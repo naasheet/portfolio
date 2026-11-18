@@ -437,7 +437,9 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 ## 15. Progress
 
 Current phase: **0 — Foundations**
-Completed chunks: 0.1 (scaffold and tooling)
+Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography)
+Carry-over into later chunks:
+- **0.6:** delete the temporary type specimen `app/type/page.tsx` (from 0.2); `/dev` replaces it.
 Open TODO(content) items:
 - `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
 - `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)

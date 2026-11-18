@@ -1,1 +1,113 @@
 @import "tailwindcss";
+
+/* Font families (CLAUDE.md §7). The --font-sf-* variables come from app/fonts.ts. */
+@theme {
+  --font-sans: var(--font-sf-text), -apple-system, system-ui, sans-serif;
+  --font-display: var(--font-sf-display), -apple-system, system-ui, sans-serif;
+  --font-mono: var(--font-sf-mono), ui-monospace, monospace;
+}
+
+/*
+ * Text styles (iOS scale, px). Each token sets family, size, line height and tracking:
+ * 20 px and up use Display, smaller sizes use Text. Only headline fixes a weight.
+ * Keep this list in sync with TEXT_TOKENS in lib/utils.ts.
+ */
+@utility text-stat-1 {
+  font-family: var(--font-display);
+  font-size: 72px;
+  line-height: 72px;
+  letter-spacing: -0.03em;
+}
+@utility text-stat-2 {
+  font-family: var(--font-display);
+  font-size: 56px;
+  line-height: 56px;
+  letter-spacing: -0.03em;
+}
+@utility text-stat-3 {
+  font-family: var(--font-display);
+  font-size: 48px;
+  line-height: 48px;
+  letter-spacing: -0.03em;
+}
+@utility text-large-title {
+  font-family: var(--font-display);
+  font-size: 34px;
+  line-height: 41px;
+  letter-spacing: -0.02em;
+}
+@utility text-title-1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  line-height: 34px;
+  letter-spacing: -0.02em;
+}
+@utility text-title-2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+}
+@utility text-title-3 {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 25px;
+  letter-spacing: -0.01em;
+}
+@utility text-headline {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+@utility text-body {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.01em;
+}
+@utility text-callout {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 21px;
+  letter-spacing: 0;
+}
+@utility text-subhead {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 20px;
+  letter-spacing: 0;
+}
+@utility text-footnote {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 18px;
+  letter-spacing: 0;
+}
+@utility text-caption-1 {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+}
+@utility text-caption-2 {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 13px;
+  letter-spacing: 0.01em;
+}
+
+/* Numbers: Tailwind's built-in `tabular-nums` utility covers this; no custom one needed. */
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 22px;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+}
