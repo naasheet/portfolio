@@ -25,3 +25,12 @@ Thumbs.db
 npm-debug.log*
 .vercel
 coverage/
+*.pem
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*

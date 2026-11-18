@@ -75,7 +75,11 @@ what it costs in bundle size.
 | Content | `content/*.ts` typed data + MDX for case studies (`@next/mdx`) |
 | UI utilities | `clsx`, `tailwind-merge` (for `cn()`), `lucide-react` icons |
 | Analytics | `@vercel/analytics`, `@vercel/speed-insights` (added in chunk 11.1) |
-| Dev only | `prettier-plugin-tailwindcss`, `@next/bundle-analyzer`, `raw-loader` (GLSL imports), `vitest` |
+| Dev only | `prettier-plugin-tailwindcss`, `eslint-config-prettier`, `@next/bundle-analyzer`, `raw-loader` (GLSL imports), `vitest` |
+
+Scripts must work on Windows, macOS and Linux. Don't use Unix-only syntax like `VAR=value cmd`
+in `package.json`; set environment variables in a small Node script in `scripts/` instead
+(for example `scripts/analyze.mjs`). No `cross-env`.
 
 Any package not in this table needs approval, including ones a build-plan chunk names.
 
@@ -126,7 +130,7 @@ lib/
 content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
                         # knowledge.md, case-studies/*.mdx
 supabase/migrations/    # 001_contact.sql, 002_chat.sql, 003_scores.sql
-scripts/                # check-content, chat-eval, copy-mediapipe-wasm, compress-media
+scripts/                # analyze, check-content, chat-eval, copy-mediapipe-wasm, compress-media
 docs/                   # motion-audit.md, deploy.md
 public/                 # fonts/, models/, audio/, sfx/, mediapipe/
 ```
@@ -339,7 +343,7 @@ npm run build      # production build — must pass before a chunk counts as don
 npm run lint       # ESLint
 npm run typecheck  # tsc --noEmit
 npm run format     # Prettier
-npm run analyze    # bundle analyzer
+npm run analyze    # bundle analyzer: node scripts/analyze.mjs (sets ANALYZE=true, runs next build)
 npm run test       # vitest (from chunk 6.2)
 ```
 
@@ -433,6 +437,11 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 ## 15. Progress
 
 Current phase: **0 — Foundations**
-Completed chunks: _none yet_
-Open TODO(content) items: _none yet_
-Known issues: _none yet_
+Completed chunks: 0.1 (scaffold and tooling)
+Open TODO(content) items:
+- `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
+- `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)
+Known issues:
+- `npm run analyze` builds with `--webpack`, because `@next/bundle-analyzer` only hooks into webpack.
+  Production builds use Turbopack, so the reported sizes are close but not exact. The Turbopack-native
+  `next analyze` needs no package, if exact numbers are wanted later.
