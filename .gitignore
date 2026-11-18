@@ -1,0 +1,27 @@
+# deps
+node_modules/
+.pnp*
+
+# next / build
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# env (secrets live only in .env.local)
+.env*
+!.env.example
+
+# raw font installers — only the converted WOFF2 files go in public/fonts/
+stuff/
+*.dmg
+*.otf.tmp
+
+# misc
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.vercel
+coverage/
