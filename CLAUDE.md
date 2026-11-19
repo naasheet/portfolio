@@ -383,7 +383,15 @@ NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
    re-render path), say so and suggest the cheaper option.
 8. **Flag manual work clearly.** When a step needs Nasheet (accounts, keys, assets, recordings,
    device tests, playtests), mark it **[manual]** and stop at that point; don't work around it.
-9. After finishing a chunk, update the **Progress** section below.
+9. **After every chunk, update this file, then commit and push.** Once the checks pass:
+   - Update **Progress** (§15): completed chunks, carry-overs, open `TODO(content)` items,
+     known issues, and any decision a fresh session would need to know.
+   - If the chunk changed a rule, the stack, a script or the folder layout, update that section too.
+   - Commit the chunk's code and this file together (conventional commit, e.g.
+     `feat(0.3): …`), then `git push` to `origin main`. Nasheet has approved commit and push
+     after each chunk; no need to ask.
+   - Assume the next chunk may start in a fresh session with no memory of this one. If it isn't
+     written here or in the code, it's lost.
 
 ---
 
@@ -447,3 +455,29 @@ Known issues:
 - `npm run analyze` builds with `--webpack`, because `@next/bundle-analyzer` only hooks into webpack.
   Production builds use Turbopack, so the reported sizes are close but not exact. The Turbopack-native
   `next analyze` needs no package, if exact numbers are wanted later.
+- Git converts files to CRLF on Windows checkout. A `.gitattributes` with `* text=auto eol=lf` is
+  proposed but not approved yet.
+
+Decisions so far (don't re-ask):
+- **SF Pro license:** Nasheet knows Apple's license only covers UI mock-ups for Apple platforms,
+  and chose to self-host SF Pro anyway. Don't raise it again.
+- **Font files:** `public/fonts/sf-{pro-text,pro-display,mono}-{400,500,600,700}.woff2`, subset to
+  Latin, Latin-1, Latin Ext-A, punctuation, currency, arrows, maths, box-drawing and geometric shapes.
+  `public/fonts/og/SF-Pro-Display-Bold.otf` is a subset OTF for OG images (next/og can't read WOFF2).
+  The source installers in `stuff/*.dmg` are gitignored. For non-Latin text, re-subset from the DMGs
+  (7-Zip, then fontTools `pyftsubset`).
+- **Stack versions:** Next.js 16.4 (App Router, Turbopack, `cacheComponents` and
+  `partialPrefetching` on), React 19.3, Tailwind v4 via `@tailwindcss/turbopack`. There's no
+  `tailwind.config.ts` or PostCSS config; theme tokens live in `@theme` in `app/globals.css`.
+  `AGENTS.md` is Next's own agent-rules file; `next dev` re-creates it, so it stays committed.
+  Next 16's own docs are in `node_modules/next/dist/docs/`.
+- **Scripts:** `typecheck` = `next typegen && tsc --noEmit` (global types like `LayoutProps` need
+  typegen). `lint` = `eslint . --max-warnings 0`. `analyze` = `node scripts/analyze.mjs`.
+- **ESLint:** `eslint-config-prettier/flat` stays the last entry in `eslint.config.mjs`.
+- **Fonts loading:** `app/fonts.ts` exports `fontVariables` for `<html>`. Only SF Pro Text is
+  preloaded; Display and Mono load on first use. Mono uses `adjustFontFallback: false`.
+- **Text tokens:** one `@utility text-<name>` per token in `globals.css` (family, size, line height,
+  tracking; weight only on headline). Stat sizes use line height 1.0, Display, and no fixed weight.
+  Every token is also listed in `TEXT_TOKENS` in `lib/utils.ts`, so `cn()` treats it as a font size,
+  not a colour. Keep the two lists in sync. `body` repeats the `text-body` values in `@layer base`.
+  Use Tailwind's built-in `tabular-nums` for numbers.
