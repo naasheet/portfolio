@@ -116,6 +116,7 @@ components/
   motion/               # RevealText, ScrambleText, Marquee
   overlay/              # Sheet, Modal, Drawer, Toast
   media/                # Img, LoopVideo, Avatar
+  providers/            # SmoothScroll and other app-wide client wiring (render nothing or wrap)
   cursor/  nav/  gate/  layer/  chapters/  case-study/  contact/
   player/  chat/  terminal/  ar/  dev/
 lib/
@@ -475,9 +476,20 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 ## 15. Progress
 
 Current phase: **0 — Foundations**
-Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and themes)
+Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
+themes), 0.4 (motion foundation)
 Carry-over into later chunks:
 - **0.6:** delete the temporary type specimen `app/type/page.tsx` (from 0.2); `/dev` replaces it.
+- **0.6:** delete the temporary scroll test page `app/motion-test/` (from 0.4).
+- **1.5 overlays:** use `lockScroll()` / `unlockScroll()` from `lib/motion/lenis.ts`. They don't
+  compensate for the scrollbar width yet (the layout may shift by the scrollbar's width on Windows); handle that there.
+- **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
+  them). `next/link` with a hash handles the click itself and jumps natively; use `scrollTo()`
+  if a Link is needed.
+- **2.5 route transitions:** call `getLenis()?.scrollTo(0, { immediate: true })` (or restore the
+  saved position) on navigation, and `ScrollTrigger.refresh()` once the new page's layout settles.
+- **Fonts and ScrollTrigger:** call `ScrollTrigger.refresh()` after `document.fonts.ready` once
+  real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
 - **0.6 / 1.x:** a theme toggle UI, and the glass recipe (blur + hairline + inset top highlight)
   as a reusable class or card base. 0.3 only ships the tokens.
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
@@ -539,3 +551,28 @@ Decisions so far (don't re-ask):
 - **Motion tokens:** `lib/motion/tokens.ts` has `duration` (ms), `durationS` (s), `easeOut`
   (CSS string), `easeOutPoints` (Framer array) and `spring.snappy/soft/gentle`. These are plain
   objects, so Framer Motion isn't needed yet. Keep them in sync with the CSS variables.
+- **Motion packages (0.4):** `gsap` 3.15 (SplitText is free and included), `@gsap/react`, `lenis`
+  1.3, `framer-motion` 14 (installed, not imported yet). Import GSAP, plugins and `useGSAP` only
+  from `lib/motion/gsap.ts`, which registers ScrollTrigger, SplitText and useGSAP once.
+- **Smooth scroll:** `components/providers/SmoothScroll.tsx` is mounted once in `<body>` and
+  renders nothing. Lenis uses `autoRaf: false` and `lerp: 0.1`, is driven by `gsap.ticker`, and
+  sets `lagSmoothing(0)`; `lenis.on('scroll', ScrollTrigger.update)`. Lenis's CSS is copied into
+  `@layer base` in `globals.css`. Don't set CSS `scroll-behavior: smooth` anywhere.
+- **Anchors:** Lenis's `anchors` option is off on purpose: it doesn't cancel the native jump, so
+  the page flashed to the target for one frame. SmoothScroll has its own click handler for
+  same-page `#hash` links: it cancels the jump, `pushState`s the hash and calls `scrollTo()`.
+- **`lib/motion/lenis.ts`:** `getLenis()`, `scrollTo(target, opts)`, and `lockScroll()` /
+  `unlockScroll()` (counted, so overlays can nest). All of them fall back to native scrolling
+  when Lenis is off.
+- **Reduced motion:** `useReducedMotion()` (`lib/hooks/`) returns `true` on the server and during
+  hydration, then the real value, so motion never starts and tears down on first load. It
+  updates live. With reduced motion, Lenis isn't created at all.
+- **Verified 0.4 (headless Chromium, production build):** `html.lenis` is present normally and
+  absent when reduced motion is emulated, both live and after a reload. An anchor glide rises
+  steadily, with no native jump. The pinned section stays at top 0 px across its whole range
+  while the bar scrubs from 0 to 1. No console errors.
+- **Bundle after 0.4:** about 183 KB gzipped first-load JS on `/`. That's the Next/React base of
+  about 128 KB, plus GSAP, ScrollTrigger and SplitText (46 KB), plus Lenis and SmoothScroll
+  (9 KB). Next's 38 KB `noModule` polyfill chunk doesn't count, because modern browsers skip it.
+  About 17 KB of headroom is left: keep everything else on `/` behind `next/dynamic`. If it gets
+  tight, register SplitText lazily where it's used (saves about 6 KB).

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { ThemeScript } from "@/components/ui/ThemeScript";
 import { fontVariables } from "./fonts";
 import "./globals.css";
@@ -16,7 +17,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <ThemeScript />
       </head>
-      <body>{children}</body>
+      <body>
+        <SmoothScroll />
+        {children}
+      </body>
     </html>
   );
 }
