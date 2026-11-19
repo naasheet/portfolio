@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
+import { StoreHydrator } from "@/components/providers/StoreHydrator";
 import { ThemeScript } from "@/components/ui/ThemeScript";
 import { fontVariables } from "./fonts";
 import "./globals.css";
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <ThemeScript />
       </head>
       <body>
+        <StoreHydrator />
         <SmoothScroll />
         {children}
       </body>

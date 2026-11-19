@@ -477,10 +477,12 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 Current phase: **0 — Foundations**
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
-themes), 0.4 (motion foundation)
+themes), 0.4 (motion foundation), 0.5 (store and shared utilities)
 Carry-over into later chunks:
 - **0.6:** delete the temporary type specimen `app/type/page.tsx` (from 0.2); `/dev` replaces it.
 - **0.6:** delete the temporary scroll test page `app/motion-test/` (from 0.4).
+- **0.6:** delete the temporary store test page `app/store-test/` (from 0.5). Its "getState()
+  reader vs subscribed reader" demo may be worth keeping in `/dev`.
 - **1.5 overlays:** use `lockScroll()` / `unlockScroll()` from `lib/motion/lenis.ts`. They don't
   compensate for the scrollbar width yet (the layout may shift by the scrollbar's width on Windows); handle that there.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
@@ -576,3 +578,26 @@ Decisions so far (don't re-ask):
   (9 KB). Next's 38 KB `noModule` polyfill chunk doesn't count, because modern browsers skip it.
   About 17 KB of headroom is left: keep everything else on `/` behind `next/dynamic`. If it gets
   tight, register SplitText lazily where it's used (saves about 6 KB).
+- **Store (0.5):** `zustand` 5 with `subscribeWithSelector`, in `lib/store.ts`. State is nested by
+  slice, and each slice carries its own actions: `useStore.getState().audio.setVolume(0.5)`,
+  `useStore((s) => s.ui.chatOpen)`. Never select a whole slice (`s.audio` contains the fast
+  `levels`); select single fields. Fast values: `audio.levels`, `audio.beat`, `ar.hand` (0–1
+  viewport coordinates, top left is 0,0) and `scroll.progress`. They're written with a normal
+  `set()` each frame and read only through `getState()`.
+- **Store meanings:** `audio.enabled` means the engine is running (the `AudioContext` exists).
+  `ui.soundEnabled` is the visitor's choice; it's saved under `"sound"` as `"1"`/`"0"`, defaults to
+  `false`, and controls UI sounds too. `setVolume` and `setProgress` clamp to 0–1.
+  `setTrackIndex` doesn't know the playlist length yet; the music engine wraps the index (5.1).
+- **Persistence:** done in the actions, not with Zustand's `persist` middleware (ThemeScript needs
+  the plain `"theme"` key). The store starts with defaults on the server and the client;
+  `components/providers/StoreHydrator.tsx` (mounted in `<body>`) calls `hydratePersisted()`
+  after hydration. `theme.setMode()` calls `setTheme()` from `lib/theme.ts`, so use the store
+  action, not `setTheme()` directly, or the store goes stale.
+- **Browser helpers:** `lib/browser.ts` has `isBrowser` and `storage.get/set/remove`, which never
+  throw. Use them for every localStorage access.
+- **Hooks:** `useMediaQuery(query, serverValue = false)` is the base, and `useReducedMotion`
+  (server value `true`) and `useIsTouch` (`(hover: none) and (pointer: coarse)`) are built on it.
+  `usePageVisible` (server value `true`).
+- **Verified 0.5 (headless Chromium, production build):** all 12 flags and the 4 value controls
+  update. `sound` and `theme` survive a reload. Over 2 s of fake 60 fps levels, the `getState()`
+  reader stayed at 1 render while a subscribed reader reached 331. No console errors.

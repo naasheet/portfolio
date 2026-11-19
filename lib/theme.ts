@@ -1,3 +1,5 @@
+import { storage } from "./browser";
+
 export type Theme = "dark" | "light";
 
 /** localStorage key for the saved theme. ThemeScript reads the same key before first paint. */
@@ -18,9 +20,6 @@ export function getTheme(): Theme {
 export function setTheme(theme: Theme): void {
   if (typeof document === "undefined") return;
   document.documentElement.dataset.theme = theme;
-  try {
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  } catch {
-    // Storage blocked (private mode, disabled cookies): the theme still applies for this visit.
-  }
+  // If storage is blocked, the theme still applies for this visit.
+  storage.set(THEME_STORAGE_KEY, theme);
 }
