@@ -475,14 +475,12 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **0 — Foundations**
+Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
-themes), 0.4 (motion foundation), 0.5 (store and shared utilities)
+themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page)
 Carry-over into later chunks:
-- **0.6:** delete the temporary type specimen `app/type/page.tsx` (from 0.2); `/dev` replaces it.
-- **0.6:** delete the temporary scroll test page `app/motion-test/` (from 0.4).
-- **0.6:** delete the temporary store test page `app/store-test/` (from 0.5). Its "getState()
-  reader vs subscribed reader" demo may be worth keeping in `/dev`.
+- **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
+  hover, focus-visible, active, disabled).
 - **1.5 overlays:** use `lockScroll()` / `unlockScroll()` from `lib/motion/lenis.ts`. They don't
   compensate for the scrollbar width yet (the layout may shift by the scrollbar's width on Windows); handle that there.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
@@ -492,7 +490,7 @@ Carry-over into later chunks:
   saved position) on navigation, and `ScrollTrigger.refresh()` once the new page's layout settles.
 - **Fonts and ScrollTrigger:** call `ScrollTrigger.refresh()` after `document.fonts.ready` once
   real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
-- **0.6 / 1.x:** a theme toggle UI, and the glass recipe (blur + hairline + inset top highlight)
+- **1.x / 2.4:** a site theme toggle (the one on `/dev` is dev-only), and the glass recipe (blur + hairline + inset top highlight)
   as a reusable class or card base. 0.3 only ships the tokens.
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
   theme change (watch `data-theme` on `<html>`).
@@ -601,3 +599,20 @@ Decisions so far (don't re-ask):
 - **Verified 0.5 (headless Chromium, production build):** all 12 flags and the 4 value controls
   update. `sound` and `theme` survive a reload. Over 2 s of fake 60 fps levels, the `getState()`
   reader stayed at 1 render while a subscribed reader reached 331. No console errors.
+- **/dev (0.6):** `app/dev/page.tsx` plus `components/dev/*`. It's `noindex, nofollow`, and in
+  production it calls `notFound()` unless `NEXT_PUBLIC_SHOW_DEV=1`. That variable is inlined at
+  build time, so it must be set for `next build`, not only `next start`. Its labels are
+  developer text, so `/dev` is **exempt from the copy rule** (strings can live in its components).
+  The type specimen reads family, size, line height, tracking and weight from `getComputedStyle`.
+  The colour swatches find every `--color-*` variable (and `--glass-fill`) in the stylesheet at
+  runtime, so new tokens appear automatically. Values show minified (`#fff`, and the glass fill
+  as 8-digit hex). The theme toggle goes through the store. Motion boxes use Framer Motion
+  (`MotionConfig reducedMotion="user"`). The temporary `/type`, `/motion-test` and `/store-test`
+  pages are gone.
+- **Themes are page-wide only:** the overrides sit on `:root[data-theme="light"]`, so a subtree
+  can't force a theme. Making a theme scopable to a subtree means writing the dark values a
+  second time in a `[data-theme="dark"]` block. Ask first.
+- **Verified 0.6 (headless Chromium, production build with the flag):** without the flag `/dev`
+  returns 404; with it, 200 and noindex. All 18 colour values match the §8 table in both themes.
+  All 14 type tokens read back as specified, and mono text renders in SF Mono. All six motion
+  boxes reach the same end. Section anchors land below the sticky header. No console errors.
