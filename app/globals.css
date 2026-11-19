@@ -1,5 +1,110 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens (CLAUDE.md §8). This file is the only place hex values live.
+ *
+ * Colours: dark is the default and is registered with Tailwind here, so every token becomes
+ * a utility (bg-bg-base, text-text-primary, border-border-default, bg-accent-primary …).
+ * `:root[data-theme='light']` below overrides the same variables. `static` makes Tailwind
+ * always emit every variable, so the canvas can read --color-canvas-particle-* with
+ * getComputedStyle (chunk 3.5) even when no class uses them.
+ */
+@theme static {
+  /* Drop Tailwind's default palette: only our tokens exist. */
+  --color-*: initial;
+
+  --color-bg-base: #090b0b;
+  --color-surface-glass: #1e2524;
+  --color-surface-solid: #121716;
+  --color-text-primary: #f4f7f6;
+  --color-text-secondary: #a3b2af;
+  --color-text-tertiary: #7a8b88;
+  --color-border-default: #2f3a38;
+  --color-border-focus: #2ec0a0;
+  --color-accent-primary: #2ec0a0;
+  --color-accent-primary-hover: #4fd9b8;
+  --color-accent-contrast: #090b0b;
+  --color-accent-secondary: #ffc56b;
+  --color-canvas-particle-a: #2ec0a0;
+  --color-canvas-particle-b: #ffc56b;
+  --color-status-success: #2ec0a0;
+  --color-status-danger: #ff7a6b;
+  --color-overlay-scrim: #000000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Radii: 24 px cards, 12 px controls, round chips. */
+  --radius-card: 24px;
+  --radius-control: 12px;
+  --radius-chip: 9999px;
+
+  /*
+   * Spacing: Tailwind's 4 px multiplier stays, so the 8 px grid is the even steps
+   * (p-2 = 8, p-4 = 16, gap-4 = 16 px bento gap, p-6 = 24 …). Avoid odd steps.
+   */
+  --spacing: 4px;
+
+  /* Blur for glass panels: backdrop-blur-glass. */
+  --blur-glass: 24px;
+
+  /* Shadows: shadow-lift (hovered card), shadow-overlay (solid overlays). */
+  --shadow-lift: 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  --shadow-overlay: 0 24px 64px -16px rgb(0 0 0 / 0.65);
+
+  /* Z-index scale: z-canvas, z-content, z-persistent, z-overlay, z-toast, z-cursor. */
+  --z-index-canvas: 0;
+  --z-index-content: 10;
+  --z-index-persistent: 40;
+  --z-index-overlay: 50;
+  --z-index-toast: 60;
+  --z-index-cursor: 70;
+
+  /*
+   * Timing for CSS transitions. Keep in sync with lib/motion/tokens.ts.
+   * Overriding --ease-out makes Tailwind's `ease-out` class use our curve.
+   */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Translucent glass fill, per theme: bg-glass-fill. */
+@theme inline {
+  --color-glass-fill: var(--glass-fill);
+}
+
+:root {
+  --glass-fill: rgba(30, 37, 36, 0.55);
+  --duration-fast: 150ms;
+  --duration-base: 250ms;
+  --duration-slow: 400ms;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --color-bg-base: #f4f7f6;
+  --color-surface-glass: #e4ebe9;
+  --color-surface-solid: #ffffff;
+  --color-text-primary: #121716;
+  --color-text-secondary: #43514f;
+  --color-text-tertiary: #5b6b68;
+  --color-border-default: #c9d4d2;
+  --color-border-focus: #22997f;
+  --color-accent-primary: #187263;
+  --color-accent-primary-hover: #11564a;
+  --color-accent-contrast: #ffffff;
+  /* Fails as text (2.4:1): fill with dark text, or canvas only. */
+  --color-accent-secondary: #e68d1e;
+  --color-canvas-particle-a: #22997f;
+  --color-canvas-particle-b: #ffad3d;
+  --color-status-success: #187263;
+  --color-status-danger: #b42318;
+  --color-overlay-scrim: #000000;
+
+  --glass-fill: rgba(228, 235, 233, 0.7);
+  --shadow-lift: 0 8px 24px -8px rgb(18 23 22 / 0.18);
+  --shadow-overlay: 0 24px 64px -16px rgb(18 23 22 / 0.28);
+  color-scheme: light;
+}
+
 /* Font families (CLAUDE.md §7). The --font-sf-* variables come from app/fonts.ts. */
 @theme {
   --font-sans: var(--font-sf-text), -apple-system, system-ui, sans-serif;
@@ -102,6 +207,8 @@
 
 @layer base {
   body {
+    background-color: var(--color-bg-base);
+    color: var(--color-text-primary);
     font-family: var(--font-sans);
     font-size: 17px;
     line-height: 22px;

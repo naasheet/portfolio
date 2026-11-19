@@ -21,10 +21,20 @@ const TEXT_TOKENS = [
 
 // Without this, tailwind-merge reads `text-title-1` as a text colour and would drop it
 // when merged with a real colour class like `text-foreground`.
+// Radius, blur and z-index tokens from app/globals.css, so later classes win conflicts.
 const twMerge = extendTailwindMerge({
   extend: {
+    theme: {
+      radius: ["card", "control", "chip"],
+      blur: ["glass"],
+    },
     classGroups: {
       "font-size": [{ text: [...TEXT_TOKENS] }],
+      z: [
+        {
+          z: ["canvas", "content", "persistent", "overlay", "toast", "cursor"],
+        },
+      ],
     },
   },
 });

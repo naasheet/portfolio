@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ThemeScript } from "@/components/ui/ThemeScript";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={fontVariables}>
+    // ThemeScript sets data-theme before hydration, so React must not warn about it.
+    <html lang="en" className={fontVariables} suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body>{children}</body>
     </html>
   );

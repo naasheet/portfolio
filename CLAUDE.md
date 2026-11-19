@@ -209,7 +209,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   transitions run 200–400 ms; scroll morphs follow the scroll.
 - Every interactive element needs hover, focus-visible, active and disabled states.
 - UI sounds are short (under 100 ms), throttled, and **fully silent** when sound is off.
-- Respect Figma frames when they exist. If a design decision isn't covered, propose it; don't invent silently.
+- Respect the design frames when they exist. If a design decision isn't covered, propose it; don't invent silently.
 
 ### UI/UX direction
 
@@ -230,7 +230,36 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   and the now-playing bars loop.
 - **Copy:** short, first person, a little funny. Labels say what happens. Every string lives
   in `content/copy.ts` or another `content/` file, never hardcoded in a component.
-- **UI chunks:** match the attached Figma PNG. If none is attached, ask for it before building.
+- **UI chunks:** match the attached design PNG (exported from the Key Frames canvas or Figma). If none is attached, ask for it before building.
+
+### Palette (B — Signal Teal)
+
+Near-black neutral, teal accent, amber for highlights. CSS variables use these names
+(`--color-bg-base` …). Every text pair below passes WCAG AA.
+
+| Token | Dark | Light |
+| --- | --- | --- |
+| `bg/base` | `#090B0B` | `#F4F7F6` |
+| `surface/glass` (base fill; blur and opacity set at the layer) | `#1E2524` | `#E4EBE9` |
+| `surface/solid` | `#121716` | `#FFFFFF` |
+| `text/primary` | `#F4F7F6` | `#121716` |
+| `text/secondary` | `#A3B2AF` | `#43514F` |
+| `text/tertiary` | `#7A8B88` | `#5B6B68` |
+| `border/default` | `#2F3A38` | `#C9D4D2` |
+| `border/focus` | `#2EC0A0` | `#22997F` |
+| `accent/primary` | `#2EC0A0` (dark text on it) | `#187263` (white text on it) |
+| `accent/primary-hover` | `#4FD9B8` | `#11564A` |
+| `accent/contrast` (text and icons on `accent/primary`) | `#090B0B` | `#FFFFFF` |
+| `accent/secondary` (amber) | `#FFC56B` | `#E68D1E` |
+| `canvas/particle-a` (`uColorA`) | `#2EC0A0` | `#22997F` |
+| `canvas/particle-b` (`uColorB`) | `#FFC56B` | `#FFAD3D` |
+| `status/success` | `#2EC0A0` | `#187263` |
+| `status/danger` | `#FF7A6B` | `#B42318` |
+| `overlay/scrim` | `#000000` | `#000000` |
+
+- Glass cards in dark mode: `rgba(30, 37, 36, 0.55)` + `backdrop-filter: blur(24px)` + 1 px
+  `border/default` + `inset 0 1px 0 rgba(244, 247, 246, 0.06)`.
+- Light-mode amber fails as text (2.4:1): use it only as a fill with dark text, or in the canvas.
 
 ---
 
@@ -397,10 +426,11 @@ NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
 
 ## 13. Manual work (only Nasheet can do these)
 
-- Design: screenshots of the reference site (desktop and mobile), a Figma moodboard, palette,
-  a component sheet (controls and every card type, with states), key frames for desktop and
-  mobile (gate, hero, about, work, case study, skills, contact, nav, mobile menu), and a PNG
-  export of each frame for its chunk.
+- Design: mobile (390 px) screenshots of the reference site; reviewing and approving the
+  component sheet (controls and every card type, with states) and the desktop and mobile key
+  frames (gate, hero, about, work, case study, skills, contact, nav, mobile menu) that the
+  planning chat draws on the Key Frames canvas; and a PNG export of each frame for its chunk.
+  Done: desktop reference screenshots, reference board, palette.
 - Copy: entry-gate lines, every UI string in `content/copy.ts`, case-study prose.
 - Accounts and keys: GitHub, Vercel, Supabase, the LLM provider (with a
   monthly spend limit), and optionally an email API.
@@ -445,9 +475,13 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 ## 15. Progress
 
 Current phase: **0 — Foundations**
-Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography)
+Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and themes)
 Carry-over into later chunks:
 - **0.6:** delete the temporary type specimen `app/type/page.tsx` (from 0.2); `/dev` replaces it.
+- **0.6 / 1.x:** a theme toggle UI, and the glass recipe (blur + hairline + inset top highlight)
+  as a reusable class or card base. 0.3 only ships the tokens.
+- **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
+  theme change (watch `data-theme` on `<html>`).
 Open TODO(content) items:
 - `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
 - `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)
@@ -481,3 +515,27 @@ Decisions so far (don't re-ask):
   Every token is also listed in `TEXT_TOKENS` in `lib/utils.ts`, so `cn()` treats it as a font size,
   not a colour. Keep the two lists in sync. `body` repeats the `text-body` values in `@layer base`.
   Use Tailwind's built-in `tabular-nums` for numbers.
+- **Palette:** B — Signal Teal, picked from three options. Values are in §8 (Palette); chunk 0.3
+  builds the theme tokens from that table. Two shades were moved one step for AA contrast (dark
+  `text/tertiary`, light `accent/primary`); the table is current, the Figma variables are not yet.
+- **Theme tokens (0.3):** all hex values live only in `app/globals.css`. Dark values sit in
+  `@theme static` (the default, registered as Tailwind utilities: `bg-bg-base`,
+  `text-text-primary`, `border-border-default`, `bg-accent-primary` …), and
+  `:root[data-theme="light"]` overrides the same variables. There's no separate dark block: dark
+  is the default. Tailwind's default palette is removed (`--color-*: initial`); only
+  `transparent` and `current` are added back. `--glass-fill` is a plain per-theme variable,
+  exposed as `bg-glass-fill`. Other tokens: `rounded-card/control/chip`, `backdrop-blur-glass`,
+  `shadow-lift/overlay` (lighter in light mode), `z-canvas/content/persistent/overlay/toast/cursor`,
+  Tailwind's `ease-out` overridden to our curve, and `--duration-fast/base/slow` CSS variables.
+- **Spacing:** Tailwind's default 4 px base stays. The 8 px grid is the even steps (`p-2` = 8,
+  `gap-4` = 16). Don't use odd steps.
+- **tailwind-merge:** radius, blur and z-index tokens are registered in `lib/utils.ts` (like
+  `TEXT_TOKENS`). Add any new non-colour token there too.
+- **Theme switching:** `components/ui/ThemeScript.tsx` (inline in `<head>`; saved choice, then
+  `prefers-color-scheme`, then dark) sets `data-theme` before paint. `<html>` has
+  `suppressHydrationWarning` for that reason. Use `setTheme()`, `getTheme()` and
+  `THEME_STORAGE_KEY` (`"theme"`) from `lib/theme.ts`. In dev only, the inline script also puts
+  `window.setTheme` on the page for console testing; it isn't in production builds.
+- **Motion tokens:** `lib/motion/tokens.ts` has `duration` (ms), `durationS` (s), `easeOut`
+  (CSS string), `easeOutPoints` (Framer array) and `spring.snappy/soft/gentle`. These are plain
+  objects, so Framer Motion isn't needed yet. Keep them in sync with the CSS variables.
