@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { CursorLoader } from "@/components/cursor/CursorLoader";
+import { EntryGate } from "@/components/gate/EntryGate";
+import { GateScript } from "@/components/gate/GateScript";
 import { ToasterLoader } from "@/components/overlay/ToasterLoader";
 import { MotionProvider } from "@/components/providers/MotionProvider";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
@@ -20,6 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={fontVariables} suppressHydrationWarning>
       <head>
         <ThemeScript />
+        <GateScript />
       </head>
       <body>
         <StoreHydrator />
@@ -28,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
           <ToasterLoader />
           <CursorLoader />
+          <EntryGate />
         </MotionProvider>
       </body>
     </html>

@@ -8,7 +8,6 @@
  * createEasedProgress() turns the real value into the number the gate shows: it eases toward
  * the real value on the shared GSAP ticker, never passes it and never goes backwards.
  */
-import { getImageProps } from "next/image";
 import type { PreloadEntry } from "@/content/preload";
 import { storage } from "@/lib/browser";
 import { gsap } from "@/lib/motion/gsap";
@@ -54,7 +53,12 @@ export type PreloadRun = {
 const DEFAULT_TIMEOUT_MS = 8000;
 
 /** The optimized next/image URL the browser will request for this entry on this screen. */
-function imageUrl(entry: Extract<PreloadEntry, { kind: "image" }>): string {
+async function imageUrl(
+  entry: Extract<PreloadEntry, { kind: "image" }>,
+): Promise<string> {
+  // Loaded only when an image entry is resolved: keeps next/image's helpers (about 7 KB) out of
+  // the first load on `/` (2.2).
+  const { getImageProps } = await import("next/image");
   const { props } = getImageProps({
     src: entry.src,
     alt: "",
@@ -145,7 +149,7 @@ export function preload(
       if (entry.kind === "fonts") {
         await document.fonts.ready;
       } else {
-        const url = entry.kind === "image" ? imageUrl(entry) : entry.url;
+        const url = entry.kind === "image" ? await imageUrl(entry) : entry.url;
         item.url = url;
         await fetchStreaming(
           url,

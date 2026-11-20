@@ -33,7 +33,15 @@ const twMerge = extendTailwindMerge({
       "font-size": [{ text: [...TEXT_TOKENS] }],
       z: [
         {
-          z: ["canvas", "content", "persistent", "overlay", "toast", "cursor"],
+          z: [
+            "canvas",
+            "content",
+            "persistent",
+            "overlay",
+            "toast",
+            "gate",
+            "cursor",
+          ],
         },
       ],
     },

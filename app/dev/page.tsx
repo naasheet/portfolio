@@ -51,6 +51,7 @@ const SECTIONS = [
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
   { id: "preload", label: "Preloader" },
+  { id: "gate", label: "Entry gate" },
 ] as const;
 
 export default function DevPage() {
@@ -219,6 +220,19 @@ export default function DevPage() {
         note="lib/preload.ts on the dev placeholder assets. Set DevTools to Slow 4G and compare the received column with the Network tab. The big number is the eased value the gate will show: it never passes the real one."
       >
         <PreloadSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="gate"
+        title="Entry gate"
+        note="Shown once per visitor; repeat visits skip it. ?gate in the URL forces it. A plain link, so the page fully reloads."
+      >
+        <a
+          href="/dev?gate"
+          className="self-start rounded-control text-subhead text-accent-primary underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
+        >
+          Replay the gate
+        </a>
       </DevSection>
     </div>
   );

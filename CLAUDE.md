@@ -228,8 +228,9 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   numbers count up once; skeletons in the card's shape instead of spinners; every action gives
   feedback within 100 ms.
 - **Motion:** one signature move per chapter, and everything else quiet. Only the status dot,
-  the now-playing bars, the terminal cursor (added in 1.4, approved) and the mouse cursor's
-  orbiting specks (Orbit board, 1.7; paused when the pointer leaves or the tab is hidden) loop.
+  the now-playing bars, the terminal cursor (added in 1.4, approved), the mouse cursor's
+  orbiting specks (Orbit board, 1.7; paused when the pointer leaves or the tab is hidden) and the
+  entry gate's loading spinner (2.2, only while the gate is up) loop.
 - **Copy:** short, first person, a little funny. Labels say what happens. Every string lives
   in `content/copy.ts` or another `content/` file, never hardcoded in a component.
 - **UI chunks:** match the attached design PNG (exported from the Key Frames canvas or Figma). If none is attached, ask for it before building.
@@ -481,16 +482,16 @@ built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
-2.1 (asset manifest and preloader)
+2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`):** first-load JS is **199.2 KB after 1.7** (the placeholder `/`
-  doesn't use Button / Card yet), so it is effectively at the ~200 KB budget. **4.x must first** move
-  SplitText registration to where it's used (Nasheet approved this in 1.7, about -6 KB), because the
-  real controls will bring the magnetic hook and the sfx stub onto `/`. The next chunk that adds to `/` must free space first:
+- **Bundle (every chunk that touches `/`):** first-load JS is **198.7 KB after 2.2** (SplitText is now lazy;
+  the gate's logic and next/image's helpers load after hydration). The placeholder `/` doesn't use
+  Button / Card yet, so 4.x will add the magnetic hook and the sfx stub. Measure, and keep
+  anything not needed for the first paint behind dynamic imports. The next chunk that adds to `/` must free space first:
   register SplitText lazily (about 6 KB), and check what else can move behind `next/dynamic`. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
   SplitText lazily where it's used (about 6 KB).
 - **2.3 persistent layer:** give the app one wrapper element and set `inert` on it while an overlay
@@ -508,14 +509,20 @@ Carry-over into later chunks:
   strings need `blurDataURL`) and `LoopVideo` for loops. `public/dev/` and `components/dev/media/`
   hold generated dev placeholders only; never use them on real pages. `public/dev/` is served in
   production too (small and harmless); delete it if it ever matters.
-- **2.2 gate (first thing):** the gate will import `lib/preload.ts` onto `/`, which is at 199.2 KB.
-  Move SplitText registration to where it's used first (approved in 1.7, about -6 KB), then
-  re-measure. Use `preload(preloadManifest, { onProgress })` and `createEasedProgress()`; show
-  the eased value, enable the buttons on `ready`, and don't wait for `done`.
-- **2.x entry gate:** "Enter with sound" must call `ui.setSoundEnabled(true)` and then `initSfx()`
-  (`lib/sfx.ts`) **inside the click handler** (it creates the AudioContext synchronously). On
-  repeat visits with `sound` = "1" the gate is skipped, so arm `initSfx()` on the first
-  pointerdown / keydown. Until then, the `/dev` "Sound on/off" button stands in for it.
+- **2.4 nav (from the 2.2 Loading screen board, deferred because there was no nav yet):**
+  - **First visit:** once the hero has settled, the nav's sound button pulses once and shows its
+    tooltip ("Sound is off" with an M Kbd) for 4 s.
+  - **Repeat visits** with sound on: show a small "Tap for sound" chip in the nav until the
+    first click (the browser needs a new gesture).
+  - Turning sound on (nav button, the M key, terminal `play`) must create or resume the
+    AudioContext inside that handler: `ensureAudioContext()` / `initSfx()`.
+- **3.x / 4.2 hero (from the 2.2 board):** during the gate's exit the particles start forming the
+  name underneath; the hero intro listens for `ui.entered`. When the WebGL canvas exists, make the
+  gate's background transparent over it at 35% and delete `GateScatter`.
+- **Sound start (2.2 decision: the site always opens silent; there is no "Enter with sound"):**
+  whatever turns sound on calls `ui.setSoundEnabled(true)` and `initSfx()` (`lib/sfx.ts`) **inside
+  its handler** (that creates the AudioContext synchronously). Until the nav exists, the `/dev`
+  "Sound on/off" button stands in.
 - **6.x terminal / 4.x contact form / 7.x chat input:** the typing sound is opt-in per field:
   `onKeyDown={onTypingSound}` (from `lib/sfx.ts`), or call it from the field's own keydown handler.
   Turn it on in the terminal; ask Nasheet before adding it to the contact form or chat.
@@ -1129,6 +1136,59 @@ Decisions so far (don't re-ask):
   - **Hanging video** (never answered): "Let in after the 8 s timeout at 8005 ms", with that row
     still loading in the background.
   - **404:** the row is "failed (HTTP 404)" and the bar completes ("Ready at 32 ms").
+- **Entry gate (2.2, loading screen only; homepage still undecided):** boards
+  `stuff/reference/Loading screen — desktop 1440@2x.png`, `— mobile 390@2x.png` and `— states, lines,
+  spec@2x.png`.
+  - **Mounting:** `components/gate/EntryGate.tsx` is mounted in `app/layout.tsx` (server-rendered,
+    so it paints with the HTML). `GateScript` in `<head>` sets `html[data-gate="skip"]` before
+    paint when localStorage `entered` = "1" (repeat visit); `?gate` in the URL forces it. CSS
+    hides `.entry-gate` for `skip` and `done`. `/dev` has a "Replay the gate" link.
+  - **Layout:** `bg-bg-base`, `z-gate` (new token 65: above toasts, below the cursor).
+    - **Top:** the name (two dots, teal and amber) top-left; `GateClock` (city · HH:MM zone, from
+      `content/profile.ts`, minute-aligned updates, hidden below md) top-right.
+    - **Bottom:** the counter is `text-stat-1` (now **responsive: 64 px below md, 72 px from md**,
+      the board calls both stat-1), `tabular-nums`. The line row is `OrbitSpinner` + the
+      loading line in SF Mono 13 (`font-mono text-footnote`, text/secondary). Then the
+      percentage and a 1 px hairline (`.gate-fill`, scaleX; glows at 100%).
+    - **Spacing:** 48 px margins on desktop; 24 px sides and the hairline 44 px from the bottom
+      on phones.
+  - **Particles:** `GateScatter`, a static, seeded SVG (150 dots, about 1 in 6 amber) at 35%, as a
+    stand-in until the WebGL canvas (3.x).
+  - **Behaviour:**
+    - The counter, percentage and hairline are written straight to the DOM from
+      `createEasedProgress`.
+    - Lines: `content/loadingLines.ts` (24 from the board). "Brewing…" is the server-rendered
+      opener, then the rest are shuffled, every 1.6 s, never repeating, and the last is always
+      `readyLine` ("Ready.").
+    - At 100% (`ready` resolved and the shown value reaches 1; a timeout also runs the counter to
+      100) it holds 300 ms, then exits with a GSAP timeline: the counter scales to 0.92 and fades
+      (0.35 s), the rest fades, and the overlay `yPercent: -100` (0.55 s from 0.25 s), about 0.8 s
+      in total. Reduced motion uses a 200 ms opacity fade instead, the spinner doesn't spin and
+      lines fade in.
+    - At the end it saves `entered`, sets `html[data-gate=done]`, releases `lockScroll`, sets
+      `ui.entered = true` and unmounts.
+    - A sr-only `role="status"` says "Loading" then "Ready."; the visual layer is `aria-hidden`.
+  - **Bundle split:** `GateLine` (ScrambleText) loads via `next/dynamic` (`ssr: false`, with the
+    first line as the server fallback). `lib/preload.ts` is imported inside the effect, and
+    `getImageProps` loads only for `image` entries.
+  - **Out of scope on purpose:** the hero (particles forming the name), the nav's sound pulse /
+    tooltip, the "Tap for sound" chip. See the carry-overs.
+  - **Counter before hydration:** with only fonts in the manifest, the counter sits at 000 until
+    the JS has loaded, then finishes quickly (the fonts start loading from `<head>`). It will
+    track real work once the hero photo, model and track chunk join the manifest.
+- **Verified 2.2 (headless Chromium, production build):**
+  - **First visit:** the gate is in the server HTML. Throttled to 60 KB/s + 150 ms, the counter
+    only rose, ended on "Ready." and the gate removed itself, with `entered` = "1",
+    `data-gate=done` and the scroll lock released. **No AudioContext was ever created.**
+  - **Repeat visit:** `data-gate=skip` and `display: none` already at DOMContentLoaded (no flash).
+  - **Lines with fonts made to take 5 s:** "Brewing…" at 25 ms, then new shuffled lines at 1.7 /
+    3.3 / 4.9 s, then "Ready." at 6.5 s. The wipe started 560 ms after "Ready." and the gate was
+    gone 1,119 ms after it (the 300 ms hold plus the ~0.8 s exit).
+  - **Reduced motion:** an opacity fade, no transform wipe, and the spinner animation is `none`.
+  - **Layout:** phone counter 64 px at left 24 px, hairline 44 px from the bottom, clock hidden;
+    desktop counter 72 px at 48 px, hairline 48 px from the bottom, 1344 px wide.
+  - **Bundle:** first-load JS on `/` was 212.7 KB before the split and is 198.7 KB after it
+    (199.2 before 2.2).
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

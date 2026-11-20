@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
-import { gsap, SplitText, useGSAP } from "@/lib/motion/gsap";
+import { gsap, loadSplitText, useGSAP } from "@/lib/motion/gsap";
 
 type RevealTag = "h1" | "h2" | "h3" | "h4" | "p" | "span" | "div";
 
@@ -35,27 +35,38 @@ export function RevealText({
   const reduced = useReducedMotion();
 
   useGSAP(
-    () => {
+    (context) => {
       const el = ref.current;
       if (!el || reduced) return;
 
-      SplitText.create(el, {
-        type: split,
-        mask: split,
-        autoSplit: split === "lines",
-        aria: "auto",
-        onSplit(self) {
-          el.dataset.reveal = "ready";
-          return gsap.from(split === "lines" ? self.lines : self.words, {
-            yPercent: 100,
-            duration: 0.7,
-            ease: "power4.out",
-            stagger: 0.04,
-            delay,
-            scrollTrigger: { trigger: el, start: "top 85%", once: true },
+      // SplitText loads on first use (lib/motion/gsap.ts). The split is created inside this
+      // GSAP context, so reverting the context (unmount, dependency change) still reverts it.
+      let cancelled = false;
+      void loadSplitText().then((SplitText) => {
+        if (cancelled || !context) return;
+        context.add(() => {
+          SplitText.create(el, {
+            type: split,
+            mask: split,
+            autoSplit: split === "lines",
+            aria: "auto",
+            onSplit(self) {
+              el.dataset.reveal = "ready";
+              return gsap.from(split === "lines" ? self.lines : self.words, {
+                yPercent: 100,
+                duration: 0.7,
+                ease: "power4.out",
+                stagger: 0.04,
+                delay,
+                scrollTrigger: { trigger: el, start: "top 85%", once: true },
+              });
+            },
           });
-        },
+        });
       });
+      return () => {
+        cancelled = true;
+      };
     },
     { dependencies: [reduced, split, children, delay], revertOnUpdate: true },
   );

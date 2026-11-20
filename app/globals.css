@@ -55,6 +55,8 @@
   --z-index-persistent: 40;
   --z-index-overlay: 50;
   --z-index-toast: 60;
+  /* The entry gate (2.2): above everything except the custom cursor. */
+  --z-index-gate: 65;
   --z-index-cursor: 70;
 
   /*
@@ -159,9 +161,14 @@
  */
 @utility text-stat-1 {
   font-family: var(--font-display);
-  font-size: 72px;
-  line-height: 72px;
+  font-size: 64px;
+  line-height: 64px;
   letter-spacing: -0.03em;
+  /* 72 px from tablets up; 64 px on phones (Loading screen board, 2.2). */
+  @media (width >= 48rem) {
+    font-size: 72px;
+    line-height: 72px;
+  }
 }
 @utility text-stat-2 {
   font-family: var(--font-display);
@@ -524,6 +531,45 @@ html.has-cursor * {
 .cursor-root[data-state="view"] .cursor-pill {
   opacity: 1;
   transform: translate(16px, -50%) scale(1);
+}
+
+/*
+ * Entry gate (components/gate/EntryGate.tsx, Loading screen board). Server-rendered so it paints
+ * with the HTML; GateScript marks repeat visits with html[data-gate="skip"] before first paint,
+ * and the gate sets "done" when it has gone. The spinner's specks rotate (one of the loops §8
+ * allows, only while the gate is up); with reduced motion they stand still and lines fade in.
+ */
+html[data-gate="skip"] .entry-gate,
+html[data-gate="done"] .entry-gate {
+  display: none;
+}
+@keyframes gate-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@keyframes gate-line-in {
+  from {
+    opacity: 0;
+  }
+}
+.gate-orbit {
+  animation: gate-orbit 1.2s linear infinite;
+}
+.gate-fill {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+.gate-fill[data-full] {
+  box-shadow: 0 0 8px var(--color-accent-primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .gate-orbit {
+    animation: none;
+  }
+  .gate-line {
+    animation: gate-line-in 200ms var(--ease-out);
+  }
 }
 
 /*
