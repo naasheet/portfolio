@@ -1014,11 +1014,15 @@ Decisions so far (don't re-ask):
     accent, with a stronger glow.
   - **text** (`data-cursor="text"`, inputs, textareas): the caret, with amber specks 2 and 5 at
     its ends (±12 px); the rest are hidden.
-  - **view** (`data-cursor="view"` + `data-cursor-label`): a pill centred on the pointer
-    (`quickTo` 0.12 s), with the specks ringing the pill 7 px out.
+  - **view** (`data-cursor="view"` + `data-cursor-label`): a pill **beside** the pointer (its
+    left edge 16 px to the right, vertically centred; `quickTo` 0.12 s), with the specks ringing
+    the pill 7 px out. (Revised 1.7 text; the first Orbit build centred it.)
+  - **Ring size:** the revised 1.7 text says "14 specks spread around the element", while the
+    Cursor board's Magnetic tile gives a small IconButton "its ring of 8 specks". Kept as built:
+    one speck per ~32 px of outline, between 8 and 14, so normal controls get 14 and small ones 8.
   - **Minifier gotcha:** the build minifier dropped a literal `translate: -50% -50%` that sat next
-    to `transform` in `.cursor-pill`, which put the pill off-centre. Centre inside `transform`
-    instead (`translate(-50%, -50%) scale(...)`). The `translate:` rules that use `var()` (magnetic,
+    to `transform` in `.cursor-pill`. Put offsets inside `transform` instead (now
+    `translate(16px, -50%) scale(...)`). The `translate:` rules that use `var()` (magnetic,
     card lift, spotlight) survive.
   - **Off:** it renders nothing unless `(hover: hover) and (pointer: fine)` and motion is allowed.
     It hides (and gives the system cursor back) when the pointer leaves the window, on blur, and
@@ -1073,7 +1077,8 @@ Decisions so far (don't re-ask):
       ~7 px, scale 1, amber back.
     - **Magnetic IconButton:** 8 specks, 6.9-7.0 px out while it has drifted 5.7 px.
     - **Text:** the caret with two amber specks at exactly (0, ±12).
-    - **View:** the pill is centred on the pointer, with 12 specks 6.9-7.1 px around it.
+    - **View:** the pill's left edge is 16 px right of the pointer (858 vs 842) and its centre is
+      level with it, with 12 specks 6.8-7.0 px around it.
     - **Other:** a plain `<a>` gives orbit; a disabled Button gives default. Leaving the window
       hides it. No cursor on touch or with reduced motion.
     - Screenshots match the board.

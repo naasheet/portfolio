@@ -485,7 +485,7 @@ html.has-cursor * {
     opacity 200ms var(--ease-out);
 }
 
-/* View pill: centred on the pointer; the specks orbit it. */
+/* View pill: beside the pointer (its left edge 16 px to the right, vertically centred); the specks ring it. */
 .cursor-pill {
   position: absolute;
   display: inline-flex;
@@ -501,8 +501,9 @@ html.has-cursor * {
   font-weight: 600;
   white-space: nowrap;
   opacity: 0;
-  /* Centred on the pointer inside transform: the minifier dropped a separate translate here. */
-  transform: translate(-50%, -50%) scale(0.6);
+  /* Offset inside transform: the minifier dropped a separate translate on this rule. */
+  transform: translate(16px, -50%) scale(0.6);
+  transform-origin: left center;
   transition:
     transform 200ms var(--ease-spring),
     opacity 150ms var(--ease-out);
@@ -522,7 +523,7 @@ html.has-cursor * {
 }
 .cursor-root[data-state="view"] .cursor-pill {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
+  transform: translate(16px, -50%) scale(1);
 }
 
 /*
