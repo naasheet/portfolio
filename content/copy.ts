@@ -6,5 +6,7 @@ export const copy = {
   ui: {
     /** Screen-reader text for a button that is busy. */
     loading: "Loading",
+    /** Accessible name of a toast's close button. */
+    dismiss: "Dismiss",
   },
 } as const;

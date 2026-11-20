@@ -478,19 +478,23 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit)
+1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`):** first-load JS is about 197 KB after 1.1, so only about
-  3 KB is left. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
+- **Bundle (every chunk that touches `/`):** first-load JS is **198.7 KB after 1.5**, so only about
+  1 KB is left before the ~200 KB budget. The next chunk that adds to `/` must free space first:
+  register SplitText lazily (about 6 KB), and check what else can move behind `next/dynamic`. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
   SplitText lazily where it's used (about 6 KB).
-- **1.5 / 10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
+- **2.3 persistent layer:** give the app one wrapper element and set `inert` on it while an overlay
+  is open (1.5 uses `aria-modal` plus the focus trap only). Fixed persistent UI (player, Ask
+  bubble) should add `padding-right: var(--scrollbar-gap, 0px)` so it doesn't jump when an
+  overlay locks scrolling on Windows.
+- **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`), driven by `ui.terminalOpen`.
+- **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
   if a tooltip sits near an edge.
-- **1.5 overlays:** use `lockScroll()` / `unlockScroll()` from `lib/motion/lenis.ts`. They don't
-  compensate for the scrollbar width yet (the layout may shift by the scrollbar's width on Windows); handle that there.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
   them). `next/link` with a hash handles the click itself and jumps natively; use `scrollTo()`
   if a Link is needed.
@@ -789,6 +793,57 @@ Decisions so far (don't re-ask):
     motion stops both and the tilt is `none`.
   - **Layout:** at 1440 / 768 / 390, in both themes, there's no page overflow, and no element
     sits outside its card.
+- **Overlays (1.5):** `components/overlay/` holds Sheet, Modal, Drawer, Toast (`Toaster`), plus
+  the shared `OverlayRoot`, `OverlayHeader`, `ToasterLoader` and `sheetFeatures`. There's no
+  design frame for overlays yet (approved to build from the tokens); revisit when frames exist.
+  - **OverlayRoot:** portals into `<body>` (only after mount), wraps the layer in
+    `AnimatePresence`, and draws a `bg-overlay-scrim/40` backdrop that closes on click.
+    - The focus trap is active only while `useIsPresent()` is true, so focus returns the moment
+      closing starts, and the leaving layer is `inert` so it can't take focus or clicks.
+    - `lockScroll()` runs on mount and `unlockScroll()` after the exit finishes.
+    - Esc closes only the topmost overlay.
+    - Safety net: on unmount, if focus fell to `<body>`, it goes back to the opener.
+  - **Props:** `open`, `onClose`, `title` (the heading, which names the dialog through
+    `aria-labelledby`), `closeLabel` and `children`. Panels are `role="dialog"` with `aria-modal`,
+    on the solid surface with `shadow-overlay`, animated with `spring.soft`. Inner scroll areas
+    have `data-lenis-prevent` and `overscroll-contain`.
+  - **Sheet:** a right panel (`max-w-md`) from 768 px up. Below that it's a bottom sheet
+    (90 `dvh` max) dragged by its handle only (`useDragControls`, `dragListener={false}`, so the
+    content still scrolls). It dismisses past 120 px or 500 px/s, and snaps back otherwise.
+    Drag needs `domMax`: the bottom sheet wraps itself in its own `LazyMotion` that loads
+    `sheetFeatures.ts` asynchronously, so drag code downloads only when a phone sheet opens.
+  - **Modal:** centred, `max-w-lg`, 85 `dvh` max, scale 0.96 → 1. **Drawer:** full width from the
+    top, 70 `dvh` max, content centred at `max-w-5xl`.
+  - **useFocusTrap(ref, active, initialFocus?)** (`lib/hooks/`): focuses `initialFocus`, else the
+    first focusable element, else the container. Tab and Shift+Tab wrap, and focus that escapes is
+    pulled back. On deactivation it restores the previous focus. A module stack makes only the
+    topmost trap act; `isTopmostTrap(el)` routes Esc. `getFocusable(root)` is exported.
+  - **Toasts:** `lib/toast.ts` is an external store. `toast(message, { tone, duration })` works
+    anywhere (even before the Toaster loads; it queues). Limit 3, the oldest drops, 3 s each, and
+    `dismissToast(id)` removes one. `Toaster` (`useSyncExternalStore`) is a bottom-centre polite
+    `role="status"` region. The timer pauses on hover and focus (refs, no state). Each toast has a
+    dismiss button labelled with `copy.ui.dismiss`. `ToasterLoader` (client) mounts it in
+    `app/layout.tsx` through `next/dynamic` with `ssr: false`.
+  - **lockScroll():** now always sets `overflow: hidden` on `<html>`, pads it by the measured
+    scrollbar width, and sets `--scrollbar-gap` (cleared on unlock), as well as stopping Lenis.
+    `setLenis` keeps a newly created instance stopped while a lock is active.
+- **Verified 1.5 (headless Chromium, production build with the /dev flag), keyboard only:**
+  - **Sheet:** opening focuses its close button. 25 Tabs and 6 Shift+Tabs never leave it. The
+    wheel over the backdrop doesn't move the page (y stays 8607) while the sheet's own content
+    scrolls (`scrollTop` 429). Esc closes it, focus returns to "Open sheet", and the lock is fully
+    released.
+  - **Nested:** a modal over the sheet traps only itself. The first Esc closes just the modal
+    (focus goes to "Open a modal on top", the page stays locked); the second closes the sheet.
+  - **Backdrop and drawer:** a backdrop click closes the modal and returns focus. The drawer
+    sits at top 0 and traps Tab.
+  - **Toasts:** five at once shows the newest three, and none remain after 3.4 s. A hovered toast
+    survives 3.6 s and leaves about 3 s after the pointer moves away.
+  - **Phone (390 px):** a bottom sheet, 90 `dvh`. A slow 60 px drag snaps back, and a long drag
+    dismisses. Focus returned to the opener on 5 of 5 repeated drag-dismiss runs; this needed the
+    `inert` and safety-net fix, because a press on the exiting panel had stolen focus.
+  - **Not testable headless:** the scrollbar gap is 0 there (scrollbars are hidden), so the
+    Windows padding compensation needs checking by hand.
+  - First-load JS on `/` is 198.7 KB (196.9 before).
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

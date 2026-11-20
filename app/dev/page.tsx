@@ -10,6 +10,7 @@ import { DevSection } from "@/components/dev/DevSection";
 import { IconButtonSpecimen } from "@/components/dev/IconButtonSpecimen";
 import { KbdTooltipDividerSpecimen } from "@/components/dev/KbdTooltipDividerSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
+import { OverlaySpecimen } from "@/components/dev/OverlaySpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
 import { ShadowSpecimen } from "@/components/dev/ShadowSpecimen";
 import { StatusChipSpecimen } from "@/components/dev/StatusChipSpecimen";
@@ -43,6 +44,7 @@ const SECTIONS = [
   { id: "bento", label: "Bento" },
   { id: "text-motion", label: "Text motion" },
   { id: "card-kit", label: "Card kit" },
+  { id: "overlays", label: "Overlays" },
 ] as const;
 
 export default function DevPage() {
@@ -179,6 +181,14 @@ export default function DevPage() {
         note="Every card from the kit in one bento, fed by components/dev/fixtures.ts (placeholders, TODO(content)). Toggle the theme in the header to check both. The CTA button form and the terminal row log their clicks above; the CTA also toggles the now-playing bars."
       >
         <CardKitSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="overlays"
+        title="Overlays"
+        note="Sheet, modal, top drawer and toasts. Everything works by keyboard: Tab stays inside, Esc closes the topmost overlay, focus goes back to its button, and the page behind never scrolls."
+      >
+        <OverlaySpecimen />
       </DevSection>
     </div>
   );
