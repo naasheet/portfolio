@@ -478,7 +478,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives), 1.2 (card base and bento grid)
+1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
@@ -500,6 +500,8 @@ Carry-over into later chunks:
   real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
 - **1.x / 2.4:** a site theme toggle (the one on `/dev` is dev-only). The glass recipe is done
   (`glass` utility, 1.2).
+- **4.x Marquee:** §8 says only the status dot and the now-playing bars loop. `Marquee` exists
+  (1.3), but using it on a page needs Nasheet's OK first.
 - **1.4 card kit:** build every card on `Card` inside a `BentoItem`, and give the Card `h-full`.
   PhotoCard tilt and the CTA/Social arrow nudge (sheet 2) belong to 1.4, not the card base.
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
@@ -690,6 +692,45 @@ Decisions so far (don't re-ask):
   border `#7A8B88`, spotlight and shadow at opacity 1. Reduced motion: no translate, border still
   changes. Touch context: the hover media query doesn't match, there's no translate, the spotlight
   stays at 0 and `--x` is never written.
+- **Text motion (1.3):** `components/motion/` holds RevealText, ScrambleText and Marquee, and
+  `lib/hooks/useCountUp.ts` holds the count-up. Every effect skips straight to its final state under
+  reduced motion, and every one renders its final text on the server (fine without JS and for SEO).
+  - **RevealText** (client): `SplitText.create` inside `useGSAP` with `mask` and, for lines,
+    `autoSplit` (re-splits on resize and font load and keeps the tween's progress), `aria: "auto"`,
+    and `onSplit` returning `gsap.from(yPercent: 100)` (0.7 s, `power4.out`, stagger 0.04, delay prop)
+    with ScrollTrigger `top 85%` once. `revertOnUpdate` plus the context reverts the split. The
+    element is keyed by its text, so React replaces it instead of patching split DOM; that's why
+    children must be a plain string. CSS hides `[data-reveal="pending"]` under
+    `@media (scripting: enabled) and (prefers-reduced-motion: no-preference)`, and `onSplit` flips
+    it to `ready`. Accepted risk: if the JS bundle fails to load, that text stays hidden.
+  - **GSAP easing:** GSAP can't read our CSS `cubic-bezier` without CustomEase (not registered), so
+    GSAP tweens use `power4.out` / `power2.out`, which are close to `--ease-out`.
+  - **useCountUp:** `const ref = useCountUp<HTMLSpanElement>(value, { duration, decimals })`. Render
+    `{formatCount(value, decimals)}` as the element's only child and add `tabular-nums`. On mount it
+    locks `min-width` to the final value's width (an inline element becomes `inline-block`), then
+    tweens from 0 with ScrollTrigger `top 90%` once.
+  - **`lib/motion/writeText.ts`:** writes into React's own text node (`nodeValue`), so React's
+    reference survives. Per-frame text effects use it instead of state.
+  - **ScrambleText:** hand-rolled on one GSAP tween (no ScrambleTextPlugin, to save about 3 KB
+    on every page). The first 25% is all noise, then characters resolve left to right, with glyphs
+    swapping every 40 ms. It's SF Mono with `whitespace-pre`, so the width is constant. The real
+    text is in an `sr-only` copy and the animated span is `aria-hidden`. `trigger="view"` (default,
+    ScrollTrigger once) or `"mount"` (plays on every `text` change, for the terminal).
+  - **Marquee** (server component, no JS): the content is rendered twice (the copy is
+    `aria-hidden` and `inert`), and a CSS `@keyframes marquee` moves the track to `-50%`. Linear on
+    purpose. Duration and gap are CSS variables. It pauses on `:hover` / `:focus-within`, fades
+    at the edges with `mask-image`, and has no animation under reduced motion. The content must
+    be at least as wide as the marquee.
+- **Verified 1.3 (headless Chromium, production build with the /dev flag):** RevealText splits into
+  3 masked lines at 1440 and re-splits to 6 at 390, every line ends at `translate(0, 0)`, CLS during
+  the reveal is 0, and the container's size doesn't change. Unmounting leaves `#reveal-demo` empty
+  (0 elements, 0 HTML), and remounting splits again. Count-up reads 0 before view, then
+  0 → 12 → 21 → 24 → 26 (and 1,280 / 98.6). The width is locked, and the text beside it stays at the
+  same x. Scramble resolves left to right in about 600 ms at a constant width; `trigger="mount"`
+  replays on a text change. The marquee moves, pauses on hover, and has an inert, aria-hidden copy.
+  Reduced motion: no split (text visible), final numbers, no scramble, marquee animation `none`.
+  Testing note: the effects fire once on view, so check each one on a fresh load, or a neighbour
+  that scrolled into view earlier will already have played.
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

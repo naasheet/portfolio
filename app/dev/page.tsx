@@ -12,6 +12,7 @@ import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
 import { ShadowSpecimen } from "@/components/dev/ShadowSpecimen";
 import { StatusChipSpecimen } from "@/components/dev/StatusChipSpecimen";
+import { TextMotionSpecimen } from "@/components/dev/TextMotionSpecimen";
 import { ThemeToggle } from "@/components/dev/ThemeToggle";
 import { TypeSpecimen } from "@/components/dev/TypeSpecimen";
 
@@ -39,6 +40,7 @@ const SECTIONS = [
   { id: "kbd-tooltip-divider", label: "Kbd · Tooltip · Divider" },
   { id: "cards", label: "Card" },
   { id: "bento", label: "Bento" },
+  { id: "text-motion", label: "Text motion" },
 ] as const;
 
 export default function DevPage() {
@@ -159,6 +161,14 @@ export default function DevPage() {
         note="1 column on phones, 6 on tablets (768+), 12 on desktop (1024+). 16 px gap, rows at least 160 px. Spans are CSS variables, not generated class names."
       >
         <BentoSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="text-motion"
+        title="Text motion"
+        note="RevealText, useCountUp, ScrambleText and Marquee. Replay remounts each demo. Under reduced motion every one of them shows its final state at once."
+      >
+        <TextMotionSpecimen />
       </DevSection>
     </div>
   );

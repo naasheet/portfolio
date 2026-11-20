@@ -314,7 +314,63 @@
   }
 }
 
+/*
+ * RevealText (components/motion/RevealText.tsx) hides its text until SplitText has split it,
+ * so text above the fold doesn't flash before sliding in. Only when scripts run and motion is
+ * allowed: without JS, or with reduced motion, the text is never hidden.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-reveal="pending"] {
+    visibility: hidden;
+  }
+}
+
+/*
+ * Marquee (components/motion/Marquee.tsx): pure CSS loop. The track holds the content twice
+ * and moves by -50%. Linear on purpose: a marquee must move at a constant speed.
+ */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 @layer components {
+  .marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      black 8%,
+      black 92%,
+      transparent
+    );
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee var(--marquee-duration, 30s) linear infinite;
+  }
+  .marquee[data-reverse] .marquee-track {
+    animation-direction: reverse;
+  }
+  .marquee:hover .marquee-track,
+  .marquee:focus-within .marquee-track {
+    animation-play-state: paused;
+  }
+  .marquee-content {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--marquee-gap, 32px);
+    padding-right: var(--marquee-gap, 32px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+
   /*
    * Bento grid (components/ui/BentoGrid.tsx, BentoItem.tsx): 1 column on phones, 6 on
    * tablets (md, 48rem), 12 on desktop (lg, 64rem), 16 px gap. BentoItem writes resolved spans
