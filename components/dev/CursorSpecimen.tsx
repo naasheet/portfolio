@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { IconButton } from "@/components/ui/IconButton";
-import { initSfx } from "@/lib/sfx";
+import { initSfx, onTypingSound } from "@/lib/sfx";
 import { useStore } from "@/lib/store";
 
 function Tile({
@@ -111,9 +111,13 @@ export function CursorSpecimen() {
             className="size-full rounded-control bg-linear-to-br from-accent-primary/40 to-accent-secondary/30"
           />
         </Tile>
-        <Tile title="Input" note="Inputs and textareas always get the caret">
+        <Tile
+          title="Input"
+          note="Always the caret. Opted into the typing sound (when sound is on)"
+        >
           <input
             aria-label="Sample field"
+            onKeyDown={onTypingSound}
             placeholder="Type here"
             className="h-11 w-full rounded-control border border-border-default bg-surface-solid px-4 text-subhead text-text-primary placeholder:text-text-tertiary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
           />

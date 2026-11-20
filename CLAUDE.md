@@ -509,10 +509,13 @@ Carry-over into later chunks:
   (`lib/sfx.ts`) **inside the click handler** (it creates the AudioContext synchronously). On
   repeat visits with `sound` = "1" the gate is skipped, so arm `initSfx()` on the first
   pointerdown / keydown. Until then, the `/dev` "Sound on/off" button stands in for it.
-- **Later sound wiring:** `lib/audio/sfxEngine.ts` maps only `hover`, `click`, `toggleOn` and
-  `toggleOff` now. Add names there (and to the `SfxName` union in `lib/sfx.ts`) as chunks need them:
-  `transition_up/down` (overlays open / close), `notification` / `caution` (toasts), `type_*`
-  (terminal keys, 6.x), `swipe_*` (SkillsCard paging), `select`, `disabled`, `celebration`
+- **6.x terminal / 4.x contact form / 7.x chat input:** the typing sound is opt-in per field:
+  `onKeyDown={onTypingSound}` (from `lib/sfx.ts`), or call it from the field's own keydown handler.
+  Turn it on in the terminal; ask Nasheet before adding it to the contact form or chat.
+- **Later sound wiring:** `lib/audio/sfxEngine.ts` maps `hover`, `click`, `toggleOn`, `toggleOff` and
+  `type`. Add names there (and to the `SfxName` union in `lib/sfx.ts`) as chunks need them:
+  `transition_up/down` (overlays open / close), `notification` / `caution` (toasts), `swipe_*`
+  (SkillsCard paging), `select`, `disabled`, `celebration`
   (games). Note that `caution` (161 ms), `notification` (300 ms) and `swipe_*` (150 ms) are
   longer than the 100 ms rule in §8. Ask before using them. IconButton has no `sound` prop
   yet (not in 1.7's scope).
@@ -1031,6 +1034,19 @@ Decisions so far (don't re-ask):
     `toggleOff` by the new state) and interactive Card (hover + click). Hover sounds are mouse
     only (`pointerType`).
   - **Files:** `public/sfx/SND01_sine/` (28 mono 44.1 kHz 16-bit WAVs, peak about -5 dBFS).
+- **Typing sound (1.7 follow-up, Nasheet asked for it):** `sfx("type")` picks one of
+  `type_01`-`type_05` (10 ms each) at random, at a per-sound gain of 0.6 under the 0.4 master.
+  Typing is the most repetitive sound, so it's the quietest.
+  - Throttles are now per sound: 60 ms for hover, click and toggles, but **30 ms for `type`**, so
+    quick typists don't lose ticks.
+  - `onTypingSound(e)` is the opt-in keydown handler. It plays for characters, Space, Backspace,
+    Delete and Enter. It skips held-down repeats, Ctrl / Cmd / Alt shortcuts, lone modifiers,
+    arrows and IME composition.
+  - On `/dev`, only the sample input in the cursor section opts in.
+  - **Verified:** silent mode means 0 plays and 0 files. Sound on fetches the five type files
+    (13 sounds in total, once). A keydown / play log of "hello world" at 60 ms shows 11 keys and
+    11 ticks, each within 1 ms. Backspace and Enter tick; Shift, ArrowLeft, Ctrl+A and Ctrl+C
+    don't. 20 keys in 330 ms give 9 ticks (the 30 ms throttle). Sound off gives 0.
 - **Testing notes (1.7):** to check audio headlessly, inject a main-world script that wraps
   `AudioBufferSourceNode.prototype.start` and the `AudioContext` constructor and reports through
   `data-*`. When moving the mouse with `steps`, the pointer crosses neighbours and fires their
