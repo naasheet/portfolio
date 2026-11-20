@@ -5,6 +5,7 @@ import { ButtonSpecimen } from "@/components/dev/ButtonSpecimen";
 import { CardKitSpecimen } from "@/components/dev/CardKitSpecimen";
 import { CardSpecimen } from "@/components/dev/CardSpecimen";
 import { ChipSpecimen } from "@/components/dev/ChipSpecimen";
+import { CursorSpecimen } from "@/components/dev/CursorSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
 import { DevSection } from "@/components/dev/DevSection";
 import { IconButtonSpecimen } from "@/components/dev/IconButtonSpecimen";
@@ -47,6 +48,7 @@ const SECTIONS = [
   { id: "card-kit", label: "Card kit" },
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
+  { id: "cursor", label: "Cursor and sound" },
 ] as const;
 
 export default function DevPage() {
@@ -199,6 +201,14 @@ export default function DevPage() {
         note="Img (blur placeholder, 300 ms fade-in, width and height required), LoopVideo (plays only on screen and with the tab visible; never under reduced motion or Save-Data), Avatar and the icon sizes. All media here is a dev placeholder."
       >
         <MediaSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="cursor"
+        title="Cursor and sound"
+        note="The custom cursor (mouse only; off on touch and with reduced motion), magnetic controls and UI sounds. Sounds are silent until sound is turned on below."
+      >
+        <CursorSpecimen />
       </DevSection>
     </div>
   );

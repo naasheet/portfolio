@@ -478,14 +478,16 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components)
+1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`):** first-load JS is **198.7 KB after 1.5**, so only about
-  1 KB is left before the ~200 KB budget. The next chunk that adds to `/` must free space first:
+- **Bundle (every chunk that touches `/`):** first-load JS is **199.2 KB after 1.7** (the placeholder `/`
+  doesn't use Button / Card yet), so it is effectively at the ~200 KB budget. **4.x must first** move
+  SplitText registration to where it's used (Nasheet approved this in 1.7, about -6 KB), because the
+  real controls will bring the magnetic hook and the sfx stub onto `/`. The next chunk that adds to `/` must free space first:
   register SplitText lazily (about 6 KB), and check what else can move behind `next/dynamic`. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
   SplitText lazily where it's used (about 6 KB).
 - **2.3 persistent layer:** give the app one wrapper element and set `inert` on it while an overlay
@@ -503,6 +505,21 @@ Carry-over into later chunks:
   strings need `blurDataURL`) and `LoopVideo` for loops. `public/dev/` and `components/dev/media/`
   hold generated dev placeholders only; never use them on real pages. `public/dev/` is served in
   production too (small and harmless); delete it if it ever matters.
+- **2.1 entry gate:** "Enter with sound" must call `ui.setSoundEnabled(true)` and then `initSfx()`
+  (`lib/sfx.ts`) **inside the click handler** (it creates the AudioContext synchronously). On
+  repeat visits with `sound` = "1" the gate is skipped, so arm `initSfx()` on the first
+  pointerdown / keydown. Until then, the `/dev` "Sound on/off" button stands in for it.
+- **Later sound wiring:** `lib/audio/sfxEngine.ts` maps only `hover`, `click`, `toggleOn` and
+  `toggleOff` now. Add names there (and to the `SfxName` union in `lib/sfx.ts`) as chunks need them:
+  `transition_up/down` (overlays open / close), `notification` / `caution` (toasts), `type_*`
+  (terminal keys, 6.x), `swipe_*` (SkillsCard paging), `select`, `disabled`, `celebration`
+  (games). Note that `caution` (161 ms), `notification` (300 ms) and `swipe_*` (150 ms) are
+  longer than the 100 ms rule in §8. Ask before using them. IconButton has no `sound` prop
+  yet (not in 1.7's scope).
+- **8.3 hand cursor:** same `Cursor` component (`data-mode` is already on the root). Add the amber
+  states from the Cursor board: pointing (40 px ring), pinching, palm hold (60 px fill ring), hand lost.
+- **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus when
+  ffmpeg is installed.
 - **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
   if a tooltip sits near an edge.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
@@ -531,6 +548,8 @@ Carry-over into later chunks:
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
   theme change (watch `data-theme` on `<html>`).
 Open TODO(content) items:
+- `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
+  name for `/credits` (11.2).
 - `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
 - `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)
 Known issues:
@@ -951,6 +970,75 @@ Decisions so far (don't re-ask):
   - **Layout shift on `/dev`:** 0 in three separate runs (plain load + full scroll; + the video
     sequence; + 1.5 s-delayed images). One long combined run that also simulated tab visibility
     from an injected script measured 0.00004 (text nodes), and it couldn't be reproduced.
+- **Cursor (1.7, Cursor board `stuff/reference/Cursor (chunks 1.7, 8.3)@2x.png`):**
+  `components/cursor/Cursor.tsx`, mounted once through `CursorLoader` (`next/dynamic`,
+  `ssr: false`) in `app/layout.tsx`.
+  - **Motion:** a 6 px dot set instantly (`gsap.quickSetter`, so it never trails) and a 32 px ring
+    on `gsap.quickTo` (0.15 s, `power3.out`). Both are on the GSAP ticker; there's no loop of its own.
+  - **States** live in `data-state` / `data-pressed` on `.cursor-root` (no React state):
+    - hover: ring x1.75 = 56 px, a 12% fill layer, the dot hides.
+    - pressed: ring x0.75 = 24 px.
+    - text: a 2 x 22 bar.
+    - view: an 80 px accent disc showing `data-cursor-label`.
+    - magnet: a dashed frame sized to the control (+4 px each side, its radius + 4) once on enter,
+      then moved each pointer move so it follows the magnetic drift.
+  - **Targets:** `closest("[data-cursor]")` (hover | text | view); inputs, textareas and
+    contenteditable always give text; nothing else sets a state. Button, IconButton, Chip and
+    interactive Card set `data-cursor="hover"` themselves (none when disabled). A hover target with
+    the `magnetic` class gives the magnet state.
+  - **CSS:** state changes animate only transform and opacity, over 200 ms on `--ease-spring` (a
+    `linear()` sampling of `spring.soft`, in `:root`). `html.has-cursor` hides the system cursor
+    only while the custom one is visible. Leaving the window (`mouseout` with no `relatedTarget`) or
+    blurring it hides the cursor again.
+  - **Off:** it renders nothing unless `(hover: hover) and (pointer: fine)` and motion is allowed.
+- **Magnetic (1.7):** `useMagnetic(ref, { radius = 60, max = 8, strength = 0.3 }, enabled)`.
+  - One shared window `pointermove` serves every registered element. Within `radius` px of the
+    element's edge it drifts `clamp(offset x 0.3, ±8)`, and it springs back with
+    `elastic.out(1, 0.5)` on leave.
+  - It tweens `--mx` / `--my`, which `.magnetic { translate: ... }` applies. That's the separate
+    `translate` property, never `transform` (Framer owns that for the press), so the two libraries
+    never share a property.
+  - Mouse only; off on touch and with reduced motion.
+  - **Defaults:** IconButton `magnetic` true; Button `magnetic` = primary only, off while disabled
+    or loading. `mergeRefs()` in `lib/utils.ts` combines the internal ref with a caller's ref.
+- **UI sounds (1.7):** `lib/sfx.ts` is a tiny stub: `initSfx()` and `sfx(name)`.
+  - **initSfx():** creates the shared AudioContext synchronously (`lib/audio/context.ts`,
+    `ensureAudioContext()`; call it only in a user gesture). It then imports
+    `lib/audio/sfxEngine.ts`, which fetches and decodes every mapped sound once.
+  - **sfx(name):** does nothing until init has run or when `ui.soundEnabled` is false, so silent
+    visitors download no engine and no files.
+  - **Playback:** through a master gain (0.4), throttled per sound name (60 ms, so a hover tick
+    never swallows the click), with a random ±3% `playbackRate`. Several files under one name
+    pick one at random (hover = `tap_01`-`05`).
+  - **Wiring:** a `sound` prop (default true) on Button (hover + click), Chip (hover + `toggleOn` /
+    `toggleOff` by the new state) and interactive Card (hover + click). Hover sounds are mouse
+    only (`pointerType`).
+  - **Files:** `public/sfx/SND01_sine/` (28 mono 44.1 kHz 16-bit WAVs, peak about -5 dBFS).
+- **Testing notes (1.7):** to check audio headlessly, inject a main-world script that wraps
+  `AudioBufferSourceNode.prototype.start` and the `AudioContext` constructor and reports through
+  `data-*`. When moving the mouse with `steps`, the pointer crosses neighbours and fires their
+  hover sounds; jump straight to the target when counting sounds.
+- **Verified 1.7 (headless Chromium, production build with the /dev flag):**
+  - **Tracking:** at four pointer positions the dot's transform equals the pointer exactly right
+    after the move, while the ring lags (e.g. 350,402 when the pointer is at 700,420) and settles
+    within 300 ms.
+  - **States:** hover, pressed, text (on a paragraph and on an input), view (label "View"),
+    magnet (52 x 52 dashed frame around the 44 px IconButton) and disabled (default).
+    Screenshots match the board in both themes.
+  - **Magnetic:** at 40 px outside, `--mx` = 8px (the cap), `translate: 8px`, and GSAP never writes
+    `style.transform`. On leave it springs back to 0px. Primary buttons are `.magnetic`; secondary
+    ones aren't.
+  - **Window leave:** the cursor hides and `has-cursor` is removed.
+  - **Touch context and reduced motion:** no cursor element and no `has-cursor`.
+  - **Sound:**
+    - Silent by default: hover and clicks on Buttons and a Chip make 0 plays, create no
+      AudioContext and fetch 0 sound files.
+    - "Sound on": the context is created and the 8 mapped WAVs are fetched exactly once.
+    - Jumping straight to a Button gives 1 hover and 1 click; a Chip gives 1 hover and 1 toggle;
+      `sound={false}` gives 0 and 0. Two hovers inside 60 ms give 1. Rates were 0.970-1.016.
+    - Sound off again: 0 plays.
+  - **Bundle:** first-load JS on `/` is 199.2 KB (198.7 before; the cursor itself loads after
+    hydration).
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

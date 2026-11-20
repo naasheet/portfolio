@@ -5,9 +5,11 @@ import {
   useRef,
   type ComponentPropsWithoutRef,
   type HTMLAttributes,
+  type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import { focusRing } from "./controlStyles";
 
@@ -32,6 +34,8 @@ type OwnProps = {
   rel?: string;
   /** Hover lift, lift shadow, border change and pointer spotlight (mouse only). */
   interactive?: boolean;
+  /** Hover and click UI sounds on interactive cards (only audible when sound is on). Default true. */
+  sound?: boolean;
   children?: ReactNode;
   className?: string;
 };
@@ -51,9 +55,12 @@ export function Card({
   target,
   rel,
   interactive = false,
+  sound = true,
   children,
   className,
   onPointerMove,
+  onPointerEnter,
+  onClick,
   ...rest
 }: CardProps) {
   const ref = useRef<HTMLElement | null>(null);
@@ -94,6 +101,16 @@ export function Card({
     "data-interactive": isInteractive ? "" : undefined,
     className: classes,
     onPointerMove: isInteractive ? handlePointerMove : onPointerMove,
+    onPointerEnter: (e: PointerEvent<HTMLElement>) => {
+      if (isInteractive && sound && e.pointerType === "mouse") sfx("hover");
+      onPointerEnter?.(e);
+    },
+    // A button inside the card plays its own click; the per-sound throttle keeps it to one.
+    onClick: (e: MouseEvent<HTMLElement>) => {
+      if (isInteractive && sound) sfx("click");
+      onClick?.(e);
+    },
+    "data-cursor": isInteractive ? "hover" : undefined,
   };
 
   if (href !== undefined) {

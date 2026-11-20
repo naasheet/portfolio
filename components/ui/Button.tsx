@@ -3,10 +3,18 @@
 import { m } from "framer-motion";
 import { LoaderCircle } from "lucide-react";
 import Link from "next/link";
-import type { ComponentPropsWithRef, ReactNode } from "react";
+import {
+  useRef,
+  type ComponentPropsWithRef,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { copy } from "@/content/copy";
+import { useMagnetic } from "@/lib/hooks/useMagnetic";
 import { spring } from "@/lib/motion/tokens";
-import { cn } from "@/lib/utils";
+import { sfx } from "@/lib/sfx";
+import { cn, mergeRefs } from "@/lib/utils";
 import {
   colorTransition,
   disabledState,
@@ -52,6 +60,10 @@ type OwnProps = {
   /** Hides the label (keeping its width) and shows a centred spinner. Clicks are ignored. */
   loading?: boolean;
   disabled?: boolean;
+  /** Hover and click UI sounds (only ever audible when sound is on). Default true. */
+  sound?: boolean;
+  /** Drift toward the pointer (Cursor board). Default: primary buttons only. */
+  magnetic?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -81,6 +93,8 @@ export function Button(props: ButtonProps) {
     trailingIcon,
     loading = false,
     disabled = false,
+    sound = true,
+    magnetic = variant === "primary",
     children,
     className,
     ...rest
@@ -88,6 +102,24 @@ export function Button(props: ButtonProps) {
 
   const iconSize = ICON_SIZE[size];
   const inactive = disabled || loading;
+
+  const own = useRef<HTMLElement | null>(null);
+  useMagnetic(own, {}, magnetic && !inactive);
+
+  // UI sounds wrap the caller's handlers. Hover is mouse-only, so a tap never "hovers".
+  const withSound = <E extends HTMLElement>(
+    onEnter?: (e: PointerEvent<E>) => void,
+    onClick?: (e: MouseEvent<E>) => void,
+  ) => ({
+    onPointerEnter: (e: PointerEvent<E>) => {
+      if (sound && !inactive && e.pointerType === "mouse") sfx("hover");
+      onEnter?.(e);
+    },
+    onClick: (e: MouseEvent<E>) => {
+      if (sound && !inactive) sfx("click");
+      onClick?.(e);
+    },
+  });
 
   const classes = cn(
     "relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-control border font-semibold whitespace-nowrap select-none",
@@ -100,6 +132,7 @@ export function Button(props: ButtonProps) {
       "cursor-progress aria-disabled:cursor-progress aria-disabled:opacity-100",
     VARIANTS[variant],
     SIZES[size],
+    magnetic && "magnetic",
     className,
   );
 
@@ -137,11 +170,17 @@ export function Button(props: ButtonProps) {
 
   // A disabled or loading link can't navigate, so it renders as a button.
   if (rest.href !== undefined && !inactive) {
-    const { href, ...linkRest } = rest as Omit<AsLink, keyof OwnProps>;
+    const { href, ref, onPointerEnter, onClick, ...linkRest } = rest as Omit<
+      AsLink,
+      keyof OwnProps
+    >;
     return (
       <MotionLink
         href={href}
+        data-cursor="hover"
         {...linkRest}
+        {...withSound(onPointerEnter, onClick)}
+        ref={mergeRefs(own, ref)}
         className={classes}
         whileTap={tap}
         transition={spring.snappy}
@@ -154,20 +193,26 @@ export function Button(props: ButtonProps) {
   const {
     type = "button",
     onClick,
+    onPointerEnter,
+    ref,
     ...buttonRest
   } = rest as Omit<AsButton, keyof OwnProps>;
+  const handlers = withSound(onPointerEnter, onClick);
   // A disabled link falls back to a button; drop its href.
   delete (buttonRest as { href?: string }).href;
 
   return (
     <m.button
       type={type}
+      data-cursor={inactive ? undefined : "hover"}
       {...buttonRest}
+      ref={mergeRefs(own, ref)}
+      onPointerEnter={handlers.onPointerEnter}
       // Loading stays focusable (aria-disabled); disabled leaves the tab order.
       disabled={disabled}
       aria-disabled={loading || undefined}
       aria-busy={loading || undefined}
-      onClick={loading ? undefined : onClick}
+      onClick={loading ? undefined : handlers.onClick}
       className={classes}
       whileTap={tap}
       transition={spring.snappy}

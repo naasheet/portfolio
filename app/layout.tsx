@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CursorLoader } from "@/components/cursor/CursorLoader";
 import { ToasterLoader } from "@/components/overlay/ToasterLoader";
 import { MotionProvider } from "@/components/providers/MotionProvider";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MotionProvider>
           {children}
           <ToasterLoader />
+          <CursorLoader />
         </MotionProvider>
       </body>
     </html>

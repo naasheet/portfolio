@@ -86,6 +86,34 @@
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 400ms;
+  /* spring.soft (stiffness 200, damping 26) sampled for CSS transitions. */
+  --ease-spring: linear(
+    0,
+    0.0378,
+    0.1224,
+    0.2317,
+    0.3469,
+    0.4551,
+    0.5561,
+    0.6444,
+    0.7179,
+    0.7806,
+    0.8316,
+    0.8716,
+    0.9041,
+    0.9293,
+    0.9482,
+    0.963,
+    0.974,
+    0.982,
+    0.9879,
+    0.9922,
+    0.9951,
+    0.9972,
+    0.9986,
+    0.9994,
+    1
+  );
   color-scheme: dark;
 }
 
@@ -340,6 +368,147 @@
   to {
     transform: translateX(-50%);
   }
+}
+
+/*
+ * Magnetic controls (lib/hooks/useMagnetic.ts): the hook tweens --mx / --my and this feeds them
+ * into `translate`, a separate property from `transform` (which Framer owns for the press).
+ */
+.magnetic {
+  translate: var(--mx, 0px) var(--my, 0px);
+}
+
+/*
+ * Custom cursor (components/cursor/Cursor.tsx, Cursor board). Two layers are moved by GSAP
+ * (.cursor-pos: the dot instantly, the ring 0.15 s behind); their children change only scale
+ * and opacity per state, over 200 ms on the soft spring. States come from data-state on
+ * .cursor-root; data-pressed shrinks the ring. The system cursor is hidden only while the
+ * custom one is showing (html.has-cursor).
+ */
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
+}
+.cursor-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-index-cursor);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.cursor-root[data-visible] {
+  opacity: 1;
+}
+.cursor-pos {
+  position: absolute;
+  top: 0;
+  left: 0;
+  will-change: transform;
+}
+.cursor-dot,
+.cursor-ring,
+.cursor-bar,
+.cursor-label {
+  position: absolute;
+  border-radius: 9999px;
+  transition:
+    transform 200ms var(--ease-spring),
+    opacity 200ms var(--ease-out);
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: var(--color-accent-primary);
+}
+.cursor-bar {
+  width: 2px;
+  height: 22px;
+  margin: -11px 0 0 -1px;
+  background: var(--color-accent-primary);
+  opacity: 0;
+  transform: scaleY(0.4);
+}
+.cursor-ring {
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border: 1.5px solid var(--color-accent-primary);
+}
+/* The 12% fill is its own layer, so it fades with opacity. */
+.cursor-ring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--color-accent-primary) 12%, transparent);
+  opacity: 0;
+  transition: opacity 200ms var(--ease-out);
+}
+.cursor-label {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent-primary);
+  color: var(--color-accent-contrast);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  transform: scale(0.4);
+}
+/* Magnetic: a frame sized to the control (set once on enter), snapped around it. */
+.cursor-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1.5px dashed var(--color-accent-primary);
+  opacity: 0;
+  transform-origin: center;
+  transition: opacity 200ms var(--ease-out);
+  will-change: transform;
+}
+
+.cursor-root[data-state="hover"] .cursor-ring {
+  transform: scale(1.75);
+}
+.cursor-root[data-state="hover"] .cursor-ring::before {
+  opacity: 1;
+}
+.cursor-root[data-state="hover"] .cursor-dot {
+  opacity: 0;
+  transform: scale(0);
+}
+.cursor-root[data-pressed] .cursor-ring {
+  transform: scale(0.75);
+}
+.cursor-root[data-state="text"] .cursor-ring,
+.cursor-root[data-state="text"] .cursor-dot {
+  opacity: 0;
+  transform: scale(0.5);
+}
+.cursor-root[data-state="text"] .cursor-bar {
+  opacity: 1;
+  transform: scaleY(1);
+}
+.cursor-root[data-state="view"] .cursor-ring,
+.cursor-root[data-state="view"] .cursor-dot {
+  opacity: 0;
+}
+.cursor-root[data-state="view"] .cursor-label {
+  opacity: 1;
+  transform: scale(1);
+}
+.cursor-root[data-state="magnet"] .cursor-ring {
+  opacity: 0;
+  transform: scale(1.4);
+}
+.cursor-root[data-state="magnet"] .cursor-frame {
+  opacity: 1;
 }
 
 /*

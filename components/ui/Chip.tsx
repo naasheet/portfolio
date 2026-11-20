@@ -4,6 +4,7 @@ import { m } from "framer-motion";
 import { Check } from "lucide-react";
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { spring } from "@/lib/motion/tokens";
+import { sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import {
   colorTransition,
@@ -17,6 +18,8 @@ type OwnProps = {
   selected?: boolean;
   /** Optional count after the label ("All 9"). */
   count?: number;
+  /** Hover and toggle UI sounds (only ever audible when sound is on). Default true. */
+  sound?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -31,16 +34,29 @@ export type ChipProps = OwnProps &
 export function Chip({
   selected = false,
   count,
+  sound = true,
   disabled = false,
   type = "button",
   children,
   className,
+  onPointerEnter,
+  onClick,
   ...rest
 }: ChipProps) {
   return (
     <m.button
       type={type}
+      data-cursor={disabled ? undefined : "hover"}
       {...rest}
+      onPointerEnter={(e) => {
+        if (sound && !disabled && e.pointerType === "mouse") sfx("hover");
+        onPointerEnter?.(e);
+      }}
+      onClick={(e) => {
+        // The sound says what the click does: selecting or deselecting.
+        if (sound && !disabled) sfx(selected ? "toggleOff" : "toggleOn");
+        onClick?.(e);
+      }}
       disabled={disabled}
       aria-pressed={selected}
       className={cn(

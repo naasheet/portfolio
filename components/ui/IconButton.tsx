@@ -1,9 +1,10 @@
 "use client";
 
 import { m } from "framer-motion";
-import type { ComponentPropsWithRef, ReactNode } from "react";
+import { useRef, type ComponentPropsWithRef, type ReactNode } from "react";
 import { spring } from "@/lib/motion/tokens";
-import { cn } from "@/lib/utils";
+import { useMagnetic } from "@/lib/hooks/useMagnetic";
+import { cn, mergeRefs } from "@/lib/utils";
 import {
   colorTransition,
   disabledState,
@@ -22,6 +23,8 @@ type OwnProps = {
   label?: ReactNode;
   /** A small teal dot after the label, e.g. "AR is live". */
   indicator?: boolean;
+  /** Drift toward the pointer (Cursor board). Default true. */
+  magnetic?: boolean;
   className?: string;
 };
 
@@ -37,15 +40,21 @@ export function IconButton({
   pressed,
   label,
   indicator = false,
+  magnetic = true,
   disabled = false,
   type = "button",
   className,
+  ref,
   ...rest
 }: IconButtonProps) {
+  const own = useRef<HTMLButtonElement | null>(null);
+  useMagnetic(own, {}, magnetic && !disabled);
   return (
     <m.button
       type={type}
+      data-cursor={disabled ? undefined : "hover"}
       {...rest}
+      ref={mergeRefs(own, ref)}
       disabled={disabled}
       aria-pressed={pressed}
       className={cn(
@@ -54,6 +63,7 @@ export function IconButton({
         "aria-pressed:border-accent-primary aria-pressed:bg-accent-primary/15 aria-pressed:hover:bg-accent-primary/25",
         "[&_svg]:size-4.5 [&_svg]:shrink-0",
         label ? "px-4 text-subhead font-semibold" : "w-11",
+        magnetic && "magnetic",
         colorTransition,
         focusRing,
         disabledState,
