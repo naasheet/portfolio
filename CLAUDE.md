@@ -37,7 +37,7 @@ Non-goals: no OS/desktop metaphor, no whiteboard or kanban board, no iOS-looking
 | --- | --- | --- |
 | Smooth experience | Everywhere | Lenis + GSAP, one shared clock |
 | AR hand control | Global toggle in the nav; also drives the Slice game | AR button, or `ar on` |
-| Music | Persistent mini-player, bottom-left; drives the canvas | "Enter with sound", or `play` |
+| Music | The nav's music island (2.4, 5.2); drives the canvas | "Enter with sound", or `play` |
 | iOS-style fonts | All text | Self-hosted SF Pro Text, Display and Mono |
 | Chatbot | Floating "Ask" bubble, bottom-right | Click it, press `/`, or `ask …` |
 | Working terminal | Drop-down drawer; full page on mobile | Backtick key (`) or the nav icon |
@@ -154,7 +154,8 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 4. **One clock.** `gsap.ticker` drives Lenis (`lenis.raf`), and Lenis scroll events call
    `ScrollTrigger.update`. The R3F scene reads the same state on the same frame. Don't start
    extra `requestAnimationFrame` loops; the AR worker and game loops are the only exceptions.
-5. **Persistent layer.** The canvas, MiniPlayer, ChatBubble, TerminalDrawer and ARToggle mount
+5. **Persistent layer.** The canvas, the nav (with its music island and AR switch), ChatBubble,
+   TerminalDrawer and the AR layer mount
    once in `app/layout.tsx` and must survive navigation. Music must never stop on a route change.
 6. **Single content source.** `content/projects.ts` feeds the hero stats, Work filters,
    case studies, the terminal's `projects` and `ls`, and the chatbot. Never hardcode a project
@@ -495,11 +496,14 @@ Carry-over into later chunks:
   anything not needed for the first paint behind dynamic imports. The next chunk that adds to `/` must free space first:
   register SplitText lazily (about 6 KB), and check what else can move behind `next/dynamic`. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
   SplitText lazily where it's used (about 6 KB).
-- **5.2 / 6.1 / 7.4 / 8.x slots:** replace the placeholder inside its slot file and keep the slot's
-  position in `PersistentLayer`: `components/player/MiniPlayerSlot.tsx` (bottom-left pill),
-  `components/chat/ChatBubbleSlot.tsx` (bottom-right pill), `components/terminal/TerminalDrawerSlot.tsx`
-  and `components/ar/ARLayerSlot.tsx` (camera preview and hand cursor; both render `null` now).
-  The AR **toggle** is not in the layer: it lives in the nav (2.4) and the ARCard.
+- **6.1 / 7.4 / 8.x slots:** replace the placeholder inside its slot file and keep the slot's
+  position in `PersistentLayer`: `components/chat/ChatBubbleSlot.tsx` (the bottom-right "Ask" pill),
+  `components/terminal/TerminalDrawerSlot.tsx` and `components/ar/ARLayerSlot.tsx` (camera preview
+  and hand cursor; both render `null` now).
+- **2.4 / 5.2 nav (revised 2.3 text):** there is no music player in the persistent layer. Music lives
+  in the nav's island (2.4 builds it, 5.2 makes it play), and the AR toggle is the nav's
+  Mouse | Hand switch (plus the hero's ARCard). Both are part of the nav, which mounts once in the
+  layout, so they survive navigation too.
 - **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
   `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
 - **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
@@ -1218,8 +1222,8 @@ Decisions so far (don't re-ask):
     `pointer-events-none`, with each corner opting back in. `.layer-corner-left/right` in `globals.css`
     use `--layer-inset-bottom/left/right`: `max(16px, env(safe-area-inset-*))`, and the right side
     adds `var(--scrollbar-gap, 0px)`. Toasts use the same side insets.
-  - **Placeholders:** `PlaceholderPill` is a non-interactive glass pill (`h-10`, `rounded-chip`,
-    subhead). Labels are in `copy.layer` ("Player", "Ask about my work").
+  - **Placeholder:** `PlaceholderPill` is a non-interactive glass pill (`h-10`, `rounded-chip`,
+    subhead). The only one is "Ask" (`copy.layer.ask`), bottom-right.
   - **Viewport:** `export const viewport = { viewportFit: "cover" }` in `app/layout.tsx`. Every new
     fixed element pads itself with `env(safe-area-inset-*)` (reuse the `--layer-inset-*` variables).
   - **Inert:** `OverlayRoot` keeps a module-level count of open overlays and toggles `inert` on
@@ -1232,10 +1236,10 @@ Decisions so far (don't re-ask):
   - **No remounts:** client navigation / → /dev → / → /dev (`window.next.router.push`) kept the
     same document and the same layer node, with `data-mounts` = 1 throughout. (An unknown URL
     gets a full page load from Next, so the count starts again at 1 there, as expected.)
-  - **Positions:** at 1440 x 900 both pills sit 16 px from the bottom and sides. With
-    `Emulation.setSafeAreaInsetsOverride`, portrait 390 x 844 (top 47, bottom 34) puts them at
-    bottom 34, sides 16; landscape 844 x 390 (left/right 47, bottom 21) at 47 / 21. No horizontal
-    overflow.
+  - **Positions:** at 1440 x 900 the Ask pill sits 16 px from the bottom and right. With
+    `Emulation.setSafeAreaInsetsOverride`, portrait 390 x 844 (top 47, bottom 34) puts it at
+    bottom 34, right 16; landscape 844 x 390 (left/right 47, bottom 21) at right 47, bottom 21.
+    No horizontal overflow. (Revised 2.3: the Player pill was removed; music is in the nav.)
   - **Inert:** opening the sheet sets `inert` on `#app` with focus inside the dialog; Esc removes it
     and focus returns to "Open sheet".
   - **Toasts** sit 72 px from the bottom (above the 40 px Ask pill), right 16.

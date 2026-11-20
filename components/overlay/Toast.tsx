@@ -149,7 +149,7 @@ function ToastView({
  * at most three. Collapsed, older toasts peek behind the newest; hovering or focusing the stack
  * spreads it into a column (so their actions are reachable) and pauses every timer.
  * The polite live region is always in the DOM. Mount once, through ToasterLoader.
- * Sits var(--toast-offset, 16px) above the bottom (2.3 sets it above the bottom pills) and
+ * Sits var(--toast-offset, 16px) above the bottom (2.3 sets it above the Ask pill) and
  * uses the persistent layer's safe-area side insets.
  */
 export function Toaster({ dismissLabel }: { dismissLabel: string }) {

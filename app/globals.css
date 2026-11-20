@@ -790,7 +790,7 @@ html[data-gate="done"] .entry-gate {
  * Persistent layer (2.3). viewport-fit=cover lets the page run under the notch and the home
  * indicator, so every fixed control is inset by at least 16 px or the safe area, whichever is
  * larger. The right side adds --scrollbar-gap (set by lockScroll), so it doesn't jump when an
- * overlay locks scrolling on Windows. Toasts sit above the 40 px bottom pills (7.4 revisits
+ * overlay locks scrolling on Windows. Toasts sit above the 40 px Ask pill (7.4 revisits
  * this when the real Ask bubble lands).
  */
 :root {
@@ -803,10 +803,6 @@ html[data-gate="done"] .entry-gate {
 }
 
 @layer components {
-  .layer-corner-left {
-    bottom: var(--layer-inset-bottom);
-    left: var(--layer-inset-left);
-  }
   .layer-corner-right {
     bottom: var(--layer-inset-bottom);
     right: var(--layer-inset-right);
