@@ -1,6 +1,6 @@
 "use client";
 
-import { MotionConfig, motion, type Transition } from "framer-motion";
+import { MotionConfig, m, type Transition } from "framer-motion";
 import { useRef, useState } from "react";
 import {
   duration,
@@ -85,7 +85,7 @@ export function MotionSpecimen() {
                 ref={i === 0 ? trackRef : undefined}
                 className="relative h-10 rounded-control bg-surface-glass"
               >
-                <motion.div
+                <m.div
                   className="size-10 rounded-control bg-accent-primary"
                   animate={{ x }}
                   transition={transition}

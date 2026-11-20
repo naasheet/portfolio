@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MotionProvider } from "@/components/providers/MotionProvider";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { StoreHydrator } from "@/components/providers/StoreHydrator";
 import { ThemeScript } from "@/components/ui/ThemeScript";
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <StoreHydrator />
         <SmoothScroll />
-        {children}
+        <MotionProvider>{children}</MotionProvider>
       </body>
     </html>
   );

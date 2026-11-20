@@ -477,10 +477,18 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
-themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page)
+themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
+1.1 (primitives)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
-  hover, focus-visible, active, disabled).
+  hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
+  `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
+  states out with `DevState`.
+- **Bundle (every chunk that touches `/`):** first-load JS is about 197 KB after 1.1, so only about
+  3 KB is left. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
+  SplitText lazily where it's used (about 6 KB).
+- **1.5 / 10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
+  if a tooltip sits near an edge.
 - **1.5 overlays:** use `lockScroll()` / `unlockScroll()` from `lib/motion/lenis.ts`. They don't
   compensate for the scrollbar width yet (the layout may shift by the scrollbar's width on Windows); handle that there.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
@@ -498,6 +506,11 @@ Open TODO(content) items:
 - `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
 - `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)
 Known issues:
+- `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
+  Add `app/icon.*` with the brand assets (11.2 at the latest).
+- The browser-automation skill's runner wants Chromium build 1248, but only 1243 is in
+  `%LOCALAPPDATA%\ms-playwright`. For 1.1 a small patchright runner with `executablePath` pointed
+  at 1243 was used. Headless Chromium prefers light, so pages open in the light theme.
 - `npm run analyze` builds with `--webpack`, because `@next/bundle-analyzer` only hooks into webpack.
   Production builds use Turbopack, so the reported sizes are close but not exact. The Turbopack-native
   `next analyze` needs no package, if exact numbers are wanted later.
@@ -571,7 +584,7 @@ Decisions so far (don't re-ask):
   absent when reduced motion is emulated, both live and after a reload. An anchor glide rises
   steadily, with no native jump. The pinned section stays at top 0 px across its whole range
   while the bar scrubs from 0 to 1. No console errors.
-- **Bundle after 0.4:** about 183 KB gzipped first-load JS on `/`. That's the Next/React base of
+- **Bundle after 0.4:** about 183 KB (185 KB measured again at the start of 1.1; 197 KB after 1.1) gzipped first-load JS on `/`. That's the Next/React base of
   about 128 KB, plus GSAP, ScrollTrigger and SplitText (46 KB), plus Lenis and SmoothScroll
   (9 KB). Next's 38 KB `noModule` polyfill chunk doesn't count, because modern browsers skip it.
   About 17 KB of headroom is left: keep everything else on `/` behind `next/dynamic`. If it gets
@@ -616,3 +629,39 @@ Decisions so far (don't re-ask):
   returns 404; with it, 200 and noindex. All 18 colour values match the §8 table in both themes.
   All 14 type tokens read back as specified, and mono text renders in SF Mono. All six motion
   boxes reach the same end. Section anchors land below the sticky header. No console errors.
+- **Primitives (1.1):** `components/ui/` has Button, IconButton, Kbd, Chip, StatusChip, Tooltip
+  and Divider. Shared state classes (focus ring, colour transition, disabled) live in
+  `components/ui/controlStyles.ts`; use them for every new control. Hover changes only colour; press
+  is `whileTap={{ scale: 0.97 }}` with `spring.snappy`. Focus ring: 2 px `border-focus`, 2 px offset.
+  Disabled: native `disabled` (or `aria-disabled`), opacity 40%.
+- **Sheet over chunk text:** where the component sheet and the build plan disagreed, the sheet won
+  (approved). IconButton is radius 12 (`rounded-control`), not round. The StatusChip pulse keeps
+  running under reduced motion (CSS `animate-status-pulse`, transform and opacity only).
+- **Button:** `href` renders `m.create(Link)`. A disabled or loading link falls back to a button.
+  Loading keeps the label in the DOM at opacity 0 (so the width doesn't change), shows a centred
+  spinner plus `copy.ui.loading` for screen readers, sets `aria-busy` and `aria-disabled`, stays
+  focusable, and swallows clicks. Loading isn't dimmed; disabled is. Sizes sm/md/lg are 36/44/52 px
+  (`h-9/11/13`; the odd steps are set by the sheet).
+- **IconButton:** `aria-label` is required by its type. `pressed` sets `aria-pressed` and the teal
+  look; `label` + `indicator` give the "AR ●" toggle.
+- **Tooltip:** wraps one focusable child and clones `aria-describedby` onto it. The description is
+  an always-present `sr-only` `role="tooltip"` span; the animated bubble is `aria-hidden`. Opens
+  300 ms after a mouse hover (touch is ignored) or instantly on `:focus-visible`. Esc and blur
+  close it. The bubble's padding bridges the gap, so it's hoverable.
+- **Framer Motion:** `components/providers/MotionProvider.tsx` (in `app/layout.tsx`) wraps the
+  app in `LazyMotion strict` + `MotionConfig reducedMotion="user"`. The features
+  (`domAnimation`) load async from `motionFeatures.ts`, which kept 1.1 to about +12 KB on `/` instead
+  of +31 KB. **Use `m.*`, never `motion.*`:** strict mode throws. `m.create(Component)` wraps
+  components.
+- **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
+  `--animate-status-pulse` with its keyframes in `globals.css`.
+- **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take
+  visitor strings as props or read them from `copy`.
+- **Verified 1.1 (headless Chromium, production build with the /dev flag):** Tab reaches all 25 live
+  controls in the new sections, each with a 2 px solid focus-visible ring. Hovering 27 controls moves
+  none of them (size and offset unchanged). Loading width equals default width for all three
+  variants. Sizes are 36/44/52 px, and IconButton is 44 × 44 at radius 12 px. Press reads `scale(0.97)`
+  while held and `none` after release. The tooltip is closed at 150 ms and open at 450 ms on hover,
+  opens on keyboard focus, and closes on Esc; its description is read through `aria-describedby`.
+  Chip toggles `aria-pressed`. The pulse runs with reduced motion emulated. First-load JS on `/`
+  is 196.9 KB gzipped (185.3 before). The only console error is the favicon 404.

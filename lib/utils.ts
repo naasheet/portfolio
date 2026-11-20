@@ -25,7 +25,7 @@ const TEXT_TOKENS = [
 const twMerge = extendTailwindMerge({
   extend: {
     theme: {
-      radius: ["card", "control", "chip"],
+      radius: ["card", "control", "chip", "key"],
       blur: ["glass"],
     },
     classGroups: {

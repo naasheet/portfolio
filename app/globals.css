@@ -37,6 +37,8 @@
   --radius-card: 24px;
   --radius-control: 12px;
   --radius-chip: 9999px;
+  /* Keyboard key caps (Kbd). */
+  --radius-key: 6px;
 
   /*
    * Spacing: Tailwind's 4 px multiplier stays, so the 8 px grid is the even steps
@@ -201,6 +203,27 @@
   font-size: 11px;
   line-height: 13px;
   letter-spacing: 0.01em;
+}
+
+/*
+ * StatusChip pulse: the ring scales 1 → 2.2 and fades over 1.6 s. Transform and opacity only.
+ * It keeps running under reduced motion on purpose (component sheet 1): it's the one looping
+ * status signal, and it's tiny.
+ */
+@theme {
+  --animate-status-pulse: status-pulse 1.6s cubic-bezier(0.22, 1, 0.36, 1)
+    infinite;
+
+  @keyframes status-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+  }
 }
 
 /* Numbers: Tailwind's built-in `tabular-nums` utility covers this; no custom one needed. */

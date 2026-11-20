@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ButtonSpecimen } from "@/components/dev/ButtonSpecimen";
+import { ChipSpecimen } from "@/components/dev/ChipSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
 import { DevSection } from "@/components/dev/DevSection";
+import { IconButtonSpecimen } from "@/components/dev/IconButtonSpecimen";
+import { KbdTooltipDividerSpecimen } from "@/components/dev/KbdTooltipDividerSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
 import { ShadowSpecimen } from "@/components/dev/ShadowSpecimen";
+import { StatusChipSpecimen } from "@/components/dev/StatusChipSpecimen";
 import { ThemeToggle } from "@/components/dev/ThemeToggle";
 import { TypeSpecimen } from "@/components/dev/TypeSpecimen";
 
@@ -25,6 +30,11 @@ const SECTIONS = [
   { id: "radii", label: "Radii" },
   { id: "shadows", label: "Shadows" },
   { id: "motion", label: "Motion" },
+  { id: "buttons", label: "Button" },
+  { id: "icon-buttons", label: "IconButton" },
+  { id: "chips", label: "Chip" },
+  { id: "status-chips", label: "StatusChip" },
+  { id: "kbd-tooltip-divider", label: "Kbd · Tooltip · Divider" },
 ] as const;
 
 export default function DevPage() {
@@ -89,6 +99,46 @@ export default function DevPage() {
         note="Durations use the ease-out curve; springs are Framer Motion presets. Reduced motion makes them jump."
       >
         <MotionSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="buttons"
+        title="Button"
+        note="Default is the live control; hover, pressed and focus cells fake their state with classes so they sit side by side like the sheet. Hover and press change only colour or scale. Loading keeps the width."
+      >
+        <ButtonSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="icon-buttons"
+        title="IconButton"
+        note="44 × 44, radius 12. aria-label is required by the type."
+      >
+        <IconButtonSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="chips"
+        title="Chip"
+        note="Selectable filter pill with aria-pressed. Selected adds a check, a teal tint and a teal border."
+      >
+        <ChipSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="status-chips"
+        title="StatusChip"
+        note="The dot carries the state; the text stays text/secondary. The pulse is CSS and keeps running under reduced motion."
+      >
+        <StatusChipSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="kbd-tooltip-divider"
+        title="Kbd, Tooltip, Divider"
+        note="Kbd is SF Mono 12/16 on surface/solid. Tooltip opens 300 ms after hover, instantly on keyboard focus; Esc closes it."
+      >
+        <KbdTooltipDividerSpecimen />
       </DevSection>
     </div>
   );
