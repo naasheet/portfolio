@@ -4,6 +4,7 @@ import { m } from "framer-motion";
 import { Check } from "lucide-react";
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { spring } from "@/lib/motion/tokens";
+import { copy } from "@/content/copy";
 import { sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +21,8 @@ type OwnProps = {
   count?: number;
   /** Hover and toggle UI sounds (only ever audible when sound is on). Default true. */
   sound?: boolean;
+  /** Name tag on the cursor's selection box. Defaults to the control's kind (content/copy.ts). */
+  cursorLabel?: string;
   children: ReactNode;
   className?: string;
 };
@@ -35,6 +38,7 @@ export function Chip({
   selected = false,
   count,
   sound = true,
+  cursorLabel,
   disabled = false,
   type = "button",
   children,
@@ -46,7 +50,10 @@ export function Chip({
   return (
     <m.button
       type={type}
-      data-cursor={disabled ? undefined : "hover"}
+      data-cursor={disabled ? undefined : "select"}
+      data-cursor-label={
+        disabled ? undefined : (cursorLabel ?? copy.cursor.chip)
+      }
       {...rest}
       onPointerEnter={(e) => {
         if (sound && !disabled && e.pointerType === "mouse") sfx("hover");

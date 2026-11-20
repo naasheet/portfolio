@@ -3,6 +3,7 @@
 import { m } from "framer-motion";
 import { useRef, type ComponentPropsWithRef, type ReactNode } from "react";
 import { spring } from "@/lib/motion/tokens";
+import { copy } from "@/content/copy";
 import { useMagnetic } from "@/lib/hooks/useMagnetic";
 import { cn, mergeRefs } from "@/lib/utils";
 import {
@@ -25,6 +26,8 @@ type OwnProps = {
   indicator?: boolean;
   /** Drift toward the pointer (Cursor board). Default true. */
   magnetic?: boolean;
+  /** Name tag on the cursor's selection box. Defaults to the control's kind (content/copy.ts). */
+  cursorLabel?: string;
   className?: string;
 };
 
@@ -41,6 +44,7 @@ export function IconButton({
   label,
   indicator = false,
   magnetic = true,
+  cursorLabel,
   disabled = false,
   type = "button",
   className,
@@ -52,7 +56,10 @@ export function IconButton({
   return (
     <m.button
       type={type}
-      data-cursor={disabled ? undefined : "hover"}
+      data-cursor={disabled ? undefined : "select"}
+      data-cursor-label={
+        disabled ? undefined : (cursorLabel ?? copy.cursor.button)
+      }
       {...rest}
       ref={mergeRefs(own, ref)}
       disabled={disabled}

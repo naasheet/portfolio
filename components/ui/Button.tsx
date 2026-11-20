@@ -64,6 +64,8 @@ type OwnProps = {
   sound?: boolean;
   /** Drift toward the pointer (Cursor board). Default: primary buttons only. */
   magnetic?: boolean;
+  /** Name tag on the cursor's selection box. Defaults to the control's kind (content/copy.ts). */
+  cursorLabel?: string;
   children: ReactNode;
   className?: string;
 };
@@ -95,6 +97,7 @@ export function Button(props: ButtonProps) {
     disabled = false,
     sound = true,
     magnetic = variant === "primary",
+    cursorLabel,
     children,
     className,
     ...rest
@@ -177,7 +180,8 @@ export function Button(props: ButtonProps) {
     return (
       <MotionLink
         href={href}
-        data-cursor="hover"
+        data-cursor="select"
+        data-cursor-label={cursorLabel ?? copy.cursor.link}
         {...linkRest}
         {...withSound(onPointerEnter, onClick)}
         ref={mergeRefs(own, ref)}
@@ -204,7 +208,10 @@ export function Button(props: ButtonProps) {
   return (
     <m.button
       type={type}
-      data-cursor={inactive ? undefined : "hover"}
+      data-cursor={inactive ? undefined : "select"}
+      data-cursor-label={
+        inactive ? undefined : (cursorLabel ?? copy.cursor.button)
+      }
       {...buttonRest}
       ref={mergeRefs(own, ref)}
       onPointerEnter={handlers.onPointerEnter}

@@ -9,6 +9,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { copy } from "@/content/copy";
 import { sfx } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 import { focusRing } from "./controlStyles";
@@ -36,6 +37,8 @@ type OwnProps = {
   interactive?: boolean;
   /** Hover and click UI sounds on interactive cards (only audible when sound is on). Default true. */
   sound?: boolean;
+  /** Name tag on the cursor's selection box. Defaults to the control's kind (content/copy.ts). */
+  cursorLabel?: string;
   children?: ReactNode;
   className?: string;
 };
@@ -56,6 +59,7 @@ export function Card({
   rel,
   interactive = false,
   sound = true,
+  cursorLabel,
   children,
   className,
   onPointerMove,
@@ -110,7 +114,10 @@ export function Card({
       if (isInteractive && sound) sfx("click");
       onClick?.(e);
     },
-    "data-cursor": isInteractive ? "hover" : undefined,
+    "data-cursor": isInteractive ? "select" : undefined,
+    "data-cursor-label": isInteractive
+      ? (cursorLabel ?? copy.cursor.card)
+      : undefined,
   };
 
   if (href !== undefined) {

@@ -517,7 +517,10 @@ Carry-over into later chunks:
   longer than the 100 ms rule in §8. Ask before using them. IconButton has no `sound` prop
   yet (not in 1.7's scope).
 - **8.3 hand cursor:** same `Cursor` component (`data-mode` is already on the root). Add the amber
-  states from the Cursor board: pointing (40 px ring), pinching, palm hold (60 px fill ring), hand lost.
+  states from the (updated) Cursor board: pointing = a crosshair (four ticks around a dot); pinching
+  = ticks close in and the dot fills to 12 px; palm hold = a thin arc filling clockwise around the
+  action icon; hand lost = fades after 500 ms, a hint after 3 s. Selection boxes still appear when
+  the hand points at something.
 - **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus when
   ffmpeg is installed.
 - **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
@@ -970,27 +973,40 @@ Decisions so far (don't re-ask):
   - **Layout shift on `/dev`:** 0 in three separate runs (plain load + full scroll; + the video
     sequence; + 1.5 s-delayed images). One long combined run that also simulated tab visibility
     from an injected script measured 0.00004 (text nodes), and it couldn't be reproduced.
-- **Cursor (1.7, Cursor board `stuff/reference/Cursor (chunks 1.7, 8.3)@2x.png`):**
-  `components/cursor/Cursor.tsx`, mounted once through `CursorLoader` (`next/dynamic`,
-  `ssr: false`) in `app/layout.tsx`.
-  - **Motion:** a 6 px dot set instantly (`gsap.quickSetter`, so it never trails) and a 32 px ring
-    on `gsap.quickTo` (0.15 s, `power3.out`). Both are on the GSAP ticker; there's no loop of its own.
-  - **States** live in `data-state` / `data-pressed` on `.cursor-root` (no React state):
-    - hover: ring x1.75 = 56 px, a 12% fill layer, the dot hides.
-    - pressed: ring x0.75 = 24 px.
-    - text: a 2 x 22 bar.
-    - view: an 80 px accent disc showing `data-cursor-label`.
-    - magnet: a dashed frame sized to the control (+4 px each side, its radius + 4) once on enter,
-      then moved each pointer move so it follows the magnetic drift.
-  - **Targets:** `closest("[data-cursor]")` (hover | text | view); inputs, textareas and
-    contenteditable always give text; nothing else sets a state. Button, IconButton, Chip and
-    interactive Card set `data-cursor="hover"` themselves (none when disabled). A hover target with
-    the `magnetic` class gives the magnet state.
-  - **CSS:** state changes animate only transform and opacity, over 200 ms on `--ease-spring` (a
-    `linear()` sampling of `spring.soft`, in `:root`). `html.has-cursor` hides the system cursor
-    only while the custom one is visible. Leaving the window (`mouseout` with no `relatedTarget`) or
-    blurring it hides the cursor again.
+- **Cursor (1.7, rebuilt to the updated Cursor board `stuff/reference/Cursor (chunks 1.7,
+  8.3)@2x.png`, "a spark that becomes a selection box"):** `components/cursor/Cursor.tsx`, mounted
+  once through `CursorLoader` (`next/dynamic`, `ssr: false`) in `app/layout.tsx`. The first
+  version (dot + ring) was replaced the same day.
+  - **Spark:** an 8 px accent dot with a glow (`--cursor-glow`, half strength in light mode), set
+    straight onto the pointer with `gsap.quickSetter`, so it never lags.
+  - **Tail:** one element, transform only. `scaleX` comes from pointer speed (full 28 px at
+    1.5 px/ms) via `quickTo`, rotation from the heading via `quickSetter`, and a restartable
+    `gsap.delayedCall(0.06)` eases it back to 0 when the pointer stops.
+  - **States** live in `data-state` (`default | select | text | view`) and `data-pressed` on
+    `.cursor-root`; no React state.
+    - **select** (`data-cursor="select"`): a selection box with 6 px padding, square corner
+      handles, a name tag (`data-cursor-label`, mono, accent fill) and the element's size
+      ("174 × 44", rounded from its bounds).
+      - The box is sized once on enter (width / height set, not animated), then grows out of a
+        spark-sized square at the pointer (scale + position, 200 ms).
+      - While something is selected, `followTarget` runs on the shared GSAP ticker (added and
+        removed with the selection), so the box tracks magnetic drift and scrolling even after
+        the pointer stops.
+      - Pressed scales `.cursor-box-inner` to the 4 px padding (`--press-sx/--press-sy`) and
+        fills the handles.
+    - **text** (`data-cursor="text"`, inputs, textareas, contenteditable): a 2 x 24 caret; the
+      spark and tail hide, and there's no box.
+    - **view** (`data-cursor="view"`): no box; a pill with `data-cursor-label` and an arrow
+      follows the pointer (`quickTo` 0.12 s), offset 10 px right and down.
+  - **CSS:** state changes are transform and opacity only, over 200 ms on `--ease-spring`.
+    `html.has-cursor` hides the system cursor only while the custom one is visible. Leaving the
+    window or blurring it hides the cursor again.
   - **Off:** it renders nothing unless `(hover: hover) and (pointer: fine)` and motion is allowed.
+  - **Name tags:** Button, IconButton, Chip and interactive Card set `data-cursor="select"` (none
+    when disabled) and `data-cursor-label` from a `cursorLabel` prop, defaulting to
+    `copy.cursor` in `content/copy.ts` (Button "Button", Button with href "Link", IconButton
+    "Button", Chip "Filter", Card "Card"). Pages should pass a specific `cursorLabel` (the board
+    uses "Sound" on the volume IconButton). The cursor is `aria-hidden`; tags are visual only.
 - **Magnetic (1.7):** `useMagnetic(ref, { radius = 60, max = 8, strength = 0.3 }, enabled)`.
   - One shared window `pointermove` serves every registered element. Within `radius` px of the
     element's edge it drifts `clamp(offset x 0.3, ±8)`, and it springs back with
@@ -1019,12 +1035,18 @@ Decisions so far (don't re-ask):
   `data-*`. When moving the mouse with `steps`, the pointer crosses neighbours and fires their
   hover sounds; jump straight to the target when counting sounds.
 - **Verified 1.7 (headless Chromium, production build with the /dev flag):**
-  - **Tracking:** at four pointer positions the dot's transform equals the pointer exactly right
-    after the move, while the ring lags (e.g. 350,402 when the pointer is at 700,420) and settles
-    within 300 ms.
-  - **States:** hover, pressed, text (on a paragraph and on an input), view (label "View"),
-    magnet (52 x 52 dashed frame around the 44 px IconButton) and disabled (default).
-    Screenshots match the board in both themes.
+  - **Cursor (rebuilt design):**
+    - **Spark:** exactly on the pointer.
+    - **Tail:** `scaleX` 0.71 shortly after a fast move right (heading 0 deg) and 0.95 on a fast
+      move down (90 deg), 0.03 on a slow move, and 0 once stopped.
+    - **Select:** the box lands at exactly the target +/- 6 px (186.2 x 56 around a 174 x 44
+      Button), tag "Button", size "174 × 44". Pressed scales it to 0.979 x 0.929 (the 4 px
+      padding) and fills the handles; it resets to 1 on release.
+    - **Magnetic:** the box tracks the drifting IconButton exactly (box x 575.4 = control - 6),
+      tag "Sound". The first build lagged here until `followTarget` moved onto the ticker.
+    - **Tags:** "Filter", "Link". A disabled Button gives no box. Text gives the caret only.
+      View: the pill shows "View case study" and sits at the pointer.
+    - Screenshots match the board in both themes.
   - **Magnetic:** at 40 px outside, `--mx` = 8px (the cap), `translate: 8px`, and GSAP never writes
     `style.transform`. On leave it springs back to 0px. Primary buttons are `.magnetic`; secondary
     ones aren't.

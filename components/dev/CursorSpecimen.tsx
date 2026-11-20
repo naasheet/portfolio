@@ -31,7 +31,7 @@ function Tile({
   );
 }
 
-/** One tile per cursor state from the Cursor board, plus the UI-sound controls. */
+/** One tile per mouse state on the Cursor board, plus the UI-sound controls. */
 export function CursorSpecimen() {
   const soundEnabled = useStore((s) => s.ui.soundEnabled);
   const setSoundEnabled = useStore((s) => s.ui.setSoundEnabled);
@@ -51,16 +51,24 @@ export function CursorSpecimen() {
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Tile
-          title="Default"
-          note="6 px dot on the pointer, 32 px ring 0.15 s behind"
+          title="Default · spark"
+          note="An 8 px dot with a soft glow, exactly on the pointer"
         >
           <span className="text-footnote text-text-tertiary">
-            Move the mouse here
+            Hold still here
           </span>
         </Tile>
         <Tile
-          title="Hover"
-          note='data-cursor="hover": ring 56 px with a 12% fill, dot hides'
+          title="Moving"
+          note="A tail up to 28 px, longer the faster you move"
+        >
+          <span className="text-footnote text-text-tertiary">
+            Move fast across this tile
+          </span>
+        </Tile>
+        <Tile
+          title="Hover · select"
+          note="Selection box: 6 px padding, handles, name tag, size"
         >
           <Button variant="secondary" trailingIcon={<ArrowUpRight />}>
             Work with me
@@ -68,13 +76,15 @@ export function CursorSpecimen() {
         </Tile>
         <Tile
           title="Pressed"
-          note="Hold the mouse button: the ring shrinks to 24 px"
+          note="Hold the mouse button: the box tightens to 4 px, handles fill"
         >
-          <Button variant="ghost">Press and hold</Button>
+          <Button variant="secondary" trailingIcon={<ArrowUpRight />}>
+            Press and hold
+          </Button>
         </Tile>
         <Tile
           title="Text"
-          note='data-cursor="text" or any input: a 2 × 22 px bar'
+          note='data-cursor="text" or any input: a 2 × 24 caret, no box, no tail'
         >
           <p data-cursor="text" className="text-subhead text-text-secondary">
             I design interfaces, then build them, with motion, 3D and an
@@ -83,33 +93,44 @@ export function CursorSpecimen() {
         </Tile>
         <Tile
           title="Magnetic"
-          note="IconButtons and primary buttons: 60 px radius, 8 px max pull"
+          note="Within 60 px the control drifts up to 8 px; the box follows it"
         >
-          <div className="flex items-center gap-6">
-            <IconButton aria-label="Mute sound" icon={<Volume2 />} />
-            <Button>Primary</Button>
-          </div>
+          <IconButton
+            aria-label="Mute sound"
+            icon={<Volume2 />}
+            cursorLabel="Sound"
+          />
         </Tile>
         <Tile
-          title="Label"
-          note='data-cursor="view" with data-cursor-label: an 80 px disc'
+          title="Label · Work cards"
+          note='data-cursor="view": no box; a pill follows the pointer'
         >
           <div
             data-cursor="view"
-            data-cursor-label="View"
-            className="flex size-full items-center justify-center rounded-control bg-linear-to-br from-accent-primary/40 to-accent-secondary/30"
+            data-cursor-label="View case study"
+            className="size-full rounded-control bg-linear-to-br from-accent-primary/40 to-accent-secondary/30"
           />
         </Tile>
-        <Tile title="Input" note="Inputs and textareas always get the text bar">
+        <Tile title="Input" note="Inputs and textareas always get the caret">
           <input
             aria-label="Sample field"
             placeholder="Type here"
             className="h-11 w-full rounded-control border border-border-default bg-surface-solid px-4 text-subhead text-text-primary placeholder:text-text-tertiary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus"
           />
         </Tile>
-        <Tile title="Disabled" note="No hover state, no magnet, no sound">
-          <Button disabled>Disabled</Button>
-        </Tile>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <Button>Primary (magnetic)</Button>
+        <Button variant="ghost" href="#cursor">
+          A link button
+        </Button>
+        <Button disabled>Disabled: no box</Button>
+        {["All", "Web", "3D"].map((f) => (
+          <Chip key={f} selected={filter === f} onClick={() => setFilter(f)}>
+            {f}
+          </Chip>
+        ))}
       </div>
 
       <div className="flex flex-col gap-4 rounded-card border border-border-default p-6">
@@ -133,11 +154,6 @@ export function CursorSpecimen() {
           <Button variant="ghost" sound={false}>
             sound={"{false}"}
           </Button>
-          {["All", "Web", "3D"].map((f) => (
-            <Chip key={f} selected={filter === f} onClick={() => setFilter(f)}>
-              {f}
-            </Chip>
-          ))}
         </div>
         <Card interactive className="max-w-sm">
           <span className="text-subhead">
