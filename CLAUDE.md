@@ -86,7 +86,9 @@ Any package not in this table needs approval, including ones a build-plan chunk 
 ### Responsibilities (don't mix them)
 
 - **GSAP + ScrollTrigger** — scroll chapters, shader uniform tweens, text reveals, game timelines.
-- **Framer Motion** — UI components: panels, drawer, chat, player, layout animations, route transitions.
+- **Framer Motion** — UI components: panels, drawer, chat, player, layout animations. (Page
+  transitions are a CSS transition since 2.5: an `m.div` in `app/template.tsx` put Framer's motion
+  component into first-load JS on `/`, +5.8 KB.)
 - **Lenis** — scrolling only, driven by `gsap.ticker`.
 - Never animate the same property of one element with two libraries.
 
@@ -482,20 +484,22 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **2 — Entry gate, preloader, persistent layer, nav** (2.5 page transitions next) (phase 0 is complete; phase 1 is
+Current phase: **2 — Entry gate, preloader, persistent layer, nav** (2.1–2.5 built; phase 3, the
+living canvas, is next) (phase 0 is complete; phase 1 is
 built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
-persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts)
+persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
 - **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is
-  **203.3 KB after 2.4** (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
+  **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
+  (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
   nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
   already load after hydration; what's left is the larger `copy` object, `content/chapters.ts`, the
   store / toast / island changes and a 3.6 KB Next error-boundary chunk that appeared with the nav's
@@ -517,8 +521,13 @@ Carry-over into later chunks:
   the terminal, then an expanded island card. Each feature pushes its own island activity
   (AR: camera dot + hand, chat: "Writing a reply…", game: live score; a new best is
   `island.alert({ icon: "star", tone: "amber", … })`). The "Hint · first use" state is not built yet.
-- **2.5 / 4.5 chapter on other routes:** the island shows `scroll.chapter`, which only the homepage
+- **4.5 chapter on other routes:** the island shows `scroll.chapter`, which only the homepage
   sections update. On a case study it keeps the last chapter; set it (e.g. Work) from the route.
+- **Every in-site navigation goes through `TransitionLink` or `navigate()`** (`components/nav/`,
+  `lib/motion/pageTransition.ts`), never a bare `next/link` or `router.push`. Besides the exit
+  animation, that's how a new page knows it was pushed: a page that mounts without the push mark
+  is treated as Back / Forward and restored to its saved scroll position. (Homepage chapter links:
+  `ChapterLink`, which uses TransitionLink off `/`.)
 - **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
   `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
 - **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
@@ -565,8 +574,6 @@ Carry-over into later chunks:
   (SmoothScroll glides it) and a `next/link` to `/#id` elsewhere (keeps the layer and music alive).
   From inside an overlay, close it and glide with `whenUnlocked(() => scrollTo("#id"))`
   (`lib/motion/lenis.ts`), as the phone menu does: a stopped Lenis ignores `scrollTo`.
-- **2.5 route transitions:** call `getLenis()?.scrollTo(0, { immediate: true })` (or restore the
-  saved position) on navigation, and `ScrollTrigger.refresh()` once the new page's layout settles.
 - **Fonts and ScrollTrigger:** call `ScrollTrigger.refresh()` after `document.fonts.ready` once
   real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
 - **4.x Marquee:** §8 lists the only loops (status dot, now-playing bars, terminal cursor). `Marquee` exists
@@ -1317,6 +1324,44 @@ Decisions so far (don't re-ask):
     player → split with a fake AR activity) and opens the ? overlay. The dev header now sticks at
     `top-22` and sections use `scroll-mt-72`, below the nav.
   - **Tooltip:** new `align="end"` and `forceOpen` props.
+- **Page transitions (2.5):** `app/template.tsx`, `components/nav/TransitionLink.tsx`,
+  `lib/motion/pageTransition.ts`, `lib/motion/scrollMemory.ts`, and the `.page` rules in `globals.css`.
+  - **Exit:** `navigate(router, href)` records the current scroll position, sets the `leaving` flag
+    (a tiny external store), and pushes after 300 ms with `{ scroll: false }`. The template's
+    wrapper gets `data-leaving` (CSS: opacity 0, `translateY(-12px)`, 300 ms ease-out). Under
+    reduced motion it pushes straight away. A popstate during the exit cancels the push.
+  - **Enter:** the new template's layout effect places the page, sets `data-page="from"` (opacity
+    0, +12 px, no transition) and switches to `"in"` on the next frame. The first page of a visit
+    doesn't animate. Reduced motion: the `.page` rules are all off.
+  - **Why CSS, not Framer:** see §3; the motion is the same.
+  - **TransitionLink:** a `next/link` (prefetch kept) whose click calls `navigate()`; modified
+    clicks, other targets, other origins and same-path links fall through. `ChapterLink` uses it
+    off `/`, and the phone menu calls `navigate()` for chapters on other routes.
+  - **Placement** (`placeNewPage(path, traversal)`): Back / Forward → the saved position; a
+    `#hash` → that section (its top measured without the wrapper's transform); otherwise 0. All
+    with Lenis `scrollTo(y, { immediate: true, force: true })` (`force`: the phone menu may still
+    hold the lock), then `ScrollTrigger.refresh()` on the next frame.
+  - **Back / Forward detection:** `navigate()` marks a push (`takePushed()`); a route mount without
+    the mark is a traversal. A popstate flag was tried first and failed: React 19 renders a
+    traversal synchronously before any of our popstate listeners runs (even in capture).
+  - **Scroll memory:** `history.scrollRestoration = "manual"`; one passive scroll listener files
+    `scrollY` under the route the template set with `setScrollPath(pathname)` (not
+    `location.pathname`: Next updates the URL after the new page's layout effect, so the reset to 0
+    was filed under the old route). Kept in memory and in `sessionStorage` (`scroll-memory`).
+- **Verified 2.5 (headless Chromium, production build with the /dev flag):**
+  - **Back:** `/` scrolled to 2400 → `/dev` (starts at 0) → Back returns to exactly 2400 with the
+    island at 04 Skills; Forward returns `/dev` to its 1200.
+  - **Exit and enter, frame by frame** (wordmark on `/dev` → `/#home`): the old page fades
+    1 → 0 while moving 0 → −11 px over ~300 ms; the new page's first frame is opacity 0 at +12 px
+    and it reaches 1 / 0 about 230 ms later. No frame shows either page at full opacity in the
+    wrong place (no flash). It lands at `/#home`, scroll 0.
+  - **Chapter links from `/dev`:** the island's Work link lands with `#work` exactly at the top;
+    the phone menu's Skills link lands `#skills` at 0 with the menu closed and the lock released.
+  - **Persistent layer:** the same document (marker kept), `data-mounts` = 1, the Ask pill at
+    16 / 16 after every navigation.
+  - **Reduced motion:** every sampled frame is at opacity 1 with no offset (an instant swap).
+  - **[manual]** The feel of the 300 ms exit + enter on real devices, and Back from a real case
+    study once 4.5 exists.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.

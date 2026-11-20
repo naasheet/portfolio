@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { focusRing } from "@/components/ui/controlStyles";
 import { scrollTo, whenUnlocked } from "@/lib/motion/lenis";
+import { navigate } from "@/lib/motion/pageTransition";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { ModeSwitch } from "./ModeSwitch";
@@ -41,7 +42,8 @@ export function MobileMenu() {
 
   const close = () => setOpen(false);
 
-  // On `/`, glide once the menu has left and released the scroll lock; elsewhere, go home.
+  // On `/`, glide once the menu has left and released the scroll lock; elsewhere, leave with
+  // the page transition and land on that chapter.
   const go = (id: string, e?: MouseEvent) => {
     e?.preventDefault();
     close();
@@ -51,7 +53,7 @@ export function MobileMenu() {
         scrollTo(`#${id}`);
       });
     } else {
-      router.push(`/#${id}`);
+      navigate(router, `/#${id}`);
     }
   };
 

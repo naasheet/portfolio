@@ -877,3 +877,35 @@ html[data-gate="done"] .entry-gate {
     opacity: 0;
   }
 }
+
+/*
+ * Page transitions (2.5, app/template.tsx). Enter: "from" (transparent, 12 px down, no
+ * transition) → "in". Exit: data-leaving fades and lifts 12 px. 300 ms on the ease-out curve.
+ * Reduced motion: an instant swap. At rest the wrapper has no transform, so it never becomes a
+ * containing block for fixed or sticky children.
+ */
+@layer components {
+  .page {
+    transition:
+      opacity 300ms var(--ease-out),
+      transform 300ms var(--ease-out);
+  }
+  .page[data-page="from"] {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: none;
+  }
+  .page[data-leaving] {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .page,
+    .page[data-page="from"],
+    .page[data-leaving] {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+}
