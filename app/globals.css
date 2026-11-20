@@ -343,6 +343,45 @@
 }
 
 /*
+ * Img (components/media/Img.tsx): the frame paints a blurred copy of the tiny blurDataURL
+ * (--img-blur) under the real image, which fades in over 300 ms once it has loaded
+ * ([data-loaded], set by the component without a re-render). Opacity only. Without JS the
+ * image is simply shown.
+ */
+.img-frame {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--color-surface-glass);
+}
+.img-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--img-blur, none);
+  background-position: center;
+  background-size: cover;
+  filter: blur(16px);
+  transform: scale(1.1);
+  transition: opacity 0ms linear 300ms;
+}
+.img-frame img {
+  position: relative;
+  opacity: 0;
+  transition: opacity 300ms var(--ease-out);
+}
+.img-frame[data-loaded] img {
+  opacity: 1;
+}
+.img-frame[data-loaded]::before {
+  opacity: 0;
+}
+@media (scripting: none) {
+  .img-frame img {
+    opacity: 1;
+  }
+}
+
+/*
  * PhotoCard tilt (components/cards/PhotoCard.tsx): pointer move writes --rx / --ry (max 8°).
  * While the pointer is on the card ([data-tilting]) the transform follows quickly; on leave the
  * variables reset and the overshoot curve springs it back. Mouse pointers only; none under

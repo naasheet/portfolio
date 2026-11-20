@@ -96,9 +96,10 @@ function TypeRow({ name, className, sample }: (typeof TOKENS)[number]) {
         <code className="text-footnote font-mono text-accent-primary">
           text-{name}
         </code>
+        {/* Filled after mount; four lines are reserved so filling it never shifts the page. */}
         <span
           ref={metaRef}
-          className="text-caption-2 font-mono text-text-tertiary"
+          className="min-h-13 text-caption-2 font-mono text-text-tertiary"
         />
       </div>
       <p ref={sampleRef} className={`${className} min-w-0 break-words`}>

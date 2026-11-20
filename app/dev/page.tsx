@@ -9,6 +9,7 @@ import { ColorSwatches } from "@/components/dev/ColorSwatches";
 import { DevSection } from "@/components/dev/DevSection";
 import { IconButtonSpecimen } from "@/components/dev/IconButtonSpecimen";
 import { KbdTooltipDividerSpecimen } from "@/components/dev/KbdTooltipDividerSpecimen";
+import { MediaSpecimen } from "@/components/dev/MediaSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
 import { OverlaySpecimen } from "@/components/dev/OverlaySpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
@@ -45,6 +46,7 @@ const SECTIONS = [
   { id: "text-motion", label: "Text motion" },
   { id: "card-kit", label: "Card kit" },
   { id: "overlays", label: "Overlays" },
+  { id: "media", label: "Media" },
 ] as const;
 
 export default function DevPage() {
@@ -189,6 +191,14 @@ export default function DevPage() {
         note="Sheet, modal, top drawer and toasts. Everything works by keyboard: Tab stays inside, Esc closes the topmost overlay, focus goes back to its button, and the page behind never scrolls."
       >
         <OverlaySpecimen />
+      </DevSection>
+
+      <DevSection
+        id="media"
+        title="Media"
+        note="Img (blur placeholder, 300 ms fade-in, width and height required), LoopVideo (plays only on screen and with the tab visible; never under reduced motion or Save-Data), Avatar and the icon sizes. All media here is a dev placeholder."
+      >
+        <MediaSpecimen />
       </DevSection>
     </div>
   );

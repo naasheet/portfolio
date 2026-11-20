@@ -8,6 +8,10 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // CLAUDE.md §6: AVIF first, WebP as the fallback (Next serves only WebP by default).
+  images: {
+    formats: ["image/avif", "image/webp"],
+  },
   turbopack: {
     rules: {
       "*.css": {

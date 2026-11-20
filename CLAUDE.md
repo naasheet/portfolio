@@ -478,7 +478,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays)
+1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
@@ -496,6 +496,13 @@ Carry-over into later chunks:
   `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
 - **7.4 Ask bubble:** it sits bottom-right like the toasts. Set `--toast-offset` (on `<html>` or the
   layer) to lift the toast stack above the bubble.
+- **10.x icon sizes:** `components/media/iconSize.ts` has `ICON_SIZE` (16 / 20 / 24) and `ICON_CLASS`
+  (`size-4/5/6`). Earlier components still hard-code `size-4` and friends; move them to the
+  constants in the polish pass. New code uses the constants.
+- **4.x / 11.x real media:** use `Img` for every image (static imports get the blur for free; URL
+  strings need `blurDataURL`) and `LoopVideo` for loops. `public/dev/` and `components/dev/media/`
+  hold generated dev placeholders only; never use them on real pages. `public/dev/` is served in
+  production too (small and harmless); delete it if it ever matters.
 - **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
   if a tooltip sits near an edge.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
@@ -892,6 +899,58 @@ Decisions so far (don't re-ask):
   - **Not testable headless:** the scrollbar gap is 0 there (scrollbars are hidden), so the
     Windows padding compensation needs checking by hand.
   - First-load JS on `/` is 198.7 KB (unchanged by the rebuild; the Toaster loads after hydration).
+- **Media (1.6):** `components/media/` holds Img, LoopVideo, Avatar, `iconSize.ts` and the brand icons.
+  - **Img** (client): props `src` (static import or URL), `alt`, `width`, `height` (required),
+    `blurDataURL?`, `sizes?`, `priority?`, `className` (frame), `imgClassName`.
+    - **Frame:** `.img-frame` holds the aspect ratio from width / height, so nothing shifts. Its
+      `::before` paints the blurDataURL (`--img-blur`), CSS-blurred.
+    - **Fade:** the image fades 0 -> 1 over 300 ms once `data-loaded` is set. That flag is written
+      by `onLoad`, or on mount when `img.complete` (cached before hydration), with no re-render.
+    - **No blur source:** the frame shows `surface-glass`. Without JS, `@media (scripting: none)`
+      shows the image.
+    - `next/image` runs with `placeholder="empty"`: its own blur can't be used, because fading
+      the image would fade the blur with it.
+  - **next.config.ts:** `images.formats: ["image/avif", "image/webp"]` (§6). Verified: `/_next/image`
+    serves AVIF to Chromium.
+  - **LoopVideo** (client): `muted playsInline loop preload="none"` plus `poster`, `sources[]`, and
+    `width` / `height` (aspect ratio).
+    - **Playback:** one IntersectionObserver (threshold 0.25) plus a `visibilitychange` listener
+      play it only while it's on screen and the tab is visible. `play()` rejections are swallowed.
+    - **Never autoplays** under reduced motion or `navigator.connection.saveData`; the poster
+      stays and nothing downloads.
+    - It's `aria-hidden` unless given a `label`. No state, no frame loop, and full cleanup on unmount.
+  - **Avatar:** round; sm / md / lg = 40 / 56 / 72; a photo through Img, or initials in accent on
+    surface/solid. `name` is optional: give it when the name isn't visible next to the avatar
+    (alt text, or a hidden label); omit it and the avatar is decorative. ProfileCard now uses
+    `Avatar` (decorative), and its `photo` prop is `{ src, blurDataURL? }`.
+  - **Dev placeholders:**
+    - `components/dev/media/sample-{wide,square}.jpg` were generated with System.Drawing.
+    - `public/dev/loop.webm` (43 KB, 640 x 360, VP9, 1.98 s seamless loop) and
+      `loop-poster.jpg` were recorded from a canvas with MediaRecorder in headless Chromium,
+      because ffmpeg isn't installed.
+  - **Fix to 0.6's TypeSpecimen:** its measured metadata line filled in after mount and shifted
+    the page (CLS 0.026 on `/dev`). It now reserves four lines (`min-h-13`).
+  - **Testing notes:**
+    - Chromium build 1243 was replaced by 1248 on 2026-11-20 (the scratch runner now picks
+      whichever `chromium-*` is installed).
+    - In headless mode, bringing another tab to the front doesn't change `visibilityState`.
+      Simulate it from an injected main-world script instead: override `document.visibilityState`
+      and dispatch `visibilitychange`.
+- **Verified 1.6 (headless Chromium, production build with the /dev flag):**
+  - **Images:** with every `/_next/image` delayed 1.5 s, the frames already have their final size
+    (309 x 174 for 16:9, 309 x 309 square) and show the blur (or the plain surface for the
+    URL source) with the image at opacity 0. After loading, all 6 frames are `data-loaded` at
+    opacity 1. The format served is `image/avif`.
+  - **Video:**
+    - Before scrolling, both videos are paused at `readyState` 0 (nothing downloaded).
+    - With video 1 in view it plays and loops (time wrapped from 1.49 s to 0.06 s), while video 2
+      stays at `readyState` 0.
+    - A simulated hidden tab pauses video 1, and it resumes when visible.
+    - Scrolled to video 2, that one plays and video 1 (off screen) pauses.
+    - With reduced motion, neither plays and nothing downloads.
+  - **Layout shift on `/dev`:** 0 in three separate runs (plain load + full scroll; + the video
+    sequence; + 1.5 s-delayed images). One long combined run that also simulated tab visibility
+    from an injected script measured 0.00004 (text nodes), and it couldn't be reproduced.
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take
