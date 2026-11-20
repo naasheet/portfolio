@@ -1,2 +1,3 @@
 // Loaded on demand by MotionProvider, so Framer's animation features stay out of first-load JS.
-export { domAnimation as default } from "framer-motion";
+// domMax (2.4): domAnimation plus layout animations (the island, the nav pills) and drag (Sheet).
+export { domMax as default } from "framer-motion";

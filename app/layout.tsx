@@ -3,9 +3,11 @@ import { CursorLoader } from "@/components/cursor/CursorLoader";
 import { EntryGate } from "@/components/gate/EntryGate";
 import { GateScript } from "@/components/gate/GateScript";
 import { CanvasLoader } from "@/components/layer/CanvasLoader";
+import { Nav } from "@/components/nav/Nav";
 import { PersistentLayer } from "@/components/layer/PersistentLayer";
 import { ToasterLoader } from "@/components/overlay/ToasterLoader";
 import { MotionProvider } from "@/components/providers/MotionProvider";
+import { ShortcutsLoader } from "@/components/providers/ShortcutsLoader";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { StoreHydrator } from "@/components/providers/StoreHydrator";
 import { ThemeScript } from "@/components/ui/ThemeScript";
@@ -35,13 +37,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <StoreHydrator />
         <SmoothScroll />
+        <ShortcutsLoader />
         <MotionProvider>
           <ToasterLoader />
           <CanvasLoader />
           <EntryGate />
           {/* Everything an open overlay makes inert (OverlayRoot sets inert on #app). */}
           <div id="app">
-            {/* Nav (chunk 2.4) mounts here. */}
+            <Nav />
             <main className="relative z-content">{children}</main>
             <PersistentLayer />
           </div>

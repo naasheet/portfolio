@@ -9,6 +9,7 @@ import { CursorSpecimen } from "@/components/dev/CursorSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
 import { DevSection } from "@/components/dev/DevSection";
 import { IconButtonSpecimen } from "@/components/dev/IconButtonSpecimen";
+import { IslandSpecimen } from "@/components/dev/IslandSpecimen";
 import { KbdTooltipDividerSpecimen } from "@/components/dev/KbdTooltipDividerSpecimen";
 import { MediaSpecimen } from "@/components/dev/MediaSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
@@ -52,6 +53,7 @@ const SECTIONS = [
   { id: "cursor", label: "Cursor and sound" },
   { id: "preload", label: "Preloader" },
   { id: "gate", label: "Entry gate" },
+  { id: "island", label: "Nav island" },
 ] as const;
 
 export default function DevPage() {
@@ -63,8 +65,8 @@ export default function DevPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-16 px-4 pb-24 md:px-8">
-      <header className="sticky top-0 z-content -mx-4 flex flex-wrap items-center justify-between gap-4 border-b border-border-default bg-glass-fill px-4 py-4 backdrop-blur-glass md:-mx-8 md:px-8">
+    <div className="mx-auto flex max-w-5xl flex-col gap-16 px-4 pt-22 pb-24 md:px-8">
+      <header className="sticky top-22 z-content -mx-4 flex flex-wrap items-center justify-between gap-4 border-b border-border-default bg-glass-fill px-4 py-4 backdrop-blur-glass md:-mx-8 md:px-8">
         <div className="flex flex-col">
           <h1 className="text-title-1 font-bold">Specimen</h1>
           <nav aria-label="Sections" className="flex flex-wrap gap-4">
@@ -233,6 +235,14 @@ export default function DevPage() {
         >
           Replay the gate
         </a>
+      </DevSection>
+
+      <DevSection
+        id="island"
+        title="Nav island"
+        note="The real island in the nav (2.4). Hover it (desktop) for the links; click the art or the bars to expand; Esc or a click outside collapses. Success and info toasts become island alerts; errors with an action stay in the corner. Press ? for the shortcuts."
+      >
+        <IslandSpecimen />
       </DevSection>
     </div>
   );

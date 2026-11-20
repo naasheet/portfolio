@@ -127,6 +127,7 @@ lib/
   motion/               # gsap.ts, lenis.ts, tokens.ts, intro.ts, scrollMemory.ts
   hooks/                # useReducedMotion, useMediaQuery, useFocusTrap, useCountUp …
   fs.ts                 # virtual filesystem built from content/
+  island.ts             # the nav island's activity / alert store (2.4)
   sfx.ts  shortcuts.ts  quality.ts  preload.ts  theme.ts  browser.ts  supabase.ts  utils.ts
 content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
                         # knowledge.md, case-studies/*.mdx
@@ -260,6 +261,9 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 | `status/success` | `#2EC0A0` | `#187263` |
 | `status/danger` | `#FF7A6B` | `#B42318` |
 | `overlay/scrim` | `#000000` | `#000000` |
+| `island/bg` · `island/border` | `#090B0B` · `#2F3A38` | same (the island is near-black in both themes) |
+| `island/text` · `island/text-secondary` | `#F4F7F6` · `#A3B2AF` | same |
+| `island/accent` | `#2EC0A0` | same (light `accent/primary` is too dark on near-black) |
 
 - Glass cards in dark mode: `rgba(30, 37, 36, 0.55)` + `backdrop-filter: blur(24px)` + 1 px
   `border/default` + `inset 0 1px 0 rgba(244, 247, 246, 0.06)`.
@@ -478,32 +482,43 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **2 — Entry gate, preloader, persistent layer, nav** (phase 0 is complete; phase 1 is
+Current phase: **2 — Entry gate, preloader, persistent layer, nav** (2.5 page transitions next) (phase 0 is complete; phase 1 is
 built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
-persistent layer)
+persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`):** first-load JS is **198.7 KB after 2.2, +0.1 KB in 2.3** (SplitText is now lazy;
-  the gate's logic and next/image's helpers load after hydration). The placeholder `/` doesn't use
-  Button / Card yet, so 4.x will add the magnetic hook and the sfx stub. Measure, and keep
-  anything not needed for the first paint behind dynamic imports. The next chunk that adds to `/` must free space first:
-  register SplitText lazily (about 6 KB), and check what else can move behind `next/dynamic`. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
-  SplitText lazily where it's used (about 6 KB).
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is
+  **203.3 KB after 2.4** (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
+  nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
+  already load after hydration; what's left is the larger `copy` object, `content/chapters.ts`, the
+  store / toast / island changes and a 3.6 KB Next error-boundary chunk that appeared with the nav's
+  extra `next/dynamic` loaders. SplitText is already lazy. Next candidate: load ScrollTrigger lazily
+  (nothing on `/` scrubs yet; about 7 KB, but it touches 0.4's SmoothScroll wiring, so ask first). Ask
+  Nasheet whether to raise the target to ~210 KB or make that cut. Anything new on `/` goes behind
+  `next/dynamic`, and server components ship no JS: prefer them for static markup.
 - **6.1 / 7.4 / 8.x slots:** replace the placeholder inside its slot file and keep the slot's
   position in `PersistentLayer`: `components/chat/ChatBubbleSlot.tsx` (the bottom-right "Ask" pill),
   `components/terminal/TerminalDrawerSlot.tsx` and `components/ar/ARLayerSlot.tsx` (camera preview
   and hand cursor; both render `null` now).
-- **2.4 / 5.2 nav (revised 2.3 text):** there is no music player in the persistent layer. Music lives
-  in the nav's island (2.4 builds it, 5.2 makes it play), and the AR toggle is the nav's
-  Mouse | Hand switch (plus the hero's ARCard). Both are part of the nav, which mounts once in the
-  layout, so they survive navigation too.
+- **5.x music in the island:** push one activity from the engine:
+  `island.push({ id: "music", kind: "music", label, lead: <art>, trail: <EqBars />, expanded: <Player /> })`
+  and `island.remove("music")` when the playlist stops. The expanded card is the only music player
+  on the site (Island board). The sound circle and the idle island already show `EqBars` while
+  `audio.playing`. The phone menu has a commented slot for the now-playing strip (5.2).
+- **6.1 / 7.x / 8.x / 9.x flags:** `` ` `` and the terminal circle flip `ui.terminalOpen`; `/` flips
+  `ui.chatOpen`; Hand (and `A`) sets `ar.enabled`; Esc (when no overlay is open) closes chat, then
+  the terminal, then an expanded island card. Each feature pushes its own island activity
+  (AR: camera dot + hand, chat: "Writing a reply…", game: live score; a new best is
+  `island.alert({ icon: "star", tone: "amber", … })`). The "Hint · first use" state is not built yet.
+- **2.5 / 4.5 chapter on other routes:** the island shows `scroll.chapter`, which only the homepage
+  sections update. On a case study it keeps the last chapter; set it (e.g. Work) from the route.
 - **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
   `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
 - **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
@@ -516,20 +531,13 @@ Carry-over into later chunks:
   strings need `blurDataURL`) and `LoopVideo` for loops. `public/dev/` and `components/dev/media/`
   hold generated dev placeholders only; never use them on real pages. `public/dev/` is served in
   production too (small and harmless); delete it if it ever matters.
-- **2.4 nav (from the 2.2 Loading screen board, deferred because there was no nav yet):**
-  - **First visit:** once the hero has settled, the nav's sound button pulses once and shows its
-    tooltip ("Sound is off" with an M Kbd) for 4 s.
-  - **Repeat visits** with sound on: show a small "Tap for sound" chip in the nav until the
-    first click (the browser needs a new gesture).
-  - Turning sound on (nav button, the M key, terminal `play`) must create or resume the
-    AudioContext inside that handler: `ensureAudioContext()` / `initSfx()`.
 - **3.x / 4.2 hero (from the 2.2 board):** during the gate's exit the particles start forming the
   name underneath; the hero intro listens for `ui.entered`. When the WebGL canvas exists, make the
   gate's background transparent over it at 35% and delete `GateScatter`.
 - **Sound start (2.2 decision: the site always opens silent; there is no "Enter with sound"):**
-  whatever turns sound on calls `ui.setSoundEnabled(true)` and `initSfx()` (`lib/sfx.ts`) **inside
-  its handler** (that creates the AudioContext synchronously). Until the nav exists, the `/dev`
-  "Sound on/off" button stands in.
+  turn sound on through `toggleSound()` in `lib/shortcuts.ts` (the nav circle and `M` use it), or
+  call `ui.setSoundEnabled(true)` and `initSfx()` **inside the handler** (that creates the
+  AudioContext synchronously). The terminal's `play` / `sound` commands (6.x) use the same.
 - **6.x terminal / 4.x contact form / 7.x chat input:** the typing sound is opt-in per field:
   `onKeyDown={onTypingSound}` (from `lib/sfx.ts`), or call it from the field's own keydown handler.
   Turn it on in the terminal; ask Nasheet before adding it to the contact form or chat.
@@ -550,17 +558,17 @@ Carry-over into later chunks:
   - The specks still ring whatever the hand points at.
 - **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus when
   ffmpeg is installed.
-- **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
-  if a tooltip sits near an edge.
-- **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
-  them). `next/link` with a hash handles the click itself and jumps natively; use `scrollTo()`
-  if a Link is needed.
+- **10.x:** Tooltip has no automatic collision handling. 2.4 added `align="end"` (bubble lined up
+  with the trigger's right edge) for the nav's right-hand circles; use it, or add real flip / shift,
+  for any other tooltip near an edge.
+- **Chapter links:** use `components/nav/ChapterLink.tsx` (`chapter="work"`): a plain anchor on `/`
+  (SmoothScroll glides it) and a `next/link` to `/#id` elsewhere (keeps the layer and music alive).
+  From inside an overlay, close it and glide with `whenUnlocked(() => scrollTo("#id"))`
+  (`lib/motion/lenis.ts`), as the phone menu does: a stopped Lenis ignores `scrollTo`.
 - **2.5 route transitions:** call `getLenis()?.scrollTo(0, { immediate: true })` (or restore the
   saved position) on navigation, and `ScrollTrigger.refresh()` once the new page's layout settles.
 - **Fonts and ScrollTrigger:** call `ScrollTrigger.refresh()` after `document.fonts.ready` once
   real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
-- **1.x / 2.4:** a site theme toggle (the one on `/dev` is dev-only). The glass recipe is done
-  (`glass` utility, 1.2).
 - **4.x Marquee:** §8 lists the only loops (status dot, now-playing bars, terminal cursor). `Marquee` exists
   (1.3), but using it on a page needs Nasheet's OK first.
 - **4.x pages:** compose chapters from `components/cards/*` inside `BentoItem`s and pass
@@ -583,7 +591,11 @@ Open TODO(content) items:
   `when: "sound"`) once those files exist. Weights = their size in KB as the Network tab shows it.
 - `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
   name for `/credits` (11.2).
-- `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
+- `app/page.tsx` — six fake test chapters for the 2.4 nav (4.x replaces them; keep `id` and
+  `data-chapter`) and the homepage placeholder line → `content/copy.ts` (chunk 4.1)
+- `content/copy.ts` — the island alert lines for theme, sound and mode ("Light theme · T to switch
+  back" is the board's; "Dark theme", "Sound on/off", "Hand/Mouse mode" follow its pattern) and
+  the nav's accessible names ("Navigation", "Pointer", "Open the menu"): Nasheet to review.
 - `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)
 Known issues:
 - `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
@@ -594,6 +606,9 @@ Known issues:
 - `npm run analyze` builds with `--webpack`, because `@next/bundle-analyzer` only hooks into webpack.
   Production builds use Turbopack, so the reported sizes are close but not exact. The Turbopack-native
   `next analyze` needs no package, if exact numbers are wanted later.
+- In this Bash tool, a heredoc whose body contains an apostrophe (`Couldn't`, `2.2's`) can fail to
+  parse ("unexpected EOF while looking for matching `'`") and nothing runs. Write such files with the
+  Write tool instead.
 - Git converts files to CRLF on Windows checkout. A `.gitattributes` with `* text=auto eol=lf` is
   proposed but not approved yet.
 
@@ -858,7 +873,7 @@ Decisions so far (don't re-ask):
 - **Overlays (1.5, rebuilt against the board):** the design is
   `stuff/reference/Overlays (chunk 1.5)@2x.png`. `components/overlay/` holds Sheet, Modal, Drawer
   and Toast (`Toaster`), plus the shared `OverlayRoot`, `OverlayHeader`, `usePanelMotion`,
-  `ToasterLoader` and `sheetFeatures`. The content inside each overlay is the caller's.
+  and `ToasterLoader`. The content inside each overlay is the caller's.
   - **OverlayRoot:** portals into `<body>` (only after mount), wraps the layer in
     `AnimatePresence`, and draws a `bg-overlay-scrim/40` backdrop. A backdrop click closes it
     unless `dismissOnBackdrop={false}`.
@@ -883,8 +898,8 @@ Decisions so far (don't re-ask):
     - **Phone:** a full-width bottom sheet (90 `dvh` max, top corners round) dragged by its handle
       (`useDragControls`, `dragListener={false}`). It dismisses past 120 px or 500 px/s and
       snaps back otherwise. Footer children stretch (`flex-1`).
-    - Drag needs `domMax`, which loads asynchronously through the sheet's own `LazyMotion`
-      (`sheetFeatures.ts`), only when a phone sheet opens.
+    - Drag needs `domMax`, which the app-wide `MotionProvider` loads after hydration (since 2.4;
+      1.5 had a nested `LazyMotion` with `sheetFeatures.ts`).
   - **Modal** (`description?`, `footer?`, `dismissOnBackdrop` default **false**, because modals
     are confirmations): 440 wide (`w-110`), centred, scale 0.96 -> 1 with a fade. Header (title,
     description, close), optional body, then actions right-aligned.
@@ -1232,6 +1247,105 @@ Decisions so far (don't re-ask):
     Overlays, toasts, the gate and the cursor are outside `#app`.
   - **Mount counter:** `MountCounter` bumps a module-level count on mount, writes it to
     `data-mounts` on the layer, and `console.debug`s it in dev (StrictMode makes dev start at 2).
+- **Nav (2.4):** boards `stuff/reference/Navigation (chunk 2.4)@2x.png` and `The island — nav + live
+  activities (2.4 and later)@2x.png`. Everything is in `components/nav/`.
+  - **Loading:** `Nav` (server) renders `<header id="site-nav">` with the static **`NavShell`** (pure
+    HTML, no JS: wordmark, Mouse selected, the idle island at "01 Home", three circles) and
+    `NavLoader`, which loads the live **`NavBar`** with `next/dynamic` (`ssr: false`). NavBar's
+    `useLayoutEffect` sets `data-live` on the header, and CSS hides `.nav-shell` in the same frame.
+    **Keep NavShell in step with NavBar / Island idle / ModeSwitch.** (A client `loading:` fallback
+    was tried first: it pulled tailwind-merge into first-load JS.)
+  - **Layout:** `NavRow` is shared by both: left group, the island absolutely centred, right group.
+    Top inset `--nav-inset-top` = `max(20px, env(safe-area-inset-top))`; sides use the 2.3
+    `--layer-inset-*`. Pills and circles are 44 px below lg and 48 px from lg (`navStyles.ts`).
+    **Desktop is lg (64rem) and up**, because wordmark + switch + open island + circles need ~1000 px;
+    below lg it's the phone row (logo circle, compact island, sound circle).
+  - **Pieces:** `Wordmark` (+ `LogoDots`), `ModeSwitch` (two `aria-pressed` buttons in a
+    `role="group"`, the selected pill slides with a per-instance `layoutId`; `compact` in the menu),
+    `NavCircles` (terminal, theme), `SoundButton`, `TapForSound`, `EqBars`, `ChapterLink`.
+    Current items are solid `text-primary` pills with `bg-base` text.
+  - **Island** (`Island.tsx` + `lib/island.ts`): one `m.div layout` whose border radius is set per
+    shape (22 / 24 / 26 / 28), morphing on `{ type: "spring", duration: 0.35, bounce: 0.15 }`, with
+    the content in `AnimatePresence mode="popLayout"` cross-fading (0.2 s). Reduced motion: no
+    morph, a 0.15 s fade. Shapes: idle, nav (links), live (lead + small chapter + trail), split
+    (live + a 44 px circle for the second activity), alert, expanded. Priority: alert › expanded ›
+    nav hover › live › idle.
+    - **Nav links** open on mouse hover (only with `(hover: hover) and (pointer: fine)` at lg) or when
+      the island's centre button gets keyboard focus, which then moves focus to the current link
+      (`aria-current="location"`). They retract 400 ms after the pointer leaves, never while focus is
+      inside. The current pill is `layoutId="island-current"`.
+    - **Below lg or on touch,** the centre opens the phone menu (`ui.menuOpen`).
+    - **Expanded:** a click on an activity's lead / trail; Esc (when no overlay is open) or a
+      pointerdown outside collapses it.
+    - **Alerts:** `island.alert({ icon, tone, text, detail })`, 2.5 s, icon names map to lucide in
+      `IslandAlert.tsx`; announced by a polite `aria-live` paragraph in the island.
+    - **The six dots:** `m.span layout` per dot, the current one `w-4` teal (moved by transform).
+  - **Toasts (decision):** `toast()` sends success and info **without an action** to
+    `island.alert` (returns -1). Errors and anything with an action (Retry, Undo) stay in the 1.5
+    corner stack.
+  - **Shortcuts** (`lib/shortcuts.ts`): one `SHORTCUTS` array (`` ` `` `/` `M` `T` `A` `?` `Esc`),
+    each with the Kbd key, label and action, plus the shared actions `toggleSound`, `toggleTheme`
+    and `setHandMode` (each raises an island alert). `handleShortcut` skips modifier combos, IME,
+    repeats, and typing targets (text inputs, textareas, selects, contenteditable); Esc defers to
+    open overlays. It's mounted by `ShortcutsLoader` → `ShortcutsProvider` (lazy).
+  - **? overlay:** `ShortcutsOverlay` (lazy, `NavOverlays` mounts it on first open) is the 1.5 Modal
+    at `w-180` with `KeyboardDrawing` (lit keys: Esc, `` ` ``, T, A, M, /) and the list from
+    `SHORTCUTS`. Backdrop click closes it.
+  - **Phone menu:** `MobileMenu` (lazy) is a full-screen dialog on `OverlayRoot`
+    (`bg-bg-base/70` + glass blur), numbered links in `text-large-title` with the
+    `content/chapters.ts` subtitles, staggered 40 ms, the current one a light pill; then
+    ModeSwitch + circles and "Get in touch" (Button). On `/` a link closes the menu and glides after
+    the lock is released (`whenUnlocked`); elsewhere it `router.push`es `/#id`.
+  - **Auto-hide:** `NavAutoHide` (passive scroll listener, no state) toggles `data-hidden` on
+    `#site-nav` after 120 px down (min 4 px delta) and clears it on any scroll up or focus inside.
+    It never hides while the nav is hovered or focused, the menu / ? overlay / any scroll lock is
+    active, or the island shows an alert or a card. CSS: `translateY(-100%)`, or opacity 0 under
+    reduced motion.
+  - **Sound hints:** first visit (`html[data-gate=done]` when `ui.entered` turns true, sound off):
+    0.9 s later the sound circle gets `data-pulse` (one CSS ring, `.sound-pulse`) and its tooltip is
+    forced open (`Tooltip forceOpen`) for 4 s. Repeat visit with `sound` = "1" and no AudioContext:
+    "Tap for sound" shows; **the first pointerdown or keydown anywhere** calls `initSfx()` (the
+    saved choice was "on") and removes it. (The plan said only the pill would turn sound on; any
+    first gesture does, so the sound state and the circle never disagree.)
+  - **Chapter tracking:** `useChapterTracker()` (in NavBar, re-scans on route change) watches
+    `[data-chapter="n"]` with one IntersectionObserver (a 1 px line at mid-viewport) and writes
+    `scroll.chapter` only when it changes.
+  - **Store:** `ui.menuOpen` / `setMenuOpen` added (`shortcutsOpen` already existed).
+  - **Framer:** `motionFeatures.ts` now loads `domMax` (layout + drag) for the whole app, still
+    after hydration; `sheetFeatures.ts` and the Sheet's nested `LazyMotion` are gone.
+  - **`/dev`:** a "Nav island" section fires alerts, pushes a fake music activity (live → expanded
+    player → split with a fake AR activity) and opens the ? overlay. The dev header now sticks at
+    `top-22` and sections use `scroll-mt-72`, below the nav.
+  - **Tooltip:** new `align="end"` and `forceOpen` props.
+- **Verified 2.4 (headless Chromium, production build with the /dev flag):**
+  - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
+    Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.
+  - **Shortcuts:** `T` switches the theme and shows "Light theme · T to switch back" in the island;
+    `M` toggles the sound circle's `aria-pressed`; `A` moves the switch to Hand; `` ` `` toggles the
+    terminal circle; `/` is handled (`defaultPrevented`), an unmapped key isn't; `?` opens the
+    720 px "Keyboard" modal with all 7 shortcuts and 6 lit keys, and Esc closes it. Typing `tma`?`
+    into a text input only types (no theme change, no dialog).
+  - **Scroll:** the island reads 03 Work / 04 Skills / 06 Contact as sections cross the middle; the
+    row hides after 120 px down and returns on a wheel up; an alert keeps it shown, and it hides
+    again after the alert ends.
+  - **Hover:** opens the links; still open 250 ms after leaving, idle at 700 ms. In light theme the
+    island stays `rgb(9, 11, 11)`.
+  - **Island on /dev:** live → expanded → Esc → split (circle present) → expand + click outside →
+    live; a success toast becomes an alert ("Email copied") and leaves after 2.5 s; an error with
+    Retry stays a corner toast; "Stop all" → idle. The live region reads
+    "Dark theme. T to switch back".
+  - **Sound hints:** first visit: the pulse and "Sound is off M" tooltip appear 0.95 s after the
+    gate is done and are gone 4 s later; not on the repeat visit. `sound` = "1": "Tap for sound"
+    shows, and one click elsewhere removes it with the circle pressed.
+  - **Reduced motion:** hover still opens; the hidden row has `transform: none`, opacity 0.
+  - **Phone (390):** the row is logo, "Navigation: 01 Home", Sound; tapping the island opens the
+    menu (6 links, Home current, `#app` inert), the controls fit one line, Esc closes it; tapping
+    About closes it, sets `#about` and glides there (section top 0, island "02 About").
+  - **Screenshots** match both boards (idle, open, alert, ? overlay, expanded player, split, phone
+    row and menu, light theme). No console errors except the favicon 404.
+  - **Bundle:** see the Bundle carry-over (203.3 KB).
+  - **[manual]** Feel of the morphs and the 400 ms retract on a real trackpad; the phone menu on a
+    real iPhone (safe areas); the copy flagged in Open TODO(content).
 - **Verified 2.3 (headless Chromium, production build with the /dev flag):**
   - **No remounts:** client navigation / → /dev → / → /dev (`window.next.router.push`) kept the
     same document and the same layer node, with `data-mounts` = 1 throughout. (An unknown URL

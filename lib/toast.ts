@@ -6,6 +6,8 @@
  * Messages and action labels come from the caller (copy lives in content/).
  */
 
+import { island } from "./island";
+
 /** success (the default): something worked. info: a neutral note. error: something failed. */
 export type ToastKind = "success" | "info" | "error";
 
@@ -40,8 +42,22 @@ function emit() {
   for (const l of listeners) l();
 }
 
-/** Show a toast. Returns its id, for dismissToast(). */
+/**
+ * Show a toast. Returns its id, for dismissToast().
+ * Since 2.4, success and info messages without an action become island alerts (Island board);
+ * errors and anything with an action (Retry, Undo) stay in the corner stack. Island alerts
+ * return -1 (nothing to dismiss).
+ */
 export function toast(message: string, options: ToastOptions = {}): number {
+  const kind = options.kind ?? "success";
+  if (kind !== "error" && !options.action) {
+    island.alert({
+      icon: kind === "info" ? "info" : "check",
+      tone: kind === "info" ? "neutral" : "teal",
+      text: message,
+    });
+    return -1;
+  }
   const item: ToastItem = {
     id: nextId++,
     message,

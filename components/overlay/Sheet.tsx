@@ -1,6 +1,6 @@
 "use client";
 
-import { LazyMotion, m, useDragControls, type PanInfo } from "framer-motion";
+import { m, useDragControls, type PanInfo } from "framer-motion";
 import { useId, type PointerEvent, type ReactNode } from "react";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
@@ -12,8 +12,6 @@ import { usePanelMotion } from "./usePanelMotion";
 /** Drag further than this (px) or flick faster than DISMISS_VELOCITY (px/s) to dismiss. */
 const DISMISS_OFFSET = 120;
 const DISMISS_VELOCITY = 500;
-
-const loadDrag = () => import("./sheetFeatures").then((mod) => mod.default);
 
 export type SheetProps = OverlayProps & {
   /** Small label above the title ("Case study"). */
@@ -107,35 +105,33 @@ export function Sheet({
           {sections(false)}
         </m.div>
       ) : (
-        <LazyMotion features={loadDrag}>
-          <m.div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className={cn(
-              PANEL,
-              "absolute inset-x-0 bottom-0 max-h-[90dvh] rounded-t-card border-b-0",
-              className,
-            )}
-            {...bottom}
-            drag="y"
-            dragListener={false}
-            dragControls={controls}
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.6 }}
-            onDragEnd={onDragEnd}
+        <m.div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          className={cn(
+            PANEL,
+            "absolute inset-x-0 bottom-0 max-h-[90dvh] rounded-t-card border-b-0",
+            className,
+          )}
+          {...bottom}
+          drag="y"
+          dragListener={false}
+          dragControls={controls}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0, bottom: 0.6 }}
+          onDragEnd={onDragEnd}
+        >
+          {/* The handle row is the drag area, so the body can still scroll. */}
+          <div
+            aria-hidden
+            onPointerDown={startDrag}
+            className="flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
           >
-            {/* The handle row is the drag area, so the body can still scroll. */}
-            <div
-              aria-hidden
-              onPointerDown={startDrag}
-              className="flex h-6 shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing"
-            >
-              <span className="h-1 w-10 rounded-chip bg-border-default" />
-            </div>
-            {sections(true)}
-          </m.div>
-        </LazyMotion>
+            <span className="h-1 w-10 rounded-chip bg-border-default" />
+          </div>
+          {sections(true)}
+        </m.div>
       )}
     </OverlayRoot>
   );

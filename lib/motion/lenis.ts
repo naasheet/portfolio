@@ -75,4 +75,22 @@ export function unlockScroll(): void {
   html.style.paddingRight = "";
   html.style.removeProperty("--scrollbar-gap");
   instance?.start();
+  const queued = afterUnlock.splice(0);
+  for (const run of queued) run();
+}
+
+const afterUnlock: Array<() => void> = [];
+
+/**
+ * Run `fn` once scrolling is unlocked: straight away if nothing holds a lock, otherwise when the
+ * last overlay has fully left. The phone menu uses it to glide to a chapter after it closes.
+ */
+export function whenUnlocked(fn: () => void): void {
+  if (lockCount === 0) fn();
+  else afterUnlock.push(fn);
+}
+
+/** True while an overlay holds a scroll lock. */
+export function isScrollLocked(): boolean {
+  return lockCount > 0;
 }

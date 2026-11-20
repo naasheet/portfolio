@@ -84,6 +84,8 @@ export type UiSlice = {
   /** The chatbot is streaming an answer (the canvas pulses). */
   chatStreaming: boolean;
   shortcutsOpen: boolean;
+  /** The phone menu (2.4). */
+  menuOpen: boolean;
   setEntered: (entered: boolean) => void;
   setSoundEnabled: (enabled: boolean) => void;
   toggleSound: () => void;
@@ -94,6 +96,7 @@ export type UiSlice = {
   setChatStreaming: (streaming: boolean) => void;
   setShortcutsOpen: (open: boolean) => void;
   toggleShortcuts: () => void;
+  setMenuOpen: (open: boolean) => void;
 };
 
 export type ThemeSlice = {
@@ -171,6 +174,7 @@ export const useStore = create<StoreState>()(
         chatOpen: false,
         chatStreaming: false,
         shortcutsOpen: false,
+        menuOpen: false,
         setEntered: (entered) => patch("ui", { entered }),
         setSoundEnabled: (soundEnabled) => {
           patch("ui", { soundEnabled });
@@ -186,6 +190,7 @@ export const useStore = create<StoreState>()(
         setShortcutsOpen: (shortcutsOpen) => patch("ui", { shortcutsOpen }),
         toggleShortcuts: () =>
           patch("ui", { shortcutsOpen: !get().ui.shortcutsOpen }),
+        setMenuOpen: (menuOpen) => patch("ui", { menuOpen }),
       },
 
       theme: {

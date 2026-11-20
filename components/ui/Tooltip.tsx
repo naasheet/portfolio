@@ -25,6 +25,10 @@ export type TooltipProps = {
   /** One focusable element. It gets aria-describedby pointing at the tooltip. */
   children: ReactElement<{ "aria-describedby"?: string }>;
   side?: TooltipSide;
+  /** "end" lines the bubble up with the trigger's right edge (controls near the right of the screen). */
+  align?: "center" | "end";
+  /** Show it regardless of hover or focus (e.g. the nav's first-visit sound hint). */
+  forceOpen?: boolean;
   className?: string;
 };
 
@@ -38,6 +42,8 @@ export function Tooltip({
   content,
   children,
   side = "top",
+  align = "center",
+  forceOpen = false,
   className,
 }: TooltipProps) {
   const id = useId();
@@ -101,12 +107,13 @@ export function Tooltip({
         {content}
       </span>
       <AnimatePresence>
-        {open ? (
+        {open || forceOpen ? (
           <m.span
             aria-hidden
             // The padding bridges the gap, so moving onto the tooltip keeps it open.
             className={cn(
-              "absolute left-1/2 z-overlay flex -translate-x-1/2",
+              "absolute z-overlay flex",
+              align === "end" ? "right-0" : "left-1/2 -translate-x-1/2",
               top ? "bottom-full pb-2" : "top-full pt-2",
             )}
             initial={{ opacity: 0, y: top ? 4 : -4, scale: 0.96 }}
