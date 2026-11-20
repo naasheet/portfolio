@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { BentoSpecimen } from "@/components/dev/BentoSpecimen";
 import { ButtonSpecimen } from "@/components/dev/ButtonSpecimen";
+import { CardSpecimen } from "@/components/dev/CardSpecimen";
 import { ChipSpecimen } from "@/components/dev/ChipSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
 import { DevSection } from "@/components/dev/DevSection";
@@ -35,6 +37,8 @@ const SECTIONS = [
   { id: "chips", label: "Chip" },
   { id: "status-chips", label: "StatusChip" },
   { id: "kbd-tooltip-divider", label: "Kbd · Tooltip · Divider" },
+  { id: "cards", label: "Card" },
+  { id: "bento", label: "Bento" },
 ] as const;
 
 export default function DevPage() {
@@ -139,6 +143,22 @@ export default function DevPage() {
         note="Kbd is SF Mono 12/16 on surface/solid. Tooltip opens 300 ms after hover, instantly on keyboard focus; Esc closes it."
       >
         <KbdTooltipDividerSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="cards"
+        title="Card"
+        note="Glass, solid and media. Interactive cards lift 2 px, gain the lift shadow and a pointer spotlight, and the border turns text/tertiary. Mouse only: touch gets none of it. The hover cell is forced with data-state."
+      >
+        <CardSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="bento"
+        title="Bento"
+        note="1 column on phones, 6 on tablets (768+), 12 on desktop (1024+). 16 px gap, rows at least 160 px. Spans are CSS variables, not generated class names."
+      >
+        <BentoSpecimen />
       </DevSection>
     </div>
   );

@@ -478,7 +478,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives)
+1.1 (primitives), 1.2 (card base and bento grid)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
@@ -498,8 +498,10 @@ Carry-over into later chunks:
   saved position) on navigation, and `ScrollTrigger.refresh()` once the new page's layout settles.
 - **Fonts and ScrollTrigger:** call `ScrollTrigger.refresh()` after `document.fonts.ready` once
   real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
-- **1.x / 2.4:** a site theme toggle (the one on `/dev` is dev-only), and the glass recipe (blur + hairline + inset top highlight)
-  as a reusable class or card base. 0.3 only ships the tokens.
+- **1.x / 2.4:** a site theme toggle (the one on `/dev` is dev-only). The glass recipe is done
+  (`glass` utility, 1.2).
+- **1.4 card kit:** build every card on `Card` inside a `BentoItem`, and give the Card `h-full`.
+  PhotoCard tilt and the CTA/Social arrow nudge (sheet 2) belong to 1.4, not the card base.
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
   theme change (watch `data-theme` on `<html>`).
 Open TODO(content) items:
@@ -653,6 +655,41 @@ Decisions so far (don't re-ask):
   (`domAnimation`) load async from `motionFeatures.ts`, which kept 1.1 to about +12 KB on `/` instead
   of +31 KB. **Use `m.*`, never `motion.*`:** strict mode throws. `m.create(Component)` wraps
   components.
+- **Card (1.2):** `components/ui/Card.tsx` (client) has `variant` glass (default) / solid / media,
+  plus `as`, `href` (`next/link`, implies interactive) and `interactive`. Padding is 24 px except on
+  media, which wraps its children in an `overflow-hidden rounded-[inherit]` div, so the card
+  itself never clips; it can't, because the lift shadow sits outside it. Interactive cards render an
+  `aria-hidden` `.card-spot` layer. The card rules in `globals.css` are **unlayered on purpose**: the
+  hover border must beat the `glass` utility's border, and a `@layer components` rule loses to
+  utilities. Only transform and opacity animate: lift is `translate: 0 -2px`, the shadow is
+  `::after` fading in, and the spotlight is a 480 px gradient circle on `.card-spot::before` moved
+  with `translate: var(--x) var(--y)`. `pointermove` writes `--x/--y` with `style.setProperty`
+  (mouse pointers only). Hover rules sit under `(hover: hover) and (pointer: fine)`, so touch is
+  handled in CSS. Reduced motion keeps the border, shadow and spotlight and drops the lift.
+  `data-state="hover"` forces the hover look (for /dev).
+- **Glass:** use the `glass` utility for every glass surface: fill, `blur(--blur-glass)`, 1 px
+  `border-default` and `inset 0 1px 0 var(--glass-highlight)`. `--glass-highlight` is per theme
+  (dark `rgba(244,247,246,.06)`, light `rgba(255,255,255,.7)`).
+- **Bento (1.2):** `BentoGrid` + `BentoItem` (separate files, one component per file). Columns are
+  1 on phones, 6 from `md` (48rem) and 12 from `lg` (64rem), with a 16 px gap and
+  `grid-auto-rows: minmax(160px, auto)`. `col={{ md, lg }}` counts in that breakpoint's own columns
+  (phones are always full width). A missing one is derived in proportion (md 3 → lg 6); with
+  neither, the item is full width. `row={{ base, md, lg }}` inherits upwards. Resolved spans go
+  inline as `--col-md/--col-lg/--row-*`, and the `.bento` / `.bento-item` rules in `@layer
+  components` read them. No class names are generated at runtime. No `dense` packing, so DOM
+  order equals reading order.
+- **Testing note:** patchright's `page.evaluate` runs in an isolated world (no page globals), and
+  `addInitScript` didn't apply. To count React commits, inject a fake
+  `__REACT_DEVTOOLS_GLOBAL_HOOK__` into the HTML with `page.route` and have it write its count
+  to a `data-` attribute on `<html>`.
+- **Verified 1.2 (headless Chromium, production build with the /dev flag):** the grid has 12 / 6 / 1
+  columns at 1440 / 768 / 390 px, with no horizontal overflow, and the sample's rows fill
+  completely at 1440 and 768. Over 120 pointer moves across an interactive card there were
+  **0 React commits** (a chip click in the same run registered 1). `--x/--y` track the pointer.
+  Frames: p95 6.3 ms, none over 20 ms (headless, unthrottled). On hover: `translate 0 -2px`,
+  border `#7A8B88`, spotlight and shadow at opacity 1. Reduced motion: no translate, border still
+  changes. Touch context: the hover media query doesn't match, there's no translate, the spotlight
+  stays at 0 and `--x` is never written.
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

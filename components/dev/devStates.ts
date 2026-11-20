@@ -13,3 +13,6 @@ export const forced = {
   chipHover: "border-text-tertiary text-text-primary",
   chipSelectedHover: "bg-accent-primary/25",
 } as const;
+
+/** Card hover is a CSS rule on [data-interactive]; this attribute matches it on /dev. */
+export const forcedCardHover = { "data-state": "hover" } as const;
