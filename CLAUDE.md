@@ -1146,10 +1146,12 @@ Decisions so far (don't re-ask):
   - **Layout:** `bg-bg-base`, `z-gate` (new token 65: above toasts, below the cursor).
     - **Top:** the name (two dots, teal and amber) top-left; `GateClock` (city · HH:MM zone, from
       `content/profile.ts`, minute-aligned updates, hidden below md) top-right.
-    - **Bottom:** the counter is `text-stat-1` (now **responsive: 64 px below md, 72 px from md**,
-      the board calls both stat-1), `tabular-nums`. The line row is `OrbitSpinner` + the
-      loading line in SF Mono 13 (`font-mono text-footnote`, text/secondary). Then the
-      percentage and a 1 px hairline (`.gate-fill`, scaleX; glows at 100%).
+    - **Centre (Nasheet's change after the first build; the board had them bottom-left):** the
+      counter (`text-stat-1`, now **responsive: 64 px below md, 72 px from md**, `tabular-nums`)
+      and, under it, the line row (`OrbitSpinner` + the loading line in SF Mono 13,
+      `font-mono text-footnote`, text/secondary), centred as one block in the space between
+      the top row and the bottom.
+    - **Bottom:** the percentage and a 1 px hairline (`.gate-fill`, scaleX; glows at 100%).
     - **Spacing:** 48 px margins on desktop; 24 px sides and the hairline 44 px from the bottom
       on phones.
   - **Particles:** `GateScatter`, a static, seeded SVG (150 dots, about 1 in 6 amber) at 35%, as a
@@ -1158,12 +1160,17 @@ Decisions so far (don't re-ask):
     - The counter, percentage and hairline are written straight to the DOM from
       `createEasedProgress`.
     - Lines: `content/loadingLines.ts` (24 from the board). "Brewing…" is the server-rendered
-      opener, then the rest are shuffled, every 1.6 s, never repeating, and the last is always
-      `readyLine` ("Ready.").
+      opener, then the rest are shuffled, **every 0.8 s** (Nasheet: "update frequently"; the board
+      said 1.6 s), never repeating, and the last is always `readyLine` ("Ready."). Swaps stop once
+      the shown value passes 95%, so no line flashes past just before "Ready.".
+    - **Minimum 3.2 s on screen:** `createEasedProgress(onFrame, { minDurationMs: 3200 })` caps
+      the shown value at elapsed / 3.2 s (it still never passes the real value). A fast load
+      therefore shows "Brewing…" plus about four lines; the gate is gone about 5.3 s after
+      hydration (4.7 s with reduced motion).
     - At 100% (`ready` resolved and the shown value reaches 1; a timeout also runs the counter to
       100) it holds 300 ms, then exits with a GSAP timeline: the counter scales to 0.92 and fades
-      (0.35 s), the rest fades, and the overlay `yPercent: -100` (0.55 s from 0.25 s), about 0.8 s
-      in total. Reduced motion uses a 200 ms opacity fade instead, the spinner doesn't spin and
+      (0.35 s, the counter and line together, from their centre), the rest fades, and the overlay
+      `yPercent: -100` (0.55 s from 0.25 s), about 0.8 s in total. Reduced motion uses a 200 ms opacity fade instead, the spinner doesn't spin and
       lines fade in.
     - At the end it saves `entered`, sets `html[data-gate=done]`, releases `lockScroll`, sets
       `ui.entered = true` and unmounts.
@@ -1189,6 +1196,14 @@ Decisions so far (don't re-ask):
     desktop counter 72 px at 48 px, hairline 48 px from the bottom, 1344 px wide.
   - **Bundle:** first-load JS on `/` was 212.7 KB before the split and is 198.7 KB after it
     (199.2 before 2.2).
+  - **After centring, 0.8 s lines and the 3.2 s minimum (unthrottled first visits):**
+    - **Lines:** desktop, phone and reduced motion each showed "Brewing…" plus four shuffled
+      lines at about 0.9 / 1.7 / 2.5 / 3.3 s, then "Ready." at about 4.1 s. The last line sat
+      ~0.8 s before "Ready." (no flash), and the counter only rose.
+    - **Centring:** the counter and line centres are exactly at the viewport centre (720 of
+      1440, 195 of 390).
+    - **Unchanged:** repeat visits skip before paint, no AudioContext, phone counter 64 px.
+    - First-load JS on `/` is still 198.7 KB.
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

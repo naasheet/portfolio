@@ -208,18 +208,35 @@ export type EasedProgress = {
  */
 export function createEasedProgress(
   onFrame: (shown: number) => void,
-  /** Time constant of the ease (s): about a third of the time it takes to catch up. */
-  tau = 0.2,
+  {
+    tau = 0.2,
+    minDurationMs = 0,
+  }: {
+    /** Time constant of the ease (s): about a third of the time it takes to catch up. */
+    tau?: number;
+    /**
+     * The shown value can't reach 100% sooner than this after it starts (it climbs no faster
+     * than elapsed / minDurationMs), so a fast load still shows a few loading lines. It still
+     * never passes the real value.
+     */
+    minDurationMs?: number;
+  } = {},
 ): EasedProgress {
   let real = 0;
   let shown = 0;
+  const start = performance.now();
   const tick = (_time: number, deltaMs: number) => {
-    if (shown >= real) return;
+    const cap =
+      minDurationMs > 0
+        ? Math.min(1, (performance.now() - start) / minDurationMs)
+        : 1;
+    const target = Math.min(real, cap);
+    if (shown >= target) return;
     const k = 1 - Math.exp(-Math.min(deltaMs, 100) / 1000 / tau);
-    let next = shown + (real - shown) * k;
+    let next = shown + (target - shown) * k;
     // Finish the last sliver instead of creeping toward it forever.
-    if (real - next < 0.001) next = real;
-    shown = Math.min(next, real);
+    if (target - next < 0.001) next = target;
+    shown = Math.min(next, target);
     onFrame(shown);
   };
   gsap.ticker.add(tick);

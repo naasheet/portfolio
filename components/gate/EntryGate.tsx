@@ -15,8 +15,10 @@ import { GateClock } from "./GateClock";
 import { GateScatter } from "./GateScatter";
 import { OrbitSpinner } from "./OrbitSpinner";
 
-/** A new line every 1.6 s. */
-const LINE_MS = 1600;
+/** A new line every 0.8 s (Nasheet: lines should change often; the board said 1.6 s). */
+const LINE_MS = 800;
+/** The gate stays at least this long, so even a fast load shows a few lines (Nasheet, 2.2). */
+const MIN_MS = 3200;
 /** Hold at 100% before leaving. */
 const HOLD_MS = 300;
 /** Written when the visitor gets in; GateScript skips the gate on later visits. */
@@ -47,7 +49,9 @@ const GateLine = dynamic(() => import("./GateLine").then((m) => m.GateLine), {
 
 /**
  * The first screen (Loading screen board, chunk 2.2): a three-digit counter that eases toward the
- * real load (lib/preload.ts), a playful line that changes every 1.6 s, and a hairline that fills.
+ * real load (lib/preload.ts) and a playful line that changes every 0.8 s, both centred (Nasheet
+ * moved them from the board's bottom-left), and a hairline along the bottom that fills. It stays
+ * at least 3.2 s, so a fast load still shows a few lines; the counter never passes the real load.
  * No buttons: at 100% it says "Ready.", holds 300 ms and leaves on its own, and the site always
  * starts silent. The exit is a ~0.8 s GSAP timeline (a 200 ms fade with reduced motion); at the
  * end ui.entered = true (the hero intro, 4.2, listens for it).
@@ -90,7 +94,10 @@ export function EntryGate() {
 
     // A new line every 1.6 s, shuffled, never repeating.
     const queue = shuffledRest();
+    // Near the end, stop swapping lines so none flashes past just before "Ready.".
+    let nearlyDone = false;
     const lineTimer = setInterval(() => {
+      if (nearlyDone) return;
       const next = queue.shift();
       if (next) setLine(next);
     }, LINE_MS);
@@ -119,18 +126,20 @@ export function EntryGate() {
         });
         return;
       }
-      // ~0.8 s: the counter scales down and fades, then the overlay wipes upward.
+      // ~0.8 s: the centred counter and line shrink toward the middle and fade, then the
+      // overlay wipes upward.
       exitTween = gsap
         .timeline({ onComplete: enter })
-        .to(counter.current, {
+        .to([counter.current, lineRow.current], {
           scale: 0.92,
           opacity: 0,
-          transformOrigin: "left bottom",
+          transformOrigin: "center center",
           duration: 0.35,
           ease: "power2.in",
+          stagger: 0.04,
         })
         .to(
-          [lineRow.current, hairRow.current, top.current],
+          [hairRow.current, top.current],
           { opacity: 0, duration: 0.25, ease: "power1.out" },
           0,
         )
@@ -156,13 +165,17 @@ export function EntryGate() {
     let disposed = false;
     void import("@/lib/preload").then(({ createEasedProgress, preload }) => {
       if (disposed) return;
-      const progress = createEasedProgress((shown) => {
-        const pct = Math.round(shown * 100);
-        if (counter.current) counter.current.textContent = pad3(pct);
-        if (percent.current) percent.current.textContent = `${pct}%`;
-        if (fill.current) fill.current.style.transform = `scaleX(${shown})`;
-        if (loaded && shown >= 1) finish();
-      });
+      const progress = createEasedProgress(
+        (shown) => {
+          const pct = Math.round(shown * 100);
+          if (counter.current) counter.current.textContent = pad3(pct);
+          if (percent.current) percent.current.textContent = `${pct}%`;
+          if (fill.current) fill.current.style.transform = `scaleX(${shown})`;
+          if (shown >= 0.95) nearlyDone = true;
+          if (loaded && shown >= 1) finish();
+        },
+        { minDurationMs: MIN_MS },
+      );
       eased = progress;
       const { ready: readyPromise } = preload(preloadManifest, {
         onProgress: (r) => progress.set(r.progress),
@@ -199,7 +212,7 @@ export function EntryGate() {
 
       <div
         aria-hidden
-        className="relative flex h-full flex-col justify-between px-6 pt-6 pb-11 md:px-12 md:pt-12 md:pb-12"
+        className="relative flex h-full flex-col px-6 pt-6 pb-11 md:px-12 md:pt-12 md:pb-12"
       >
         <div ref={top} className="flex items-center justify-between gap-4">
           <span className="flex items-center gap-2 text-subhead text-text-secondary">
@@ -214,18 +227,21 @@ export function EntryGate() {
           </span>
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex flex-1 flex-col items-center justify-center text-center">
           <div ref={counter} className="text-stat-1 font-medium tabular-nums">
             000
           </div>
           <div
             ref={lineRow}
-            className="mt-6 flex items-center gap-2 text-footnote font-mono text-text-secondary"
+            className="mt-6 flex items-center justify-center gap-2 text-footnote font-mono text-text-secondary"
           >
             <OrbitSpinner />
             <GateLine text={line} />
           </div>
-          <div ref={hairRow} className="mt-6 flex flex-col gap-2">
+        </div>
+
+        <div>
+          <div ref={hairRow} className="flex flex-col gap-2">
             <span
               ref={percent}
               className="self-end text-caption-1 text-text-tertiary tabular-nums"
