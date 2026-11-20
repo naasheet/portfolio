@@ -2,11 +2,12 @@
 
 import { m } from "framer-motion";
 import { useId, type ReactNode } from "react";
-import { spring } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils";
 import { OverlayHeader } from "./OverlayHeader";
 import { OverlayRoot } from "./OverlayRoot";
+import { usePanelMotion } from "./usePanelMotion";
 
+/** Props every overlay shares. */
 export type OverlayProps = {
   open: boolean;
   onClose: () => void;
@@ -14,48 +15,79 @@ export type OverlayProps = {
   title: string;
   /** Accessible name of the close button (copy comes from content/). */
   closeLabel: string;
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
 };
 
-/** A centred dialog on the solid surface. Scales in from 0.96 with the soft spring. */
+export type ModalProps = OverlayProps & {
+  /** One or two lines: what this dialog is for and what happens next. */
+  description?: string;
+  /** Actions, right-aligned (e.g. Cancel and Confirm). */
+  footer?: ReactNode;
+  /** A backdrop click closes it. Off by default: modals ask to confirm. Esc still closes. */
+  dismissOnBackdrop?: boolean;
+};
+
+/**
+ * A centred dialog, 440 wide, used rarely: confirmations only. Title, description, close
+ * button and right-aligned actions. Scales 0.96 → 1 with a fade (fade only under reduced
+ * motion). A backdrop click does nothing unless dismissOnBackdrop is set.
+ */
 export function Modal({
   open,
   onClose,
   title,
   closeLabel,
+  description,
+  footer,
+  dismissOnBackdrop = false,
   children,
   className,
-}: OverlayProps) {
+}: ModalProps) {
   const titleId = useId();
+  const descriptionId = useId();
+  const motion = usePanelMotion(
+    { opacity: 0, scale: 0.96 },
+    { opacity: 1, scale: 1 },
+  );
+
   return (
-    <OverlayRoot open={open} onClose={onClose}>
+    <OverlayRoot
+      open={open}
+      onClose={onClose}
+      dismissOnBackdrop={dismissOnBackdrop}
+    >
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4">
         <m.div
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
+          aria-describedby={description ? descriptionId : undefined}
           className={cn(
-            "pointer-events-auto flex max-h-[85dvh] w-full max-w-lg flex-col gap-4 rounded-card border border-border-default bg-surface-solid p-6 shadow-overlay",
+            "pointer-events-auto flex max-h-[85dvh] w-110 max-w-full flex-col gap-6 rounded-card border border-border-default bg-surface-solid p-6 shadow-overlay",
             className,
           )}
-          initial={{ opacity: 0, scale: 0.96, y: 8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.96, y: 8 }}
-          transition={spring.soft}
+          {...motion}
         >
           <OverlayHeader
             title={title}
             titleId={titleId}
+            description={description}
+            descriptionId={descriptionId}
             closeLabel={closeLabel}
             onClose={onClose}
           />
-          <div
-            data-lenis-prevent
-            className="-mx-2 min-h-0 flex-1 overflow-y-auto overscroll-contain px-2"
-          >
-            {children}
-          </div>
+          {children ? (
+            <div
+              data-lenis-prevent
+              className="-mx-2 min-h-0 flex-1 overflow-y-auto overscroll-contain px-2"
+            >
+              {children}
+            </div>
+          ) : null}
+          {footer ? (
+            <div className="flex flex-wrap justify-end gap-2">{footer}</div>
+          ) : null}
         </m.div>
       </div>
     </OverlayRoot>

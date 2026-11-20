@@ -21,15 +21,19 @@ function useMounted(): boolean {
 export type OverlayRootProps = {
   open: boolean;
   onClose: () => void;
+  /** Close on a backdrop click (default). The Modal turns it off: it asks to confirm. */
+  dismissOnBackdrop?: boolean;
   /** The panel: an m.* element with its own initial / animate / exit. */
   children: ReactNode;
 };
 
 function OverlayLayer({
   onClose,
+  dismissOnBackdrop,
   children,
 }: {
   onClose: () => void;
+  dismissOnBackdrop: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -83,7 +87,7 @@ function OverlayLayer({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: durationS.base, ease: easeOutPoints }}
-        onClick={onClose}
+        onClick={dismissOnBackdrop ? onClose : undefined}
       />
       {children}
     </div>
@@ -92,16 +96,25 @@ function OverlayLayer({
 
 /**
  * Shared plumbing for Sheet, Modal and Drawer: a portal into <body>, a 40% black backdrop that
- * closes on click, a focus trap that returns focus on close, Esc for the topmost overlay only,
+ * closes on click (unless dismissOnBackdrop is false), a focus trap that returns focus on close, Esc for the topmost overlay only,
  * and lockScroll() while it's on screen. Each overlay supplies its own animated panel.
  */
-export function OverlayRoot({ open, onClose, children }: OverlayRootProps) {
+export function OverlayRoot({
+  open,
+  onClose,
+  dismissOnBackdrop = true,
+  children,
+}: OverlayRootProps) {
   const mounted = useMounted();
   if (!mounted) return null;
   return createPortal(
     <AnimatePresence>
       {open ? (
-        <OverlayLayer key="overlay" onClose={onClose}>
+        <OverlayLayer
+          key="overlay"
+          onClose={onClose}
+          dismissOnBackdrop={dismissOnBackdrop}
+        >
           {children}
         </OverlayLayer>
       ) : null}

@@ -1,13 +1,13 @@
 "use client";
 
 import { LazyMotion, m, useDragControls, type PanInfo } from "framer-motion";
-import { useId, type PointerEvent } from "react";
+import { useId, type PointerEvent, type ReactNode } from "react";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
-import { spring } from "@/lib/motion/tokens";
 import { cn } from "@/lib/utils";
 import type { OverlayProps } from "./Modal";
 import { OverlayHeader } from "./OverlayHeader";
 import { OverlayRoot } from "./OverlayRoot";
+import { usePanelMotion } from "./usePanelMotion";
 
 /** Drag further than this (px) or flick faster than DISMISS_VELOCITY (px/s) to dismiss. */
 const DISMISS_OFFSET = 120;
@@ -15,22 +15,38 @@ const DISMISS_VELOCITY = 500;
 
 const loadDrag = () => import("./sheetFeatures").then((mod) => mod.default);
 
+export type SheetProps = OverlayProps & {
+  /** Small label above the title ("Case study"). */
+  eyebrow?: string;
+  /** Sticky footer actions (e.g. Close and a primary action). Full width on phones. */
+  footer?: ReactNode;
+};
+
+const PANEL =
+  "flex flex-col overflow-hidden border border-border-default bg-surface-solid shadow-overlay";
+
 /**
- * Desktop (768 px and up): a panel that slides in from the right. Phones: a bottom sheet that
- * can be dragged down by its handle to dismiss (Framer drag="y"; the drag feature loads only
- * when a sheet first opens). Content scrolls inside; the page behind stays locked.
+ * For longer content (case studies). A header with an optional eyebrow, a scrolling body and a
+ * sticky footer. Desktop (768 px and up): 480 wide, inset 12 from the edges, slides in from the
+ * right. Phones: a bottom sheet (90% max height) dragged down by its handle to dismiss (Framer
+ * drag="y"; the drag feature loads only when a phone sheet first opens). Fades only under
+ * reduced motion.
  */
 export function Sheet({
   open,
   onClose,
   title,
   closeLabel,
+  eyebrow,
+  footer,
   children,
   className,
-}: OverlayProps) {
+}: SheetProps) {
   const titleId = useId();
   const desktop = useMediaQuery("(min-width: 48rem)");
   const controls = useDragControls();
+  const side = usePanelMotion({ x: "calc(100% + 12px)" }, { x: 0 });
+  const bottom = usePanelMotion({ y: "100%" }, { y: 0 });
 
   const onDragEnd = (_: unknown, info: PanInfo) => {
     if (info.offset.y > DISMISS_OFFSET || info.velocity.y > DISMISS_VELOCITY) {
@@ -40,20 +56,37 @@ export function Sheet({
 
   const startDrag = (e: PointerEvent<HTMLDivElement>) => controls.start(e);
 
-  const body = (
+  const sections = (phone: boolean) => (
     <>
       <OverlayHeader
         title={title}
         titleId={titleId}
+        eyebrow={eyebrow}
         closeLabel={closeLabel}
         onClose={onClose}
+        className={cn(
+          "border-b border-border-default px-6 pb-4",
+          phone ? "pt-2" : "pt-6",
+        )}
       />
       <div
         data-lenis-prevent
-        className="-mx-2 min-h-0 flex-1 overflow-y-auto overscroll-contain px-2"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6"
       >
         {children}
       </div>
+      {footer ? (
+        <div
+          className={cn(
+            "flex gap-2 border-t border-border-default px-6 pt-4",
+            phone
+              ? "pb-[max(16px,env(safe-area-inset-bottom))] [&>*]:flex-1"
+              : "justify-end pb-4",
+          )}
+        >
+          {footer}
+        </div>
+      ) : null}
     </>
   );
 
@@ -65,15 +98,13 @@ export function Sheet({
           aria-modal="true"
           aria-labelledby={titleId}
           className={cn(
-            "absolute inset-y-0 right-0 flex w-full max-w-md flex-col gap-4 rounded-l-card border-l border-border-default bg-surface-solid p-6 shadow-overlay",
+            PANEL,
+            "absolute top-3 right-3 bottom-3 w-120 max-w-[calc(100vw-24px)] rounded-card",
             className,
           )}
-          initial={{ x: "100%" }}
-          animate={{ x: 0 }}
-          exit={{ x: "100%" }}
-          transition={spring.soft}
+          {...side}
         >
-          {body}
+          {sections(false)}
         </m.div>
       ) : (
         <LazyMotion features={loadDrag}>
@@ -82,13 +113,11 @@ export function Sheet({
             aria-modal="true"
             aria-labelledby={titleId}
             className={cn(
-              "absolute inset-x-0 bottom-0 flex max-h-[90dvh] flex-col gap-4 rounded-t-card border-t border-border-default bg-surface-solid px-6 pb-[max(24px,env(safe-area-inset-bottom))] shadow-overlay",
+              PANEL,
+              "absolute inset-x-0 bottom-0 max-h-[90dvh] rounded-t-card border-b-0",
               className,
             )}
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={spring.soft}
+            {...bottom}
             drag="y"
             dragListener={false}
             dragControls={controls}
@@ -96,7 +125,7 @@ export function Sheet({
             dragElastic={{ top: 0, bottom: 0.6 }}
             onDragEnd={onDragEnd}
           >
-            {/* The handle row is the drag area, so content can still scroll. */}
+            {/* The handle row is the drag area, so the body can still scroll. */}
             <div
               aria-hidden
               onPointerDown={startDrag}
@@ -104,7 +133,7 @@ export function Sheet({
             >
               <span className="h-1 w-10 rounded-chip bg-border-default" />
             </div>
-            {body}
+            {sections(true)}
           </m.div>
         </LazyMotion>
       )}

@@ -1,19 +1,30 @@
 /*
- * Toast queue: call toast("Copied") from anywhere (components, commands, plain functions).
+ * Toast queue: call toast("Email copied") from anywhere (components, commands, plain functions).
  * The Toaster (components/overlay/Toast.tsx) subscribes with useSyncExternalStore.
- * At most three toasts show; a fourth pushes the oldest out. Each one leaves after 3 s,
- * and the Toaster pauses that timer while a toast is hovered or focused.
- * Messages come from the caller (copy lives in content/).
+ * At most three toasts show; a fourth pushes the oldest out. Each one leaves after 3 s; the
+ * Toaster pauses the timers while the stack is hovered or focused.
+ * Messages and action labels come from the caller (copy lives in content/).
  */
 
-export type ToastTone = "neutral" | "success" | "danger";
+/** success (the default): something worked. info: a neutral note. error: something failed. */
+export type ToastKind = "success" | "info" | "error";
+
+/** An optional button on the toast, e.g. "Undo" or "Retry". Clicking it also dismisses the toast. */
+export type ToastAction = { label: string; onClick: () => void };
 
 export type ToastItem = {
   id: number;
   message: string;
-  tone: ToastTone;
+  kind: ToastKind;
+  action?: ToastAction;
   /** Milliseconds before it leaves on its own. */
   duration: number;
+};
+
+export type ToastOptions = {
+  kind?: ToastKind;
+  action?: ToastAction;
+  duration?: number;
 };
 
 export const TOAST_LIMIT = 3;
@@ -30,14 +41,12 @@ function emit() {
 }
 
 /** Show a toast. Returns its id, for dismissToast(). */
-export function toast(
-  message: string,
-  options: { tone?: ToastTone; duration?: number } = {},
-): number {
+export function toast(message: string, options: ToastOptions = {}): number {
   const item: ToastItem = {
     id: nextId++,
     message,
-    tone: options.tone ?? "neutral",
+    kind: options.kind ?? "success",
+    action: options.action,
     duration: options.duration ?? TOAST_DURATION,
   };
   items = [...items, item].slice(-TOAST_LIMIT);
@@ -57,6 +66,7 @@ export function subscribeToasts(listener: Listener): () => void {
   return () => listeners.delete(listener);
 }
 
+/** Oldest first. */
 export function getToasts(): ToastItem[] {
   return items;
 }

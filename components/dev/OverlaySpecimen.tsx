@@ -1,29 +1,44 @@
 "use client";
 
+import { ArrowRight, Terminal } from "lucide-react";
 import { useState } from "react";
 import { Drawer } from "@/components/overlay/Drawer";
 import { Modal } from "@/components/overlay/Modal";
 import { Sheet } from "@/components/overlay/Sheet";
 import { Button } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
-import { Divider } from "@/components/ui/Divider";
 import { toast } from "@/lib/toast";
 
+/*
+ * Mirrors the Overlays board (stuff/reference/Overlays (chunk 1.5)@2x.png). The content inside
+ * each overlay is placeholder: chunk 1.5 builds the frames only.
+ */
+
+const SKELETON = ["w-11/12", "w-10/12", "w-11/12", "w-7/12"];
+
 const LONG = Array.from(
-  { length: 14 },
+  { length: 10 },
   (_, i) =>
-    `Paragraph ${i + 1}. Long enough to scroll inside the panel while the page behind stays put. Wheel, touch and keyboard scrolling all stay in here.`,
+    `[Placeholder paragraph ${i + 1}. Long enough to scroll inside the sheet body while the header and footer stay put and the page behind never moves.]`,
 );
 
-const FIELD =
-  "h-11 w-full rounded-control border border-border-default bg-bg-base px-4 text-subhead text-text-primary placeholder:text-text-tertiary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-border-focus";
+function TerminalLine({ cmd }: { cmd?: string }) {
+  return (
+    <p>
+      <span className="text-accent-primary">nasheet@portfolio:~$</span>{" "}
+      {cmd ? (
+        <span className="text-text-primary">{cmd}</span>
+      ) : (
+        <span className="terminal-cursor inline-block h-3.5 w-2 translate-y-0.5 bg-accent-secondary" />
+      )}
+    </p>
+  );
+}
 
-/** Opens each overlay with sample focusable content, plus toast triggers. */
+/** Opens each overlay as drawn on the board, plus the three toast kinds. */
 export function OverlaySpecimen() {
   const [sheet, setSheet] = useState(false);
   const [modal, setModal] = useState(false);
   const [drawer, setDrawer] = useState(false);
-  const [filter, setFilter] = useState(false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -39,20 +54,33 @@ export function OverlaySpecimen() {
         </Button>
       </div>
       <div className="flex flex-wrap gap-4">
-        <Button variant="ghost" onClick={() => toast("Copied")}>
-          Toast
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => toast("Message sent", { tone: "success" })}
-        >
+        <Button variant="ghost" onClick={() => toast("Email copied")}>
           Success toast
         </Button>
         <Button
           variant="ghost"
-          onClick={() => toast("Camera blocked", { tone: "danger" })}
+          onClick={() =>
+            toast("Sound is off", {
+              kind: "info",
+              action: { label: "Undo", onClick: () => toast("Sound is on") },
+            })
+          }
         >
-          Danger toast
+          Info + Undo
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() =>
+            toast("Couldn't reach the server", {
+              kind: "error",
+              action: {
+                label: "Retry",
+                onClick: () => toast("Sent", { kind: "success" }),
+              },
+            })
+          }
+        >
+          Error + Retry
         </Button>
         <Button
           variant="ghost"
@@ -64,32 +92,51 @@ export function OverlaySpecimen() {
         </Button>
       </div>
       <p className="text-footnote text-text-tertiary">
-        Esc or a backdrop click closes the topmost overlay; focus returns to the
-        button that opened it. On a phone-width window the sheet becomes a
-        bottom sheet: drag its handle down.
+        Esc closes the topmost overlay; a backdrop click closes the sheet and
+        drawer but not the modal (it asks to confirm). Focus returns to the
+        button that opened it. Toasts sit bottom-right (bottom-centre on
+        phones); hover or Tab into the stack to spread it out. Below 768 px the
+        sheet is a bottom sheet: drag its handle down.
       </p>
 
       <Sheet
         open={sheet}
         onClose={() => setSheet(false)}
-        title="Sheet"
+        eyebrow="Case study"
+        title="[Sheet title]"
         closeLabel="Close sheet"
-      >
-        <div className="flex flex-col gap-4 pb-2">
-          <input
-            className={FIELD}
-            placeholder="Type here"
-            aria-label="Sample field"
-          />
-          <div className="flex flex-wrap gap-2">
-            <Chip selected={filter} onClick={() => setFilter((f) => !f)}>
-              A chip
-            </Chip>
-            <Button size="sm" onClick={() => setModal(true)}>
-              Open a modal on top
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setSheet(false)}>
+              Close
             </Button>
+            <Button
+              trailingIcon={<ArrowRight />}
+              onClick={() => setModal(true)}
+            >
+              Read the full case study
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <div
+            aria-hidden
+            className="aspect-[16/9] rounded-control bg-linear-to-br from-accent-primary/40 to-accent-secondary/30"
+          />
+          <p className="text-subhead text-text-secondary">
+            [Content goes here. The sheet only provides the frame: header,
+            scrolling body and a sticky footer. The primary button opens a modal
+            on top, to test nesting.]
+          </p>
+          <div aria-hidden className="flex flex-col gap-2">
+            {SKELETON.map((w, i) => (
+              <span
+                key={i}
+                className={`h-2 rounded-chip bg-surface-glass ${w}`}
+              />
+            ))}
           </div>
-          <Divider />
           {LONG.map((p) => (
             <p key={p} className="text-subhead text-text-secondary">
               {p}
@@ -99,7 +146,7 @@ export function OverlaySpecimen() {
             href="#overlays"
             className="text-subhead text-accent-primary underline"
           >
-            A link at the end
+            [A link at the end]
           </a>
         </div>
       </Sheet>
@@ -107,48 +154,44 @@ export function OverlaySpecimen() {
       <Modal
         open={modal}
         onClose={() => setModal(false)}
-        title="Modal"
-        closeLabel="Close modal"
-      >
-        <div className="flex flex-col gap-4 pb-2">
-          <p className="text-subhead text-text-secondary">
-            Tab cycles between the close button, the field and the two buttons,
-            and never leaves.
-          </p>
-          <input
-            className={FIELD}
-            placeholder="Your name"
-            aria-label="Your name"
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setModal(false)}>
+        title="[Modal title]"
+        description="[One or two lines that say what this dialog is for and what happens next.]"
+        closeLabel="Close dialog"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setModal(false)}>
               Cancel
             </Button>
             <Button
               onClick={() => {
                 setModal(false);
-                toast("Saved", { tone: "success" });
+                toast("Confirmed");
               }}
             >
-              Save
+              Confirm
             </Button>
-          </div>
-        </div>
-      </Modal>
+          </>
+        }
+      />
 
       <Drawer
         open={drawer}
         onClose={() => setDrawer(false)}
-        title="Drawer"
-        closeLabel="Close drawer"
+        icon={<Terminal />}
+        title="Terminal"
+        escHint="close"
+        closeLabel="Close terminal"
       >
-        <div className="flex flex-col gap-4 pb-2 text-footnote font-mono">
-          <p className="text-accent-primary">nasheet@portfolio:~$</p>
-          <input
-            className={FIELD}
-            placeholder="The terminal input lives here in 6.1"
-            aria-label="Command"
-          />
+        <div className="flex flex-col gap-2 text-footnote font-mono text-text-secondary">
+          <TerminalLine cmd="help" />
+          <p>
+            30 commands. Try <span className="text-text-primary">play</span>,{" "}
+            <span className="text-text-primary">ar on</span> or{" "}
+            <span className="text-text-primary">sudo hire-me</span>
+          </p>
+          <TerminalLine cmd="whoami" />
+          <p>[Designer and frontend developer, city.]</p>
+          <TerminalLine />
         </div>
       </Drawer>
     </div>

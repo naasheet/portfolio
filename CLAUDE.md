@@ -492,7 +492,10 @@ Carry-over into later chunks:
   is open (1.5 uses `aria-modal` plus the focus trap only). Fixed persistent UI (player, Ask
   bubble) should add `padding-right: var(--scrollbar-gap, 0px)` so it doesn't jump when an
   overlay locks scrolling on Windows.
-- **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`), driven by `ui.terminalOpen`.
+- **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
+  `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
+- **7.4 Ask bubble:** it sits bottom-right like the toasts. Set `--toast-offset` (on `<html>` or the
+  layer) to lift the toast stack above the bubble.
 - **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
   if a tooltip sits near an edge.
 - **2.x nav:** in-page links should be plain `<a href="#id">` (the SmoothScroll handler glides
@@ -568,7 +571,7 @@ Decisions so far (don't re-ask):
   is the default. Tailwind's default palette is removed (`--color-*: initial`); only
   `transparent` and `current` are added back. `--glass-fill` is a plain per-theme variable,
   exposed as `bg-glass-fill`. Other tokens: `rounded-card/control/chip`, `backdrop-blur-glass`,
-  `shadow-lift/overlay` (lighter in light mode), `z-canvas/content/persistent/overlay/toast/cursor`,
+  `shadow-lift/overlay` (lighter in light mode; since 1.5 through `--lift-shadow` / `--overlay-shadow`), `z-canvas/content/persistent/overlay/toast/cursor`,
   Tailwind's `ease-out` overridden to our curve, and `--duration-fast/base/slow` CSS variables.
 - **Spacing:** Tailwind's default 4 px base stays. The 8 px grid is the even steps (`p-2` = 8,
   `gap-4` = 16). Don't use odd steps.
@@ -793,57 +796,102 @@ Decisions so far (don't re-ask):
     motion stops both and the tilt is `none`.
   - **Layout:** at 1440 / 768 / 390, in both themes, there's no page overflow, and no element
     sits outside its card.
-- **Overlays (1.5):** `components/overlay/` holds Sheet, Modal, Drawer, Toast (`Toaster`), plus
-  the shared `OverlayRoot`, `OverlayHeader`, `ToasterLoader` and `sheetFeatures`. There's no
-  design frame for overlays yet (approved to build from the tokens); revisit when frames exist.
+- **Overlays (1.5, rebuilt against the board):** the design is
+  `stuff/reference/Overlays (chunk 1.5)@2x.png`. `components/overlay/` holds Sheet, Modal, Drawer
+  and Toast (`Toaster`), plus the shared `OverlayRoot`, `OverlayHeader`, `usePanelMotion`,
+  `ToasterLoader` and `sheetFeatures`. The content inside each overlay is the caller's.
   - **OverlayRoot:** portals into `<body>` (only after mount), wraps the layer in
-    `AnimatePresence`, and draws a `bg-overlay-scrim/40` backdrop that closes on click.
+    `AnimatePresence`, and draws a `bg-overlay-scrim/40` backdrop. A backdrop click closes it
+    unless `dismissOnBackdrop={false}`.
     - The focus trap is active only while `useIsPresent()` is true, so focus returns the moment
-      closing starts, and the leaving layer is `inert` so it can't take focus or clicks.
+      closing starts, and the leaving layer is `inert`.
     - `lockScroll()` runs on mount and `unlockScroll()` after the exit finishes.
     - Esc closes only the topmost overlay.
     - Safety net: on unmount, if focus fell to `<body>`, it goes back to the opener.
-  - **Props:** `open`, `onClose`, `title` (the heading, which names the dialog through
-    `aria-labelledby`), `closeLabel` and `children`. Panels are `role="dialog"` with `aria-modal`,
-    on the solid surface with `shadow-overlay`, animated with `spring.soft`. Inner scroll areas
-    have `data-lenis-prevent` and `overscroll-contain`.
-  - **Sheet:** a right panel (`max-w-md`) from 768 px up. Below that it's a bottom sheet
-    (90 `dvh` max) dragged by its handle only (`useDragControls`, `dragListener={false}`, so the
-    content still scrolls). It dismisses past 120 px or 500 px/s, and snaps back otherwise.
-    Drag needs `domMax`: the bottom sheet wraps itself in its own `LazyMotion` that loads
-    `sheetFeatures.ts` asynchronously, so drag code downloads only when a phone sheet opens.
-  - **Modal:** centred, `max-w-lg`, 85 `dvh` max, scale 0.96 → 1. **Drawer:** full width from the
-    top, 70 `dvh` max, content centred at `max-w-5xl`.
+  - **Panels:** `role="dialog"`, `aria-modal`, `aria-labelledby` the title. Surface/solid
+    (never glass), radius 24, 1 px `border-default`, `shadow-overlay`.
+    - `OverlayHeader` takes `eyebrow`, `description` (+ id, for `aria-describedby`), `leading`
+      (icon), `trailing` (extra controls before the close IconButton) and `titleClassName`.
+    - Inner scroll areas get `data-lenis-prevent` and `overscroll-contain`.
+  - **Motion:** `usePanelMotion(hidden, shown)` gives the soft spring, or under reduced motion a
+    plain fade with no slide or scale (the board's rule).
+  - **Shared props:** `open`, `onClose`, `title`, `closeLabel`, `children`, `className`
+    (`OverlayProps`, exported from Modal.tsx).
+  - **Sheet** (`eyebrow?`, `footer?`): a header with a divider, a scrolling `p-6` body, and a
+    sticky footer with a top divider.
+    - **Desktop (768 px and up):** 480 wide (`w-120`), inset 12 on the top, right and bottom,
+      radius on all corners, sliding in from `x: calc(100% + 12px)`.
+    - **Phone:** a full-width bottom sheet (90 `dvh` max, top corners round) dragged by its handle
+      (`useDragControls`, `dragListener={false}`). It dismisses past 120 px or 500 px/s and
+      snaps back otherwise. Footer children stretch (`flex-1`).
+    - Drag needs `domMax`, which loads asynchronously through the sheet's own `LazyMotion`
+      (`sheetFeatures.ts`), only when a phone sheet opens.
+  - **Modal** (`description?`, `footer?`, `dismissOnBackdrop` default **false**, because modals
+    are confirmations): 440 wide (`w-110`), centred, scale 0.96 -> 1 with a fade. Header (title,
+    description, close), optional body, then actions right-aligned.
+  - **Drawer** (`icon?`, `escHint?`): full width minus 12 px insets, 12 px from the top, 300 tall
+    (`h-75`).
+    - The header has the icon and a subhead title on the left, and the `escHint` word, an Esc
+      Kbd and close on the right; the hint hides below `sm`.
+    - A decorative bottom handle marks it as "resizable later". 6.1 puts the terminal in it.
   - **useFocusTrap(ref, active, initialFocus?)** (`lib/hooks/`): focuses `initialFocus`, else the
-    first focusable element, else the container. Tab and Shift+Tab wrap, and focus that escapes is
-    pulled back. On deactivation it restores the previous focus. A module stack makes only the
-    topmost trap act; `isTopmostTrap(el)` routes Esc. `getFocusable(root)` is exported.
-  - **Toasts:** `lib/toast.ts` is an external store. `toast(message, { tone, duration })` works
-    anywhere (even before the Toaster loads; it queues). Limit 3, the oldest drops, 3 s each, and
-    `dismissToast(id)` removes one. `Toaster` (`useSyncExternalStore`) is a bottom-centre polite
-    `role="status"` region. The timer pauses on hover and focus (refs, no state). Each toast has a
-    dismiss button labelled with `copy.ui.dismiss`. `ToasterLoader` (client) mounts it in
-    `app/layout.tsx` through `next/dynamic` with `ssr: false`.
-  - **lockScroll():** now always sets `overflow: hidden` on `<html>`, pads it by the measured
-    scrollbar width, and sets `--scrollbar-gap` (cleared on unlock), as well as stopping Lenis.
-    `setLenis` keeps a newly created instance stopped while a lock is active.
-- **Verified 1.5 (headless Chromium, production build with the /dev flag), keyboard only:**
-  - **Sheet:** opening focuses its close button. 25 Tabs and 6 Shift+Tabs never leave it. The
-    wheel over the backdrop doesn't move the page (y stays 8607) while the sheet's own content
-    scrolls (`scrollTop` 429). Esc closes it, focus returns to "Open sheet", and the lock is fully
-    released.
-  - **Nested:** a modal over the sheet traps only itself. The first Esc closes just the modal
-    (focus goes to "Open a modal on top", the page stays locked); the second closes the sheet.
-  - **Backdrop and drawer:** a backdrop click closes the modal and returns focus. The drawer
-    sits at top 0 and traps Tab.
-  - **Toasts:** five at once shows the newest three, and none remain after 3.4 s. A hovered toast
-    survives 3.6 s and leaves about 3 s after the pointer moves away.
-  - **Phone (390 px):** a bottom sheet, 90 `dvh`. A slow 60 px drag snaps back, and a long drag
-    dismisses. Focus returned to the opener on 5 of 5 repeated drag-dismiss runs; this needed the
-    `inert` and safety-net fix, because a press on the exiting panel had stolen focus.
+    first focusable element, else the container. Tab and Shift+Tab wrap, and focus that escapes
+    is pulled back. On deactivation it restores the previous focus. A module stack makes only
+    the topmost trap act; `isTopmostTrap(el)` routes Esc. `getFocusable(root)` is exported.
+  - **Toasts:** `lib/toast.ts` is an external store, called as
+    `toast(message, { kind, action, duration })`.
+    - **Kinds:** `success` (default, teal check), `info` (speech bubble) and `error` (red x).
+    - **Actions:** `action: { label, onClick }` (Undo, Retry) runs `onClick`, then dismisses.
+    - Limit 3 (the oldest drops), 3 s each, and `dismissToast(id)` removes one. It works before
+      the Toaster loads (it queues).
+    - **Toaster:** a polite `role="status"` region, 360 x 48 toasts (`max-w-90`, `h-12`),
+      bottom-right (`md:right-4 md:w-90`) or bottom-centre on phones. It sits
+      `var(--toast-offset, 16px)` above the bottom and safe area.
+    - **Deck:** newest in front; older toasts peek behind (8-10 px up, smaller, 50% / 25% opacity).
+      Hover or focus-within spreads them into a column and pauses every timer (refs, no state).
+      DOM order is newest first, so Tab reaches the front toast first.
+    - **Focus handoff:** before a toast removes itself from under the focused button, focus
+      moves to the neighbouring toast's first button, or blurs. Chrome fires no blur when a
+      focused element is removed, so without this the stack stayed "focused", spread out and
+      paused forever. Leaving toasts are `inert`.
+    - `ToasterLoader` mounts it in `app/layout.tsx` through `next/dynamic` with `ssr: false`.
+  - **lockScroll():** sets `overflow: hidden` on `<html>`, pads it by the measured scrollbar width,
+    sets `--scrollbar-gap` (cleared on unlock), and stops Lenis. `setLenis` keeps a newly created
+    instance stopped while a lock is active.
+- **Shadow tokens fixed in 1.5 (a 0.3 bug):** Tailwind v4 copies a literal shadow value into the
+  utility (`.shadow-overlay{--tw-shadow:0 24px 64px ...}`), so the light-theme overrides of
+  `--shadow-lift` / `--shadow-overlay` never applied. Both are now `@theme inline` aliases of plain
+  per-theme variables, `--lift-shadow` and `--overlay-shadow`:
+  - **Dark:** lift `0 8px 24px -8px` at 50%, overlay `0 24px 64px` at 45% black (board).
+  - **Light:** the same shapes at 18% of `#121716`.
+  - In raw CSS, read `var(--lift-shadow)` / `var(--overlay-shadow)`; `--shadow-*` isn't emitted
+    as a variable any more. Do the same for any future per-theme shadow.
+- **Verified 1.5 (headless Chromium, production build with the /dev flag), against the board:**
+  - **Geometry:**
+    - **Sheet:** 480 x 876 at 12 / 12 / 12 insets.
+    - **Modal:** 440 wide, centred (500 / 500).
+    - **Drawer:** 12 / 12 / 12 insets, 300 tall.
+    - **All three:** radius 24 on every corner, a 1 px border, `rgb(18 23 22)` surface, and a
+      `0 24px 64px` 45% black shadow (light: 18%).
+  - **Keyboard:** each overlay focuses its close button first. Tab and Shift+Tab never leave it.
+    The page stays at the same y under the wheel while the sheet body scrolls (`scrollTop` 525).
+  - **Nesting and backdrop:** sheet -> modal nests. A backdrop click does **not** close the
+    modal; Esc does, with focus back to "Read the full case study". A backdrop click closes the
+    sheet, with focus back to "Open sheet" and the lock released. Modal and drawer Esc return
+    focus to their buttons.
+  - **Toasts:**
+    - 360 x 48 at right 16; on a 390 px phone they span 16 / 16, centred.
+    - Collapsed tops are 836 / 828 / 821 (opacity 1 / 0.5 / 0.25); hovered they spread to
+      836 / 780 / 724 and all three stay past 3.4 s, then they're gone 3.6 s after leaving.
+    - Kind icons are success teal, error danger and info secondary. Undo runs and adds
+      "Sound is on".
+    - **Keyboard:** Enter on Retry moves focus to the next toast's Undo, dismissing the last
+      focused toast collapses the stack, and timers resume (a fresh toast leaves on time).
+  - **Reduced motion:** the sheet's transform stays `none` while its opacity fades.
+  - **Phone:** a bottom sheet (top 84, 760 tall) whose drag-dismiss returns focus to the opener.
   - **Not testable headless:** the scrollbar gap is 0 there (scrollbars are hidden), so the
     Windows padding compensation needs checking by hand.
-  - First-load JS on `/` is 198.7 KB (196.9 before).
+  - First-load JS on `/` is 198.7 KB (unchanged by the rebuild; the Toaster loads after hydration).
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

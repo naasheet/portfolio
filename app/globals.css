@@ -49,10 +49,6 @@
   /* Blur for glass panels: backdrop-blur-glass. */
   --blur-glass: 24px;
 
-  /* Shadows: shadow-lift (hovered card), shadow-overlay (solid overlays). */
-  --shadow-lift: 0 8px 24px -8px rgb(0 0 0 / 0.5);
-  --shadow-overlay: 0 24px 64px -16px rgb(0 0 0 / 0.65);
-
   /* Z-index scale: z-canvas, z-content, z-persistent, z-overlay, z-toast, z-cursor. */
   --z-index-canvas: 0;
   --z-index-content: 10;
@@ -68,15 +64,25 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Translucent glass fill, per theme: bg-glass-fill. */
+/*
+ * Per-theme values exposed as utilities: bg-glass-fill, shadow-lift (hovered card),
+ * shadow-overlay (solid overlays). They point at plain variables because Tailwind copies a
+ * literal shadow value into the utility class, so a light-theme override of --shadow-* never
+ * reached .shadow-lift / .shadow-overlay (fixed in 1.5). Read the plain variables in CSS.
+ */
 @theme inline {
   --color-glass-fill: var(--glass-fill);
+  --shadow-lift: var(--lift-shadow);
+  --shadow-overlay: var(--overlay-shadow);
 }
 
 :root {
   --glass-fill: rgba(30, 37, 36, 0.55);
   /* Faint top inner highlight on glass (inset 0 1px 0). */
   --glass-highlight: rgba(244, 247, 246, 0.06);
+  --lift-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  /* Overlays board: 0 24 64 at 45% black. */
+  --overlay-shadow: 0 24px 64px rgb(0 0 0 / 0.45);
   --duration-fast: 150ms;
   --duration-base: 250ms;
   --duration-slow: 400ms;
@@ -105,8 +111,9 @@
 
   --glass-fill: rgba(228, 235, 233, 0.7);
   --glass-highlight: rgba(255, 255, 255, 0.7);
-  --shadow-lift: 0 8px 24px -8px rgb(18 23 22 / 0.18);
-  --shadow-overlay: 0 24px 64px -16px rgb(18 23 22 / 0.28);
+  --lift-shadow: 0 8px 24px -8px rgb(18 23 22 / 0.18);
+  /* Same shape, lighter: 45% black reads too heavy on the pale page. */
+  --overlay-shadow: 0 24px 64px rgb(18 23 22 / 0.18);
   color-scheme: light;
 }
 
@@ -264,7 +271,7 @@
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--lift-shadow);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--duration-base) var(--ease-out);
