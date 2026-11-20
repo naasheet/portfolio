@@ -9,6 +9,14 @@ import { lockScroll, unlockScroll } from "@/lib/motion/lenis";
 
 const noop = () => () => {};
 
+// Open overlays, counted so nested ones work. While any is open, the app wrapper (#app in
+// app/layout.tsx: nav, main, persistent layer) is inert; overlays portal into <body>, outside it.
+let openOverlays = 0;
+function setAppInert(delta: 1 | -1) {
+  openOverlays = Math.max(0, openOverlays + delta);
+  document.getElementById("app")?.toggleAttribute("inert", openOverlays > 0);
+}
+
 /** False on the server and during hydration, true after: portals need document.body. */
 function useMounted(): boolean {
   return useSyncExternalStore(
@@ -59,6 +67,13 @@ function OverlayLayer({
   // so focus goes back to the trigger immediately, and make the leaving layer inert so it
   // can't take focus or clicks.
   const present = useIsPresent();
+  // Declared before the trap: React runs cleanups in order, so the app stops being inert
+  // before the trap hands focus back to the opener (focus() on an inert element does nothing).
+  useEffect(() => {
+    if (!present) return;
+    setAppInert(1);
+    return () => setAppInert(-1);
+  }, [present]);
   useFocusTrap(ref, present);
 
   useEffect(() => {

@@ -482,26 +482,29 @@ built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
-2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only)
+2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
+persistent layer)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`):** first-load JS is **198.7 KB after 2.2** (SplitText is now lazy;
+- **Bundle (every chunk that touches `/`):** first-load JS is **198.7 KB after 2.2, +0.1 KB in 2.3** (SplitText is now lazy;
   the gate's logic and next/image's helpers load after hydration). The placeholder `/` doesn't use
   Button / Card yet, so 4.x will add the magnetic hook and the sfx stub. Measure, and keep
   anything not needed for the first paint behind dynamic imports. The next chunk that adds to `/` must free space first:
   register SplitText lazily (about 6 KB), and check what else can move behind `next/dynamic`. Anything new on `/` goes behind `next/dynamic`. If it gets tight, register
   SplitText lazily where it's used (about 6 KB).
-- **2.3 persistent layer:** give the app one wrapper element and set `inert` on it while an overlay
-  is open (1.5 uses `aria-modal` plus the focus trap only). Fixed persistent UI (player, Ask
-  bubble) should add `padding-right: var(--scrollbar-gap, 0px)` so it doesn't jump when an
-  overlay locks scrolling on Windows.
+- **5.2 / 6.1 / 7.4 / 8.x slots:** replace the placeholder inside its slot file and keep the slot's
+  position in `PersistentLayer`: `components/player/MiniPlayerSlot.tsx` (bottom-left pill),
+  `components/chat/ChatBubbleSlot.tsx` (bottom-right pill), `components/terminal/TerminalDrawerSlot.tsx`
+  and `components/ar/ARLayerSlot.tsx` (camera preview and hand cursor; both render `null` now).
+  The AR **toggle** is not in the layer: it lives in the nav (2.4) and the ARCard.
 - **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
   `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
-- **7.4 Ask bubble:** it sits bottom-right like the toasts. Set `--toast-offset` (on `<html>` or the
-  layer) to lift the toast stack above the bubble.
+- **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
+  sized for the 40 px placeholder pill plus a 16 px gap. Change the 56 px to the real bubble's
+  height + 16.
 - **10.x icon sizes:** `components/media/iconSize.ts` has `ICON_SIZE` (16 / 20 / 24) and `ICON_CLASS`
   (`size-4/5/6`). Earlier components still hard-code `size-4` and friends; move them to the
   constants in the polish pass. New code uses the constants.
@@ -1204,6 +1207,42 @@ Decisions so far (don't re-ask):
       1440, 195 of 390).
     - **Unchanged:** repeat visits skip before paint, no AudioContext, phone counter 64 px.
     - First-load JS on `/` is still 198.7 KB.
+- **Root layout (2.3):** the `<body>` order is StoreHydrator, SmoothScroll, then inside MotionProvider:
+  ToasterLoader, `CanvasLoader`, EntryGate, `<div id="app">` (Nav slot comment for 2.4,
+  `<main class="relative z-content">`, `PersistentLayer`), CursorLoader.
+  - **The layout owns `<main>`.** Pages render only their content (no `<main>` of their own).
+  - **Canvas:** `canvas/CanvasRoot.tsx` is an empty fixed `z-canvas` div (`data-canvas`,
+    `aria-hidden`), loaded by `components/layer/CanvasLoader.tsx` with `next/dynamic` (`ssr: false`).
+    3.1 puts the R3F scene there.
+  - **PersistentLayer** (`components/layer/`, a server component): fixed `inset-0 z-persistent`,
+    `pointer-events-none`, with each corner opting back in. `.layer-corner-left/right` in `globals.css`
+    use `--layer-inset-bottom/left/right`: `max(16px, env(safe-area-inset-*))`, and the right side
+    adds `var(--scrollbar-gap, 0px)`. Toasts use the same side insets.
+  - **Placeholders:** `PlaceholderPill` is a non-interactive glass pill (`h-10`, `rounded-chip`,
+    subhead). Labels are in `copy.layer` ("Player", "Ask about my work").
+  - **Viewport:** `export const viewport = { viewportFit: "cover" }` in `app/layout.tsx`. Every new
+    fixed element pads itself with `env(safe-area-inset-*)` (reuse the `--layer-inset-*` variables).
+  - **Inert:** `OverlayRoot` keeps a module-level count of open overlays and toggles `inert` on
+    `#app` while any is open. The effect is declared **before** `useFocusTrap`, so `inert` is
+    released before the trap's cleanup focuses the opener (focus on an inert element is ignored).
+    Overlays, toasts, the gate and the cursor are outside `#app`.
+  - **Mount counter:** `MountCounter` bumps a module-level count on mount, writes it to
+    `data-mounts` on the layer, and `console.debug`s it in dev (StrictMode makes dev start at 2).
+- **Verified 2.3 (headless Chromium, production build with the /dev flag):**
+  - **No remounts:** client navigation / → /dev → / → /dev (`window.next.router.push`) kept the
+    same document and the same layer node, with `data-mounts` = 1 throughout. (An unknown URL
+    gets a full page load from Next, so the count starts again at 1 there, as expected.)
+  - **Positions:** at 1440 x 900 both pills sit 16 px from the bottom and sides. With
+    `Emulation.setSafeAreaInsetsOverride`, portrait 390 x 844 (top 47, bottom 34) puts them at
+    bottom 34, sides 16; landscape 844 x 390 (left/right 47, bottom 21) at 47 / 21. No horizontal
+    overflow.
+  - **Inert:** opening the sheet sets `inert` on `#app` with focus inside the dialog; Esc removes it
+    and focus returns to "Open sheet".
+  - **Toasts** sit 72 px from the bottom (above the 40 px Ask pill), right 16.
+  - **Bundle:** first-load JS on `/` +0.1 KB (198.3 → 198.4 KB by summing the gzipped module
+    scripts in the HTML; the analyzer method gave 198.7 for 2.2).
+  - **[manual]** A real iPhone (notch and home indicator) is still to check; the safe areas were
+    emulated.
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

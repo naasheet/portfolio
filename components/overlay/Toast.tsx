@@ -149,7 +149,8 @@ function ToastView({
  * at most three. Collapsed, older toasts peek behind the newest; hovering or focusing the stack
  * spreads it into a column (so their actions are reachable) and pauses every timer.
  * The polite live region is always in the DOM. Mount once, through ToasterLoader.
- * Sits var(--toast-offset, 16px) above the bottom; 7.4 raises it above the Ask bubble.
+ * Sits var(--toast-offset, 16px) above the bottom (2.3 sets it above the bottom pills) and
+ * uses the persistent layer's safe-area side insets.
  */
 export function Toaster({ dismissLabel }: { dismissLabel: string }) {
   const toasts = useSyncExternalStore(
@@ -175,7 +176,7 @@ export function Toaster({ dismissLabel }: { dismissLabel: string }) {
     <div
       role="status"
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-4 bottom-[max(var(--toast-offset,16px),env(safe-area-inset-bottom))] z-toast flex justify-center md:right-4 md:left-auto md:w-90"
+      className="pointer-events-none fixed right-(--layer-inset-right) bottom-[max(var(--toast-offset,16px),env(safe-area-inset-bottom))] left-(--layer-inset-left) z-toast flex justify-center md:left-auto md:w-90"
     >
       <ol
         onPointerEnter={() => setHovered(true)}
