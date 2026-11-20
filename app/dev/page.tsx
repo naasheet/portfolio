@@ -13,6 +13,7 @@ import { KbdTooltipDividerSpecimen } from "@/components/dev/KbdTooltipDividerSpe
 import { MediaSpecimen } from "@/components/dev/MediaSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
 import { OverlaySpecimen } from "@/components/dev/OverlaySpecimen";
+import { PreloadSpecimen } from "@/components/dev/PreloadSpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
 import { ShadowSpecimen } from "@/components/dev/ShadowSpecimen";
 import { StatusChipSpecimen } from "@/components/dev/StatusChipSpecimen";
@@ -49,6 +50,7 @@ const SECTIONS = [
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
+  { id: "preload", label: "Preloader" },
 ] as const;
 
 export default function DevPage() {
@@ -209,6 +211,14 @@ export default function DevPage() {
         note="The custom cursor (mouse only; off on touch and with reduced motion), magnetic controls and UI sounds. Sounds are silent until sound is turned on below."
       >
         <CursorSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="preload"
+        title="Preloader"
+        note="lib/preload.ts on the dev placeholder assets. Set DevTools to Slow 4G and compare the received column with the Network tab. The big number is the eased value the gate will show: it never passes the real one."
+      >
+        <PreloadSpecimen />
       </DevSection>
     </div>
   );

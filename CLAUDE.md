@@ -476,10 +476,12 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **1 — Design system and UI kit** (phase 0 is complete)
+Current phase: **2 — Entry gate, preloader, persistent layer, nav** (phase 0 is complete; phase 1 is
+built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds)
+1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
+2.1 (asset manifest and preloader)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
@@ -506,7 +508,11 @@ Carry-over into later chunks:
   strings need `blurDataURL`) and `LoopVideo` for loops. `public/dev/` and `components/dev/media/`
   hold generated dev placeholders only; never use them on real pages. `public/dev/` is served in
   production too (small and harmless); delete it if it ever matters.
-- **2.1 entry gate:** "Enter with sound" must call `ui.setSoundEnabled(true)` and then `initSfx()`
+- **2.2 gate (first thing):** the gate will import `lib/preload.ts` onto `/`, which is at 199.2 KB.
+  Move SplitText registration to where it's used first (approved in 1.7, about -6 KB), then
+  re-measure. Use `preload(preloadManifest, { onProgress })` and `createEasedProgress()`; show
+  the eased value, enable the buttons on `ready`, and don't wait for `done`.
+- **2.x entry gate:** "Enter with sound" must call `ui.setSoundEnabled(true)` and then `initSfx()`
   (`lib/sfx.ts`) **inside the click handler** (it creates the AudioContext synchronously). On
   repeat visits with `sound` = "1" the gate is skipped, so arm `initSfx()` on the first
   pointerdown / keydown. Until then, the `/dev` "Sound on/off" button stands in for it.
@@ -558,6 +564,9 @@ Carry-over into later chunks:
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
   theme change (watch `data-theme` on `<html>`).
 Open TODO(content) items:
+- `content/preload.ts`: add the hero photo (4.2, `kind: "image"`), the first particle shape's
+  GLB (3.2, `kind: "url"`) and the first track's first chunk (5.1, `kind: "url"` + `range`,
+  `when: "sound"`) once those files exist. Weights = their size in KB as the Network tab shows it.
 - `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
   name for `/credits` (11.2).
 - `app/page.tsx` — homepage placeholder line → `content/copy.ts` (chunk 4.1)
@@ -1082,6 +1091,39 @@ Decisions so far (don't re-ask):
     - Sound off again: 0 plays.
   - **Bundle:** first-load JS on `/` is 199.2 KB (198.7 before; the cursor itself loads after
     hydration).
+- **Preloader (2.1):** `content/preload.ts` (the manifest, typed `PreloadEntry`) and `lib/preload.ts`.
+  - **Entry kinds:**
+    - `fonts`: `document.fonts.ready`, weight 258, the four preloaded SF Pro Text files.
+    - `url`: a fetch, with an optional byte `range` and `when: "sound"`, which is included only if
+      localStorage `sound` = "1" or the `soundChosen` option says so.
+    - `image`: resolves the **same optimized `/_next/image` URL the page will request** via
+      `getImageProps` (same width / height / `sizes`), picking the smallest srcset candidate at
+      least `innerWidth x vw x devicePixelRatio` wide. That warms the cache the page actually uses.
+  - **`preload(manifest, { onProgress, timeoutMs = 8000, soundChosen })`:** fetches everything in
+    parallel and reads each body as a stream (`received / Content-Length`, clamped to 1). It
+    reports `{ loadedWeight, totalWeight, progress, items }`.
+    - A failed asset (404, blocked) counts as finished, with `status: "failed"` and the error.
+    - It returns `{ ready, done }`. `ready` resolves when everything is done **or** after the
+      timeout (`timedOut: true`); `done` resolves when everything has really finished.
+  - **`createEasedProgress(onFrame, tau = 0.2)`:** runs on `gsap.ticker`. The shown value eases
+    toward the real one, never passes it, never goes backwards, and snaps the last 0.1%. Call
+    `stop()` when the gate is gone.
+  - **Fonts are one step:** `document.fonts.ready` resolves at once, so the fonts' weight lands
+    in a single jump of the real value (the eased display smooths it). Re-fetching the fonts
+    with `fetch()` could download them twice, because a `<link rel=preload as=font>` isn't
+    reused by fetch. Revisit only if the gate's bar visibly jumps on a first visit.
+  - **/dev "Preloader" section:** a dev manifest of the placeholder media. URL entries get
+    `?run=N` cache-busters; the image URLs are fixed, so they come from cache after the first run.
+- **Verified 2.1 (headless Chromium, production build with the /dev flag):**
+  - **Throttled at 50 KB/s + 150 ms latency, cache off:** ready at 1,453 ms. The real value took
+    12 distinct steps (largest 5%). The shown value never exceeded the real one and never went
+    back.
+  - **Bytes vs the CDP network log:** video 41.8 KB received vs 42.1 KB encoded (headers), poster
+    6.1 vs 6.4, images 5.9 / 6.7 vs 6.3 / 7.1. Images were fetched at the same `w=640` URL the
+    `/dev` `Img` uses.
+  - **Hanging video** (never answered): "Let in after the 8 s timeout at 8005 ms", with that row
+    still loading in the background.
+  - **404:** the row is "failed (HTTP 404)" and the bar completes ("Ready at 32 ms").
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take
