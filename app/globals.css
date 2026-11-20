@@ -335,7 +335,78 @@
   }
 }
 
+/*
+ * PhotoCard tilt (components/cards/PhotoCard.tsx): pointer move writes --rx / --ry (max 8°).
+ * While the pointer is on the card ([data-tilting]) the transform follows quickly; on leave the
+ * variables reset and the overshoot curve springs it back. Mouse pointers only; none under
+ * reduced motion. The translate and border transitions repeat the card's own.
+ */
+.photo-tilt {
+  transform: perspective(900px) rotateX(var(--rx, 0deg))
+    rotateY(var(--ry, 0deg));
+  transition:
+    transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    translate var(--duration-base) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.photo-tilt[data-tilting] {
+  transition:
+    transform 120ms var(--ease-out),
+    translate var(--duration-base) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+@media (prefers-reduced-motion: reduce), (hover: none) {
+  .photo-tilt {
+    transform: none;
+  }
+}
+
+/*
+ * The two loops §8 allows besides the status dot: the now-playing bars and the terminal cursor.
+ * Both stand still under reduced motion.
+ */
+@keyframes np-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+@keyframes cursor-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
 @layer components {
+  .np-bar {
+    transform-origin: bottom;
+    transform: scaleY(0.6);
+  }
+  [data-playing] .np-bar {
+    animation: np-bar 900ms var(--ease-out) infinite;
+  }
+  [data-playing] .np-bar:nth-child(2) {
+    animation-delay: -300ms;
+  }
+  [data-playing] .np-bar:nth-child(3) {
+    animation-delay: -600ms;
+  }
+  [data-playing] .np-bar:nth-child(4) {
+    animation-delay: -150ms;
+  }
+  .terminal-cursor {
+    animation: cursor-blink 1s steps(1, end) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-playing] .np-bar,
+    .terminal-cursor {
+      animation: none;
+    }
+  }
+
   .marquee {
     overflow: hidden;
     mask-image: linear-gradient(

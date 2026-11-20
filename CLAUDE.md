@@ -227,8 +227,8 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   state); press scale 0.97 with a spring; 2 px accent focus ring; staggered entry (40–60 ms);
   numbers count up once; skeletons in the card's shape instead of spinners; every action gives
   feedback within 100 ms.
-- **Motion:** one signature move per chapter, and everything else quiet. Only the status dot
-  and the now-playing bars loop.
+- **Motion:** one signature move per chapter, and everything else quiet. Only the status dot,
+  the now-playing bars and the terminal cursor loop (cursor added in 1.4, approved).
 - **Copy:** short, first person, a little funny. Labels say what happens. Every string lives
   in `content/copy.ts` or another `content/` file, never hardcoded in a component.
 - **UI chunks:** match the attached design PNG (exported from the Key Frames canvas or Figma). If none is attached, ask for it before building.
@@ -478,7 +478,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 Current phase: **1 — Design system and UI kit** (phase 0 is complete)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
-1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion)
+1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit)
 Carry-over into later chunks:
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
@@ -500,10 +500,20 @@ Carry-over into later chunks:
   real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
 - **1.x / 2.4:** a site theme toggle (the one on `/dev` is dev-only). The glass recipe is done
   (`glass` utility, 1.2).
-- **4.x Marquee:** §8 says only the status dot and the now-playing bars loop. `Marquee` exists
+- **4.x Marquee:** §8 lists the only loops (status dot, now-playing bars, terminal cursor). `Marquee` exists
   (1.3), but using it on a page needs Nasheet's OK first.
-- **1.4 card kit:** build every card on `Card` inside a `BentoItem`, and give the Card `h-full`.
-  PhotoCard tilt and the CTA/Social arrow nudge (sheet 2) belong to 1.4, not the card base.
+- **4.x pages:** compose chapters from `components/cards/*` inside `BentoItem`s and pass
+  `className="h-full"` to each card. All card copy comes from props: wire them to `content/` in
+  4.1 and delete nothing from `components/dev/fixtures.ts` (it stays as the /dev fixture).
+  ProfileCard's time is static text; a live local clock (updating once a minute) is a 4.x
+  follow-up. Add brand icons as one file each in `components/media/icons/` (Simple Icons paths,
+  CC0) for each platform in `content/socials.ts`.
+- **Bundle:** the card kit isn't on `/` yet. When 4.x puts it there, re-measure: SkillsCard
+  brings AnimatePresence, and StatCard brings the count-up hook. There's only about 3 KB of
+  headroom.
+- **5.5 / 6.1 / 8.x wiring:** NowPlayingCard (`playing`, `progress`, title, artist, cover),
+  TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`, `onToggle` flips
+  `ar.enabled`) all take static props for now.
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
   theme change (watch `data-theme` on `<html>`).
 Open TODO(content) items:
@@ -731,6 +741,54 @@ Decisions so far (don't re-ask):
   Reduced motion: no split (text visible), final numbers, no scramble, marquee animation `none`.
   Testing note: the effects fire once on view, so check each one on a fresh load, or a neighbour
   that scrolled into view earlier will already have played.
+- **Card kit (1.4):** ten cards in `components/cards/`, plus the shared `CardEyebrow` and
+  `IconTile`. The design reference is component sheet 2 (`stuff/reference/`).
+  - **Server-safe** (no hooks): Profile, Social, NowPlaying, Text. **Client:** Stat (count-up),
+    Photo (tilt), Skills (state), CTA, AR, Terminal (handlers).
+  - **Clickable cards with `onClick`** (CTACard button form, TerminalCard) use the stretched-button
+    pattern: the real `<button>` (the arrow, or the "Open the terminal" row) gets
+    `after:absolute after:inset-0 after:rounded-card`, so the whole card is clickable and the
+    focus ring is drawn on `::after` around the card. The button itself must stay unpositioned.
+    `href` cards use `Card href`, which names the link by its visible text (label in name).
+  - **SkillsCard:** the counter and arrows are IconButtons, and they disable at the ends (no wrap).
+    The body is a focusable `role="group"` `aria-roledescription="carousel"` that takes ←/→. Touch
+    and pen swipes (≥ 40 px) are hand-rolled with pointer events (Framer drag isn't in
+    `domAnimation`) on a `touch-pan-y` area. `AnimatePresence mode="popLayout"` slides 24 px
+    with a direction. The area title is the only `aria-live` region. Pills are static `li`s
+    (no Tag primitive).
+  - **PhotoCard:** `.photo-tilt` (unlayered, after the card rules) sets
+    `perspective(900px) rotateX/Y(var(--rx/--ry))`. Pointer move (mouse only) writes the variables
+    and `data-tilting` (fast follow); leave resets them, and a 600 ms overshoot curve springs it
+    back. Tilt is off under reduced motion or `(hover: none)`.
+  - **Loops:** `.np-bar` keyframes (scaleY) run only under `[data-playing]`, and `.terminal-cursor`
+    blinks with `steps(1)`. Both stop under reduced motion. The amber cover's bars use
+    `text-overlay-scrim/80`, the one token that's dark in both themes (amber needs dark marks).
+  - **TerminalCard panel** follows the theme (`bg-bg-base` inset); 6.1 decides the terminal's
+    light look. The preview is `aria-hidden`, and the row button carries the name.
+  - **Card change:** `Card` now accepts `target` and `rel` (link form only), for SocialCard's
+    new tab.
+  - **ARCard blocked help** is a wrapping text link (`next/link`), not a Button, because Buttons
+    are `whitespace-nowrap` and overflowed a 3-column card. The ARCard header row wraps, so the
+    status chip drops below the tile when space is tight.
+  - **Brand icons:** `components/media/icons/GitHubIcon.tsx` and `LinkedInIcon.tsx` (Simple Icons,
+    CC0), because lucide 1.x has no brand icons.
+- **Fixed in 1.4 (a 1.3 bug):** ScrambleText used `whitespace-pre`, so long lines couldn't wrap and
+  the page scrolled sideways at 390 px. It's now `whitespace-pre-wrap`. Glyphs are monospace and
+  spaces stay spaces, so the wrap points don't move while scrambling.
+- **Verified 1.4 (headless Chromium, production build with the /dev flag):**
+  - **Keyboard:** Tab reaches all 11 interactive stops in the kit (Skills next and carousel, 2
+    social links, CTA button and link, terminal row, AR buttons, help link), each with a 2 px ring
+    (stretched buttons on `::after`). Enter fires the CTA `onClick`, terminal `onOpen` and AR
+    `onToggle`.
+  - **Skills:** → / ← change the area and the "n / N" counter, it stops at 3 / 3 with Next
+    disabled, a 100 px touch swipe goes to the next area, and only one page is in the DOM
+    afterwards.
+  - **Links:** both social links are `_blank` with `noopener noreferrer`.
+  - **Photo tilt:** about 4.7° at 80% of the card's width and height, and it springs back to 0.
+  - **Loops and reduced motion:** the bars run while playing and the cursor blinks; reduced
+    motion stops both and the tilt is `none`.
+  - **Layout:** at 1440 / 768 / 390, in both themes, there's no page overflow, and no element
+    sits outside its card.
 - **Tokens added in 1.1:** `--radius-key: 6px` (`rounded-key`, Kbd caps; registered in `lib/utils.ts`) and
   `--animate-status-pulse` with its keyframes in `globals.css`.
 - **content/copy.ts** exists now, with `copy.ui.loading` only; 4.1 extends it. Components take

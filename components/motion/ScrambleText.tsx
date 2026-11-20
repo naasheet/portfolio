@@ -94,7 +94,7 @@ export function ScrambleText({
   return (
     <span className={cn("font-mono", className)}>
       <span className="sr-only">{text}</span>
-      <span ref={ref} aria-hidden className="whitespace-pre">
+      <span ref={ref} aria-hidden className="whitespace-pre-wrap">
         {text}
       </span>
     </span>

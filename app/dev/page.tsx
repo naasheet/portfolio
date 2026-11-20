@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { BentoSpecimen } from "@/components/dev/BentoSpecimen";
 import { ButtonSpecimen } from "@/components/dev/ButtonSpecimen";
+import { CardKitSpecimen } from "@/components/dev/CardKitSpecimen";
 import { CardSpecimen } from "@/components/dev/CardSpecimen";
 import { ChipSpecimen } from "@/components/dev/ChipSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
@@ -41,6 +42,7 @@ const SECTIONS = [
   { id: "cards", label: "Card" },
   { id: "bento", label: "Bento" },
   { id: "text-motion", label: "Text motion" },
+  { id: "card-kit", label: "Card kit" },
 ] as const;
 
 export default function DevPage() {
@@ -169,6 +171,14 @@ export default function DevPage() {
         note="RevealText, useCountUp, ScrambleText and Marquee. Replay remounts each demo. Under reduced motion every one of them shows its final state at once."
       >
         <TextMotionSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="card-kit"
+        title="Card kit"
+        note="Every card from the kit in one bento, fed by components/dev/fixtures.ts (placeholders, TODO(content)). Toggle the theme in the header to check both. The CTA button form and the terminal row log their clicks above; the CTA also toggles the now-playing bars."
+      >
+        <CardKitSpecimen />
       </DevSection>
     </div>
   );

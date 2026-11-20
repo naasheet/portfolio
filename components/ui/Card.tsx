@@ -27,6 +27,9 @@ type OwnProps = {
   as?: CardTag;
   /** Renders a next/link; implies interactive. */
   href?: string;
+  /** Link only, e.g. "_blank" with rel "noopener noreferrer" for external profiles. */
+  target?: string;
+  rel?: string;
   /** Hover lift, lift shadow, border change and pointer spotlight (mouse only). */
   interactive?: boolean;
   children?: ReactNode;
@@ -45,6 +48,8 @@ export function Card({
   variant = "glass",
   as = "div",
   href,
+  target,
+  rel,
   interactive = false,
   children,
   className,
@@ -95,6 +100,8 @@ export function Card({
     return (
       <Link
         href={href}
+        target={target}
+        rel={rel}
         {...(rest as Omit<ComponentPropsWithoutRef<"a">, "href">)}
         {...shared}
         ref={(el) => {
