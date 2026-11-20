@@ -67,20 +67,24 @@ export function CursorSpecimen() {
           </span>
         </Tile>
         <Tile
-          title="Hover · select"
-          note="Selection box: 6 px padding, handles, name tag, size"
+          title="Over a button"
+          note="Controls keep the spark and tail; no selection box (Nasheet, 1.7)"
         >
           <Button variant="secondary" trailingIcon={<ArrowUpRight />}>
             Work with me
           </Button>
         </Tile>
         <Tile
-          title="Pressed"
-          note="Hold the mouse button: the box tightens to 4 px, handles fill"
+          title="Select (opt-in)"
+          note='data-cursor="select" + data-cursor-label: box, handles, tag, size; press tightens it'
         >
-          <Button variant="secondary" trailingIcon={<ArrowUpRight />}>
-            Press and hold
-          </Button>
+          <div
+            data-cursor="select"
+            data-cursor-label="Card"
+            className="flex h-20 w-40 items-center justify-center rounded-control border border-border-default bg-surface-solid text-footnote text-text-secondary"
+          >
+            Opt-in element
+          </div>
         </Tile>
         <Tile
           title="Text"
@@ -93,13 +97,9 @@ export function CursorSpecimen() {
         </Tile>
         <Tile
           title="Magnetic"
-          note="Within 60 px the control drifts up to 8 px; the box follows it"
+          note="Within 60 px the control drifts up to 8 px toward the pointer"
         >
-          <IconButton
-            aria-label="Mute sound"
-            icon={<Volume2 />}
-            cursorLabel="Sound"
-          />
+          <IconButton aria-label="Mute sound" icon={<Volume2 />} />
         </Tile>
         <Tile
           title="Label · Work cards"
@@ -125,7 +125,7 @@ export function CursorSpecimen() {
         <Button variant="ghost" href="#cursor">
           A link button
         </Button>
-        <Button disabled>Disabled: no box</Button>
+        <Button disabled>Disabled</Button>
         {["All", "Web", "3D"].map((f) => (
           <Chip key={f} selected={filter === f} onClick={() => setFilter(f)}>
             {f}

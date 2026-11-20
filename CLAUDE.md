@@ -1002,11 +1002,12 @@ Decisions so far (don't re-ask):
     `html.has-cursor` hides the system cursor only while the custom one is visible. Leaving the
     window or blurring it hides the cursor again.
   - **Off:** it renders nothing unless `(hover: hover) and (pointer: fine)` and motion is allowed.
-  - **Name tags:** Button, IconButton, Chip and interactive Card set `data-cursor="select"` (none
-    when disabled) and `data-cursor-label` from a `cursorLabel` prop, defaulting to
-    `copy.cursor` in `content/copy.ts` (Button "Button", Button with href "Link", IconButton
-    "Button", Chip "Filter", Card "Card"). Pages should pass a specific `cursorLabel` (the board
-    uses "Sound" on the volume IconButton). The cursor is `aria-hidden`; tags are visual only.
+  - **Decision (Nasheet, after the rebuild): no selection box on controls.** Button, IconButton,
+    Chip and interactive Card set no `data-cursor` at all, so hovering them shows only the spark
+    and tail; the `cursorLabel` props and the `copy.cursor` defaults were removed. The select
+    state stays in the cursor as an **opt-in**: any element (e.g. a work card in 4.x) can set
+    `data-cursor="select"` and `data-cursor-label` (the controls pass these through their rest
+    props). This overrides the board's "Hover · select" tile; don't re-add it without asking.
 - **Magnetic (1.7):** `useMagnetic(ref, { radius = 60, max = 8, strength = 0.3 }, enabled)`.
   - One shared window `pointermove` serves every registered element. Within `radius` px of the
     element's edge it drifts `clamp(offset x 0.3, ±8)`, and it springs back with
@@ -1042,10 +1043,14 @@ Decisions so far (don't re-ask):
     - **Select:** the box lands at exactly the target +/- 6 px (186.2 x 56 around a 174 x 44
       Button), tag "Button", size "174 × 44". Pressed scales it to 0.979 x 0.929 (the 4 px
       padding) and fills the handles; it resets to 1 on release.
-    - **Magnetic:** the box tracks the drifting IconButton exactly (box x 575.4 = control - 6),
-      tag "Sound". The first build lagged here until `followTarget` moved onto the ticker.
-    - **Tags:** "Filter", "Link". A disabled Button gives no box. Text gives the caret only.
-      View: the pill shows "View case study" and sits at the pointer.
+    - **Magnetic:** the box tracks a drifting control exactly (box x 575.4 = control - 6). The
+      first build lagged here until `followTarget` moved onto the ticker. (Measured while controls
+      still opted in; after the "no box on controls" decision this applies only to opt-in elements.)
+    - Text gives the caret only. View: the pill shows "View case study" and sits at the pointer.
+    - **After removing the box from controls:** hovering a secondary Button, primary Button, link
+      Button, IconButton, Chip and interactive Card all give `default` with the box at opacity 0
+      and no tag; no control carries `data-cursor`. An opt-in `data-cursor="select"` element
+      still gets the box, tag "Card", size "160 × 80".
     - Screenshots match the board in both themes.
   - **Magnetic:** at 40 px outside, `--mx` = 8px (the cap), `translate: 8px`, and GSAP never writes
     `style.transform`. On leave it springs back to 0px. Primary buttons are `.magnetic`; secondary
