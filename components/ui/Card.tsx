@@ -110,6 +110,7 @@ export function Card({
       if (isInteractive && sound) sfx("click");
       onClick?.(e);
     },
+    "data-cursor": isInteractive ? "orbit" : undefined,
   };
 
   if (href !== undefined) {

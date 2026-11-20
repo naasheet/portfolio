@@ -51,8 +51,8 @@ export function CursorSpecimen() {
     <div className="flex flex-col gap-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Tile
-          title="Default · spark"
-          note="An 8 px dot with a soft glow, exactly on the pointer"
+          title="Default"
+          note="6 px dot on the pointer; three 3 px specks orbit at 13 px (one turn every 4 s), one amber"
         >
           <span className="text-footnote text-text-tertiary">
             Hold still here
@@ -60,35 +60,31 @@ export function CursorSpecimen() {
         </Tile>
         <Tile
           title="Moving"
-          note="A tail up to 28 px, longer the faster you move"
+          note="Each speck lags on its own, pulling into a short particle stream"
         >
           <span className="text-footnote text-text-tertiary">
             Move fast across this tile
           </span>
         </Tile>
         <Tile
-          title="Over a button"
-          note="Controls keep the spark and tail; no selection box (Nasheet, 1.7)"
+          title="Hover"
+          note='data-cursor="orbit": the dot fades; specks ring the element 7 px out and drift along it'
         >
           <Button variant="secondary" trailingIcon={<ArrowUpRight />}>
             Work with me
           </Button>
         </Tile>
         <Tile
-          title="Select (opt-in)"
-          note='data-cursor="select" + data-cursor-label: box, handles, tag, size; press tightens it'
+          title="Pressed"
+          note="Hold the mouse button: specks snap to 2 px from the edge, grow to 4 px, all glow"
         >
-          <div
-            data-cursor="select"
-            data-cursor-label="Card"
-            className="flex h-20 w-40 items-center justify-center rounded-control border border-border-default bg-surface-solid text-footnote text-text-secondary"
-          >
-            Opt-in element
-          </div>
+          <Button variant="secondary" trailingIcon={<ArrowUpRight />}>
+            Press and hold
+          </Button>
         </Tile>
         <Tile
           title="Text"
-          note='data-cursor="text" or any input: a 2 × 24 caret, no box, no tail'
+          note='data-cursor="text" or any input: a 2 × 24 caret with an amber speck at each end'
         >
           <p data-cursor="text" className="text-subhead text-text-secondary">
             I design interfaces, then build them, with motion, 3D and an
@@ -97,13 +93,13 @@ export function CursorSpecimen() {
         </Tile>
         <Tile
           title="Magnetic"
-          note="Within 60 px the control drifts up to 8 px toward the pointer"
+          note="Within 60 px the control drifts up to 8 px; its ring of 8 specks travels with it"
         >
           <IconButton aria-label="Mute sound" icon={<Volume2 />} />
         </Tile>
         <Tile
           title="Label · Work cards"
-          note='data-cursor="view": no box; a pill follows the pointer'
+          note='data-cursor="view": no edge ring; a pill follows the pointer, specks orbit the pill'
         >
           <div
             data-cursor="view"

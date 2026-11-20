@@ -46,6 +46,7 @@ export function Chip({
   return (
     <m.button
       type={type}
+      data-cursor={disabled ? undefined : "orbit"}
       {...rest}
       onPointerEnter={(e) => {
         if (sound && !disabled && e.pointerType === "mouse") sfx("hover");

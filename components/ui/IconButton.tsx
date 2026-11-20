@@ -52,6 +52,7 @@ export function IconButton({
   return (
     <m.button
       type={type}
+      data-cursor={disabled ? undefined : "orbit"}
       {...rest}
       ref={mergeRefs(own, ref)}
       disabled={disabled}

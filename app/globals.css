@@ -379,26 +379,18 @@
 }
 
 /*
- * Custom cursor (components/cursor/Cursor.tsx, Cursor board: "a spark that becomes a selection
- * box"). GSAP moves the layers (.cursor-pos, .cursor-box, the tail); CSS only changes scale and
- * opacity per state, over 200 ms on the soft spring. States come from data-state on .cursor-root
- * (default | select | text | view); data-pressed tightens the box. The system cursor is hidden
- * only while the custom one is showing (html.has-cursor).
+ * Custom cursor, "Orbit" (components/cursor/Cursor.tsx, board stuff/reference/Cursor — Orbit).
+ * A 6 px dot on the pointer with three 3 px specks orbiting it; the specks spread into a ring
+ * around anything clickable. GSAP moves everything with transforms from gsap.ticker; CSS only
+ * fades and resizes per state. data-state on .cursor-root: default | orbit | text | view;
+ * data-pressed snaps the ring in. The system cursor is hidden only while the custom one shows.
  */
 :root {
-  --cursor-glow: color-mix(
-    in oklab,
-    var(--color-accent-primary) 55%,
-    transparent
-  );
+  --cursor-glow-mix: 55%;
 }
 :root[data-theme="light"] {
   /* Light mode: the glow drops to half strength (board). */
-  --cursor-glow: color-mix(
-    in oklab,
-    var(--color-accent-primary) 28%,
-    transparent
-  );
+  --cursor-glow-mix: 28%;
 }
 html.has-cursor,
 html.has-cursor * {
@@ -422,37 +414,63 @@ html.has-cursor * {
   will-change: transform;
 }
 
-/* Spark: an 8 px dot with a soft glow, exactly on the pointer. */
-.cursor-spark {
+/* Dot: 6 px, exactly on the pointer. */
+.cursor-dot {
   position: absolute;
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
   border-radius: 9999px;
   background: var(--color-accent-primary);
-  box-shadow: 0 0 12px 2px var(--cursor-glow);
+  box-shadow: 0 0 8px
+    color-mix(
+      in oklab,
+      var(--color-accent-primary) var(--cursor-glow-mix),
+      transparent
+    );
   transition:
     transform 200ms var(--ease-spring),
     opacity 200ms var(--ease-out);
 }
-/* Tail: one element behind the spark; GSAP sets its rotation and scaleX (speed). */
-.cursor-tail {
+
+/* Specks: 3 px, accent (every third amber), glow in their own colour. */
+.cursor-speck {
   position: absolute;
-  top: -1.5px;
-  left: -28px;
-  width: 28px;
+  top: 0;
+  left: 0;
+  width: 3px;
   height: 3px;
+  margin: -1.5px 0 0 -1.5px;
   border-radius: 9999px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--color-accent-primary)
-  );
-  transform-origin: right center;
-  transform: scaleX(0);
-  transition: opacity 120ms var(--ease-out);
+  color: var(--color-accent-primary);
+  background: currentColor;
+  box-shadow: 0 0 4px
+    color-mix(in oklab, currentColor var(--cursor-glow-mix), transparent);
+  opacity: 0;
+  transition: opacity 150ms var(--ease-out);
+  will-change: transform;
 }
-/* Text caret: 2 x 24. */
+.cursor-speck[data-amber] {
+  color: var(--color-accent-secondary);
+}
+.cursor-speck[data-on] {
+  opacity: 1;
+}
+/* Pressed (on a ring): every speck turns accent and glows harder (the ticker sets their size). */
+.cursor-root[data-state="orbit"][data-pressed] .cursor-speck[data-amber] {
+  color: var(--color-accent-primary);
+}
+/* Pressed: every speck glows harder. */
+.cursor-root[data-pressed] .cursor-speck {
+  box-shadow: 0 0 8px
+    color-mix(
+      in oklab,
+      currentColor calc(var(--cursor-glow-mix) + 25%),
+      transparent
+    );
+}
+
+/* Text caret: 2 x 24, with an amber speck at each end (placed by the ticker). */
 .cursor-caret {
   position: absolute;
   width: 2px;
@@ -467,82 +485,9 @@ html.has-cursor * {
     opacity 200ms var(--ease-out);
 }
 
-/*
- * Selection box: sized to the target (+6 px padding) once on enter; GSAP moves it from the pointer
- * to the target's bounds and follows the target. Corner handles, a name tag above, the size below.
- */
-.cursor-box {
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform-origin: 0 0;
-  opacity: 0;
-  transition: opacity 150ms var(--ease-out);
-  will-change: transform;
-}
-.cursor-box-inner {
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--color-accent-primary);
-  transition: transform 200ms var(--ease-spring);
-}
-.cursor-handle {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border: 1px solid var(--color-accent-primary);
-  background: var(--color-bg-base);
-  transition: background-color 120ms var(--ease-out);
-}
-.cursor-handle[data-corner="tl"] {
-  top: -3.5px;
-  left: -3.5px;
-}
-.cursor-handle[data-corner="tr"] {
-  top: -3.5px;
-  right: -3.5px;
-}
-.cursor-handle[data-corner="bl"] {
-  bottom: -3.5px;
-  left: -3.5px;
-}
-.cursor-handle[data-corner="br"] {
-  right: -3.5px;
-  bottom: -3.5px;
-}
-.cursor-tag {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: -1px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: var(--color-accent-primary);
-  color: var(--color-accent-contrast);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 16px;
-  white-space: nowrap;
-}
-.cursor-tag:empty {
-  display: none;
-}
-.cursor-size {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 50%;
-  translate: -50% 0;
-  color: var(--color-accent-primary);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 16px;
-  white-space: nowrap;
-}
-
-/* View pill: follows the pointer on large cards, no box. */
+/* View pill: centred on the pointer; the specks orbit it. */
 .cursor-pill {
   position: absolute;
-  top: 10px;
-  left: 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -556,27 +501,19 @@ html.has-cursor * {
   font-weight: 600;
   white-space: nowrap;
   opacity: 0;
-  transform: scale(0.6);
-  transform-origin: 0 0;
+  /* Centred on the pointer inside transform: the minifier dropped a separate translate here. */
+  transform: translate(-50%, -50%) scale(0.6);
   transition:
     transform 200ms var(--ease-spring),
     opacity 150ms var(--ease-out);
 }
 
-.cursor-root[data-state="select"] .cursor-box {
-  opacity: 1;
-}
-.cursor-root[data-state="select"][data-pressed] .cursor-box-inner {
-  transform: scale(var(--press-sx, 1), var(--press-sy, 1));
-}
-.cursor-root[data-state="select"][data-pressed] .cursor-handle {
-  background: var(--color-accent-primary);
-}
-.cursor-root[data-state="text"] .cursor-spark {
+.cursor-root[data-state="orbit"] .cursor-dot,
+.cursor-root[data-state="view"] .cursor-dot {
   opacity: 0;
   transform: scale(0.4);
 }
-.cursor-root[data-state="text"] .cursor-tail {
+.cursor-root[data-state="text"] .cursor-dot {
   opacity: 0;
 }
 .cursor-root[data-state="text"] .cursor-caret {
@@ -585,7 +522,7 @@ html.has-cursor * {
 }
 .cursor-root[data-state="view"] .cursor-pill {
   opacity: 1;
-  transform: scale(1);
+  transform: translate(-50%, -50%) scale(1);
 }
 
 /*

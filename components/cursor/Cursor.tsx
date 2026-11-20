@@ -6,19 +6,40 @@ import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { gsap } from "@/lib/motion/gsap";
 
-type CursorState = "default" | "select" | "text" | "view";
+type CursorState = "default" | "orbit" | "text" | "view";
+
+/** One dot and a pool of 14 specks; 3 orbit at rest (Orbit board). */
+const POOL = 14;
+const REST_SPECKS = 3;
+/** Every third speck is amber. */
+const isAmber = (i: number) => i % 3 === 2;
+/** At rest each speck trails the dot with its own lag (s), cycling 0.08 / 0.14 / 0.20. */
+const LAGS = [0.08, 0.14, 0.2];
+const ORBIT_RADIUS = 13;
+/** 90° a second: one turn every 4 s. */
+const ORBIT_SPEED = Math.PI / 2;
+/** The ring sits this far outside the element's edge, 2 px while pressed. */
+const EDGE = 7;
+const EDGE_PRESSED = 2;
+/** Specks drift along the ring at 20 px/s. */
+const DRIFT_SPEED = 20;
+/** Ring spacing: one speck per ~32 px of perimeter, between 8 and 14 specks. */
+const RING_SPACING = 32;
+const RING_MIN = 8;
+/** Easing time constants (s): onto the ring in ~250 ms (soft spring), snapping in when pressed. */
+const RING_TAU = 0.07;
+const PRESS_TAU = 0.035;
+const TEXT_TAU = 0.05;
+/** Specks grow from 3 px to 4 px while pressed. */
+const PRESSED_SCALE = 4 / 3;
+/** The caret's ends sit 12 px above and below the pointer (2 x 24 caret). */
+const CARET_HALF = 12;
+/** Specks marking the caret ends (both amber). */
+const CARET_SPECKS = [2, 5];
 
 /** Inputs that take typing get the caret; buttons styled as inputs don't. */
 const TEXT_INPUTS =
   "textarea, [contenteditable='true'], input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file'])";
-
-/** Selection box padding around the target, and while pressed (px). */
-const PAD = 6;
-const PAD_PRESSED = 4;
-/** Spark size: the box grows out of a square this big at the pointer. */
-const SPARK = 8;
-/** Pointer speed (px/ms) at which the tail reaches its full 28 px. */
-const FULL_TAIL_SPEED = 1.5;
 
 function stateFor(target: EventTarget | null): {
   state: CursorState;
@@ -27,31 +48,83 @@ function stateFor(target: EventTarget | null): {
   if (!(target instanceof Element)) return { state: "default", el: null };
   const input = target.closest<HTMLElement>(TEXT_INPUTS);
   if (input) return { state: "text", el: input };
-  const el = target.closest<HTMLElement>("[data-cursor]");
-  const value = el?.dataset.cursor;
-  if (el && (value === "select" || value === "text" || value === "view")) {
-    return { state: value, el };
+  const tagged = target.closest<HTMLElement>("[data-cursor]");
+  const value = tagged?.dataset.cursor;
+  if (tagged && (value === "orbit" || value === "text" || value === "view")) {
+    return { state: value, el: tagged };
   }
+  // Any link gets the ring too (board: "links").
+  const link = target.closest<HTMLElement>("a[href]");
+  if (link) return { state: "orbit", el: link };
   return { state: "default", el: null };
 }
 
+type Ring = { x: number; y: number; w: number; h: number; r: number };
+
+function perimeter({ w, h, r }: Ring): number {
+  return 2 * (w - 2 * r) + 2 * (h - 2 * r) + 2 * Math.PI * r;
+}
+
+/** The point `s` px along a rounded rectangle's outline, clockwise from its top edge. */
+function pointOnRing(ring: Ring, s: number): [number, number] {
+  const { x, y, w, h, r } = ring;
+  const sw = w - 2 * r;
+  const sh = h - 2 * r;
+  const arc = (Math.PI * r) / 2;
+  const total = perimeter(ring);
+  let d = ((s % total) + total) % total;
+  const corner = (cx: number, cy: number, from: number): [number, number] => {
+    const a = from + (d / (arc || 1)) * (Math.PI / 2);
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
+  };
+  if (d < sw) return [x + r + d, y];
+  d -= sw;
+  if (d < arc) return corner(x + w - r, y + r, -Math.PI / 2);
+  d -= arc;
+  if (d < sh) return [x + w, y + r + d];
+  d -= sh;
+  if (d < arc) return corner(x + w - r, y + h - r, 0);
+  d -= arc;
+  if (d < sw) return [x + w - r - d, y + h];
+  d -= sw;
+  if (d < arc) return corner(x + r, y + h - r, Math.PI / 2);
+  d -= arc;
+  if (d < sh) return [x, y + h - r - d];
+  d -= sh;
+  return corner(x + r, y + r, Math.PI);
+}
+
+/** The ring around an element: its rect pushed out by `offset`, corners rounded to match. */
+function ringAround(el: HTMLElement, radius: number, offset: number): Ring {
+  const b = el.getBoundingClientRect();
+  const w = b.width + offset * 2;
+  const h = b.height + offset * 2;
+  return {
+    x: b.left - offset,
+    y: b.top - offset,
+    w,
+    h,
+    r: Math.max(0, Math.min(radius + offset, w / 2, h / 2)),
+  };
+}
+
 /**
- * The custom mouse cursor (Cursor board, chunk 1.7): "a spark that moves through the particles,
- * and a selection box when you point at something you can use".
+ * The custom mouse cursor, "Orbit" (board: stuff/reference/Cursor — Orbit (chunks 1.7, 8.3)):
+ * a 6 px dot exactly on the pointer with three 3 px specks orbiting it at 13 px (one turn every
+ * 4 s, one speck in three amber). Moving pulls the specks into a short stream behind the dot.
  *
- * - Spark: an 8 px glowing dot set straight onto the pointer (quickSetter), so it never lags.
- * - Tail: one element behind the spark; scaleX from pointer speed (up to 28 px), rotated to the
- *   direction of travel, eased back to 0 when the pointer stops.
- * - Select (data-cursor="select"): a selection box with 6 px padding, square corner handles, a
- *   name tag (data-cursor-label) and the element's size. It grows from the pointer to the target's
- *   bounds in 200 ms and follows the target (magnetic drift, scrolling). Pressed tightens it to
- *   4 px and fills the handles.
- * - Text (data-cursor="text", inputs, textareas): a 2 x 24 caret, no tail.
- * - View (data-cursor="view"): no box; a pill with data-cursor-label follows the pointer.
+ * - orbit (data-cursor="orbit" on Button, IconButton, Chip and interactive Card; any link): the
+ *   dot fades and 8-14 specks spread 7 px outside the element's edge in ~250 ms, then drift
+ *   along it at 20 px/s. The ring follows the element (magnetic drift, scrolling). Pressed snaps
+ *   them to 2 px from the edge, grows them to 4 px, and makes them all glow.
+ * - text (data-cursor="text", inputs): a 2 x 24 caret with an amber speck at each end.
+ * - view (data-cursor="view" + data-cursor-label): a pill that follows the pointer; the specks
+ *   orbit the pill.
  *
- * GSAP runs it on the shared ticker (no loop of its own); state lives in data attributes, never
- * React state. Renders nothing on touch / coarse pointers and with reduced motion; hides and
- * gives the system cursor back when the pointer leaves the window. 8.3 adds the amber hand mode.
+ * The dot is set straight from pointer events; the specks are plain spans moved with transforms
+ * from one gsap.ticker callback (no loop of its own), which runs only while the cursor is
+ * visible and the tab is in front. State lives in data attributes, never React state. Renders
+ * nothing on touch / coarse pointers or with reduced motion. 8.3 adds the amber hand mode.
  */
 export function Cursor() {
   const reduced = useReducedMotion();
@@ -59,43 +132,34 @@ export function Cursor() {
   const active = finePointer && !reduced;
 
   const root = useRef<HTMLDivElement>(null);
-  const spark = useRef<HTMLDivElement>(null);
-  const tail = useRef<HTMLSpanElement>(null);
-  const box = useRef<HTMLDivElement>(null);
-  const tag = useRef<HTMLSpanElement>(null);
-  const size = useRef<HTMLSpanElement>(null);
+  const dot = useRef<HTMLDivElement>(null);
   const pill = useRef<HTMLDivElement>(null);
+  const pillShape = useRef<HTMLSpanElement>(null);
   const pillText = useRef<HTMLSpanElement>(null);
+  const specks = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
     const rootEl = root.current;
-    const sparkEl = spark.current;
-    const tailEl = tail.current;
-    const boxEl = box.current;
-    const tagEl = tag.current;
-    const sizeEl = size.current;
+    const dotEl = dot.current;
     const pillEl = pill.current;
+    const pillShapeEl = pillShape.current;
     const pillTextEl = pillText.current;
+    const speckEls = specks.current.filter((s): s is HTMLSpanElement => !!s);
     if (
       !active ||
       !rootEl ||
-      !sparkEl ||
-      !tailEl ||
-      !boxEl ||
-      !tagEl ||
-      !sizeEl ||
+      !dotEl ||
       !pillEl ||
-      !pillTextEl
+      !pillShapeEl ||
+      !pillTextEl ||
+      speckEls.length !== POOL
     ) {
       return;
     }
 
     const html = document.documentElement;
-
-    // Spark: no delay at all.
-    const setX = gsap.quickSetter(sparkEl, "x", "px");
-    const setY = gsap.quickSetter(sparkEl, "y", "px");
-    // Pill: follows the pointer, a touch softer.
+    const setDotX = gsap.quickSetter(dotEl, "x", "px");
+    const setDotY = gsap.quickSetter(dotEl, "y", "px");
     const pillX = gsap.quickTo(pillEl, "x", {
       duration: 0.12,
       ease: "power3.out",
@@ -104,104 +168,113 @@ export function Cursor() {
       duration: 0.12,
       ease: "power3.out",
     });
-    // Tail: length from speed, heading from direction; eases back to 0 after the pointer stops.
-    const tailScale = gsap.quickTo(tailEl, "scaleX", {
-      duration: 0.15,
-      ease: "power2.out",
-    });
-    const setTailRotation = gsap.quickSetter(tailEl, "rotation", "deg");
-    const settleTail = gsap.delayedCall(0.06, () => tailScale(0)).pause();
-    // Box: follows its target.
-    const boxX = gsap.quickTo(boxEl, "x", {
-      duration: 0.2,
-      ease: "power3.out",
-    });
-    const boxY = gsap.quickTo(boxEl, "y", {
-      duration: 0.2,
-      ease: "power3.out",
-    });
 
-    let placed = false;
-    let last = { x: 0, y: 0, t: 0 };
-    let pointer = { x: 0, y: 0 };
+    let state: CursorState = "default";
     let target: HTMLElement | null = null;
-    let boxShown = false;
+    let targetRadius = 0;
+    let pressed = false;
+    const pointer = { x: 0, y: 0 };
+    let placed = false;
+    let orbitAngle = 0;
+    let drift = 0;
+
+    // Per-speck position, scale and visibility.
+    const pos = speckEls.map(() => ({ x: 0, y: 0, s: 1 }));
+    const on = speckEls.map(() => false);
+    const setOn = (i: number, value: boolean) => {
+      if (on[i] === value) return;
+      on[i] = value;
+      const el = speckEls[i];
+      if (!el) return;
+      if (value) el.dataset.on = "";
+      else delete el.dataset.on;
+    };
+
+    const tick = (_time: number, deltaMs: number) => {
+      const dt = Math.min(deltaMs / 1000, 0.05);
+      orbitAngle += ORBIT_SPEED * dt;
+      drift += DRIFT_SPEED * dt;
+
+      if (target && !target.isConnected) target = null;
+
+      // Where each speck should be, and how quickly it gets there.
+      let ring: Ring | null = null;
+      if (state === "orbit" && target) {
+        ring = ringAround(target, targetRadius, pressed ? EDGE_PRESSED : EDGE);
+      } else if (state === "view") {
+        ring = ringAround(pillShapeEl, 16, EDGE);
+      }
+      const ringCount = ring
+        ? Math.max(
+            RING_MIN,
+            Math.min(POOL, Math.round(perimeter(ring) / RING_SPACING)),
+          )
+        : 0;
+
+      for (let i = 0; i < POOL; i++) {
+        let tx = pointer.x;
+        let ty = pointer.y;
+        let visible = false;
+        let tau = LAGS[i % LAGS.length] ?? 0.14;
+        let scale = 1;
+
+        if (ring) {
+          visible = i < ringCount;
+          if (visible) {
+            const len = perimeter(ring);
+            [tx, ty] = pointOnRing(ring, drift + (i * len) / ringCount);
+          }
+          tau = pressed ? PRESS_TAU : RING_TAU;
+          scale = pressed && state === "orbit" ? PRESSED_SCALE : 1;
+        } else if (state === "text") {
+          const end = CARET_SPECKS.indexOf(i);
+          visible = end !== -1;
+          if (visible) ty = pointer.y + (end === 0 ? -CARET_HALF : CARET_HALF);
+          tau = TEXT_TAU;
+        } else {
+          visible = i < REST_SPECKS;
+          if (visible) {
+            const a = orbitAngle + (i * Math.PI * 2) / REST_SPECKS;
+            tx = pointer.x + ORBIT_RADIUS * Math.cos(a);
+            ty = pointer.y + ORBIT_RADIUS * Math.sin(a);
+          }
+        }
+
+        const p = pos[i];
+        const el = speckEls[i];
+        if (!p || !el) continue;
+        const k = 1 - Math.exp(-dt / tau);
+        p.x += (tx - p.x) * k;
+        p.y += (ty - p.y) * k;
+        p.s += (scale - p.s) * k;
+        el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${p.s})`;
+        setOn(i, visible);
+      }
+    };
+
+    let ticking = false;
+    const startTicker = () => {
+      if (ticking) return;
+      gsap.ticker.add(tick);
+      ticking = true;
+    };
+    const stopTicker = () => {
+      if (!ticking) return;
+      gsap.ticker.remove(tick);
+      ticking = false;
+    };
 
     const show = () => {
       rootEl.dataset.visible = "";
       html.classList.add("has-cursor");
+      if (document.visibilityState === "visible") startTicker();
     };
     const hide = () => {
       delete rootEl.dataset.visible;
       delete rootEl.dataset.pressed;
+      pressed = false;
       html.classList.remove("has-cursor");
-    };
-
-    /** Box geometry for the current target: size, labels and press scale. */
-    const fitBox = (el: HTMLElement) => {
-      const r = el.getBoundingClientRect();
-      const w = r.width + PAD * 2;
-      const h = r.height + PAD * 2;
-      boxEl.style.width = `${w}px`;
-      boxEl.style.height = `${h}px`;
-      boxEl.style.setProperty(
-        "--press-sx",
-        `${(r.width + PAD_PRESSED * 2) / w}`,
-      );
-      boxEl.style.setProperty(
-        "--press-sy",
-        `${(r.height + PAD_PRESSED * 2) / h}`,
-      );
-      sizeEl.textContent = `${Math.round(r.width)} × ${Math.round(r.height)}`;
-      tagEl.textContent = el.dataset.cursorLabel ?? "";
-      return { r, w, h };
-    };
-
-    /**
-     * Keep the box on the target as it drifts (magnetic spring) or scrolls. Runs on the shared
-     * GSAP ticker only while something is selected, so the box keeps up even after the pointer
-     * stops moving.
-     */
-    const followTarget = () => {
-      if (!target) return;
-      const r = target.getBoundingClientRect();
-      boxX(r.left - PAD);
-      boxY(r.top - PAD);
-    };
-    let following = false;
-    const startFollow = () => {
-      if (following) return;
-      gsap.ticker.add(followTarget);
-      following = true;
-    };
-    const stopFollow = () => {
-      if (!following) return;
-      gsap.ticker.remove(followTarget);
-      following = false;
-    };
-
-    const select = (el: HTMLElement) => {
-      const { r, w, h } = fitBox(el);
-      if (!boxShown) {
-        // Grow out of a spark-sized square at the pointer into the target's bounds.
-        gsap.set(boxEl, {
-          x: pointer.x - SPARK / 2,
-          y: pointer.y - SPARK / 2,
-          scaleX: SPARK / w,
-          scaleY: SPARK / h,
-        });
-        gsap.to(boxEl, {
-          scaleX: 1,
-          scaleY: 1,
-          duration: 0.2,
-          ease: "power3.out",
-          overwrite: "auto",
-        });
-        boxShown = true;
-      }
-      boxX(r.left - PAD);
-      boxY(r.top - PAD);
-      startFollow();
+      stopTicker();
     };
 
     const onMove = (e: PointerEvent) => {
@@ -209,57 +282,55 @@ export function Cursor() {
         hide();
         return;
       }
-      pointer = { x: e.clientX, y: e.clientY };
-      setX(e.clientX);
-      setY(e.clientY);
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+      setDotX(e.clientX);
+      setDotY(e.clientY);
       pillX(e.clientX);
       pillY(e.clientY);
-
       if (!placed) {
+        // First sighting: start everything under the pointer, not at 0,0.
+        for (const p of pos) {
+          p.x = e.clientX;
+          p.y = e.clientY;
+        }
         gsap.set(pillEl, { x: e.clientX, y: e.clientY });
         placed = true;
-      } else {
-        const dx = e.clientX - last.x;
-        const dy = e.clientY - last.y;
-        const dt = Math.max(1, e.timeStamp - last.t);
-        const dist = Math.hypot(dx, dy);
-        if (dist > 1) {
-          setTailRotation((Math.atan2(dy, dx) * 180) / Math.PI);
-          tailScale(Math.min(1, dist / dt / FULL_TAIL_SPEED));
-          settleTail.restart(true);
-        }
       }
-      last = { x: e.clientX, y: e.clientY, t: e.timeStamp };
       show();
     };
 
     const onOver = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
-      const { state, el } = stateFor(e.target);
+      const next = stateFor(e.target);
+      state = next.state;
       rootEl.dataset.state = state;
-      if (state === "select" && el) {
-        if (el !== target) {
-          target = el;
-          select(el);
-        }
-        return;
+      target = state === "orbit" ? next.el : null;
+      if (target) {
+        targetRadius =
+          parseFloat(getComputedStyle(target).borderTopLeftRadius) || 0;
       }
-      target = null;
-      boxShown = false;
-      stopFollow();
-      if (state === "view")
-        pillTextEl.textContent = el?.dataset.cursorLabel ?? "";
+      if (state === "view") {
+        pillTextEl.textContent = next.el?.dataset.cursorLabel ?? "";
+      }
     };
 
     const onDown = (e: PointerEvent) => {
-      if (e.pointerType === "mouse") rootEl.dataset.pressed = "";
+      if (e.pointerType !== "mouse") return;
+      pressed = true;
+      rootEl.dataset.pressed = "";
     };
     const onUp = () => {
+      pressed = false;
       delete rootEl.dataset.pressed;
     };
     // relatedTarget is null when the pointer leaves the window.
     const onOut = (e: MouseEvent) => {
       if (!e.relatedTarget) hide();
+    };
+    // Specks hide while the tab is in the background.
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") hide();
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
@@ -267,6 +338,7 @@ export function Cursor() {
     window.addEventListener("pointerdown", onDown);
     window.addEventListener("pointerup", onUp);
     document.addEventListener("mouseout", onOut);
+    document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", hide);
 
     return () => {
@@ -275,10 +347,9 @@ export function Cursor() {
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
       document.removeEventListener("mouseout", onOut);
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("blur", hide);
-      stopFollow();
-      settleTail.kill();
-      gsap.killTweensOf([pillEl, tailEl, boxEl]);
+      gsap.killTweensOf(pillEl);
       hide();
     };
   }, [active]);
@@ -293,25 +364,24 @@ export function Cursor() {
       data-state="default"
       data-mode="mouse"
     >
-      <div ref={box} className="cursor-box">
-        <div className="cursor-box-inner">
-          <span className="cursor-handle" data-corner="tl" />
-          <span className="cursor-handle" data-corner="tr" />
-          <span className="cursor-handle" data-corner="bl" />
-          <span className="cursor-handle" data-corner="br" />
-          <span ref={tag} className="cursor-tag" />
-          <span ref={size} className="cursor-size" />
-        </div>
-      </div>
       <div ref={pill} className="cursor-pos">
-        <span className="cursor-pill">
+        <span ref={pillShape} className="cursor-pill">
           <span ref={pillText} />
           <ArrowUpRight aria-hidden className="size-3.5" />
         </span>
       </div>
-      <div ref={spark} className="cursor-pos">
-        <span ref={tail} className="cursor-tail" />
-        <span className="cursor-spark" />
+      {Array.from({ length: POOL }, (_, i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            specks.current[i] = el;
+          }}
+          className="cursor-speck"
+          data-amber={isAmber(i) ? "" : undefined}
+        />
+      ))}
+      <div ref={dot} className="cursor-pos">
+        <span className="cursor-dot" />
         <span className="cursor-caret" />
       </div>
     </div>

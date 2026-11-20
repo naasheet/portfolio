@@ -228,7 +228,8 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   numbers count up once; skeletons in the card's shape instead of spinners; every action gives
   feedback within 100 ms.
 - **Motion:** one signature move per chapter, and everything else quiet. Only the status dot,
-  the now-playing bars and the terminal cursor loop (cursor added in 1.4, approved).
+  the now-playing bars, the terminal cursor (added in 1.4, approved) and the mouse cursor's
+  orbiting specks (Orbit board, 1.7; paused when the pointer leaves or the tab is hidden) loop.
 - **Copy:** short, first person, a little funny. Labels say what happens. Every string lives
   in `content/copy.ts` or another `content/` file, never hardcoded in a component.
 - **UI chunks:** match the attached design PNG (exported from the Key Frames canvas or Figma). If none is attached, ask for it before building.
@@ -520,10 +521,13 @@ Carry-over into later chunks:
   longer than the 100 ms rule in §8. Ask before using them. IconButton has no `sound` prop
   yet (not in 1.7's scope).
 - **8.3 hand cursor:** same `Cursor` component (`data-mode` is already on the root). Add the amber
-  states from the (updated) Cursor board: pointing = a crosshair (four ticks around a dot); pinching
-  = ticks close in and the dot fills to 12 px; palm hold = a thin arc filling clockwise around the
-  action icon; hand lost = fades after 500 ms, a hint after 3 s. Selection boxes still appear when
-  the hand points at something.
+  states from the Orbit board (`stuff/reference/Cursor — Orbit (chunks 1.7, 8.3)@2x.png`):
+  - **Pointing:** an 8 px amber dot with three specks at 18 px.
+  - **Pinching:** the specks collapse into the dot, which grows to 14 px; release clicks and the
+    specks burst back out.
+  - **Palm hold:** 16 specks form a ring around the action icon and light up one by one over 1 s.
+  - **Hand lost:** fades after 500 ms; a hint after 3 s.
+  - The specks still ring whatever the hand points at.
 - **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus when
   ffmpeg is installed.
 - **10.x:** Tooltip has no collision handling (no flip or shift at the screen edge). Add it
@@ -976,41 +980,40 @@ Decisions so far (don't re-ask):
   - **Layout shift on `/dev`:** 0 in three separate runs (plain load + full scroll; + the video
     sequence; + 1.5 s-delayed images). One long combined run that also simulated tab visibility
     from an injected script measured 0.00004 (text nodes), and it couldn't be reproduced.
-- **Cursor (1.7, rebuilt to the updated Cursor board `stuff/reference/Cursor (chunks 1.7,
-  8.3)@2x.png`, "a spark that becomes a selection box"):** `components/cursor/Cursor.tsx`, mounted
-  once through `CursorLoader` (`next/dynamic`, `ssr: false`) in `app/layout.tsx`. The first
-  version (dot + ring) was replaced the same day.
-  - **Spark:** an 8 px accent dot with a glow (`--cursor-glow`, half strength in light mode), set
-    straight onto the pointer with `gsap.quickSetter`, so it never lags.
-  - **Tail:** one element, transform only. `scaleX` comes from pointer speed (full 28 px at
-    1.5 px/ms) via `quickTo`, rotation from the heading via `quickSetter`, and a restartable
-    `gsap.delayedCall(0.06)` eases it back to 0 when the pointer stops.
-  - **States** live in `data-state` (`default | select | text | view`) and `data-pressed` on
-    `.cursor-root`; no React state.
-    - **select** (`data-cursor="select"`): a selection box with 6 px padding, square corner
-      handles, a name tag (`data-cursor-label`, mono, accent fill) and the element's size
-      ("174 × 44", rounded from its bounds).
-      - The box is sized once on enter (width / height set, not animated), then grows out of a
-        spark-sized square at the pointer (scale + position, 200 ms).
-      - While something is selected, `followTarget` runs on the shared GSAP ticker (added and
-        removed with the selection), so the box tracks magnetic drift and scrolling even after
-        the pointer stops.
-      - Pressed scales `.cursor-box-inner` to the 4 px padding (`--press-sx/--press-sy`) and
-        fills the handles.
-    - **text** (`data-cursor="text"`, inputs, textareas, contenteditable): a 2 x 24 caret; the
-      spark and tail hide, and there's no box.
-    - **view** (`data-cursor="view"`): no box; a pill with `data-cursor-label` and an arrow
-      follows the pointer (`quickTo` 0.12 s), offset 10 px right and down.
-  - **CSS:** state changes are transform and opacity only, over 200 ms on `--ease-spring`.
-    `html.has-cursor` hides the system cursor only while the custom one is visible. Leaving the
-    window or blurring it hides the cursor again.
+- **Cursor (1.7), current design "Orbit"** (`stuff/reference/Cursor — Orbit (chunks 1.7, 8.3)@2x.png`).
+  History, so nobody re-litigates it: the first build (dot + ring) and the second (spark +
+  selection box, later removed from controls at Nasheet's request) were both replaced by Orbit,
+  on Nasheet's newest board. `Cursor (chunks 1.7, 8.3)@2x.png` in `stuff/reference/` is the
+  superseded spark/box board.
+  - **Files and mounting:** `components/cursor/Cursor.tsx`, mounted once through `CursorLoader`
+    (`next/dynamic`, `ssr: false`) in `app/layout.tsx`.
+  - **Elements:** one 6 px dot (on the pointer through `gsap.quickSetter`, so it never lags), a
+    pool of 14 specks of 3 px (every third amber, `data-amber`; glow = a box-shadow in their own
+    colour at `--cursor-glow-mix`, 55% dark / 28% light), a 2 x 24 caret and a view pill.
+  - **One loop:** all specks are moved by a single `gsap.ticker` callback, which writes
+    `translate3d` / `scale` per speck. Each speck eases toward its target with
+    `1 - exp(-dt / tau)`, the same effect as the board's per-speck `quickTo` without 28 tweens.
+    The callback runs only while the cursor is visible and the tab is in front.
+  - **Rest:** three specks orbit at 13 px, advancing 90° a second (one turn every 4 s). Their lags
+    cycle 0.08 / 0.14 / 0.20 s (tau = lag / 2), so moving pulls them into a short stream.
+  - **orbit:** set by `data-cursor="orbit"` (Button, IconButton, Chip, interactive Card; Button
+    links) **and any `a[href]`**. The dot fades, and `clamp(round(perimeter / 32), 8, 14)` specks
+    move 7 px outside the element's rounded outline (radius = its `border-top-left-radius` + 7)
+    with tau 0.07 (about 250 ms). They drift along it at 20 px/s, and the ring is re-measured
+    every tick, so it follows magnetic drift and scrolling.
+  - **Pressed (on a ring):** 2 px from the edge (tau 0.035), specks at 4 px (x4/3), all turned
+    accent, with a stronger glow.
+  - **text** (`data-cursor="text"`, inputs, textareas): the caret, with amber specks 2 and 5 at
+    its ends (±12 px); the rest are hidden.
+  - **view** (`data-cursor="view"` + `data-cursor-label`): a pill centred on the pointer
+    (`quickTo` 0.12 s), with the specks ringing the pill 7 px out.
+  - **Minifier gotcha:** the build minifier dropped a literal `translate: -50% -50%` that sat next
+    to `transform` in `.cursor-pill`, which put the pill off-centre. Centre inside `transform`
+    instead (`translate(-50%, -50%) scale(...)`). The `translate:` rules that use `var()` (magnetic,
+    card lift, spotlight) survive.
   - **Off:** it renders nothing unless `(hover: hover) and (pointer: fine)` and motion is allowed.
-  - **Decision (Nasheet, after the rebuild): no selection box on controls.** Button, IconButton,
-    Chip and interactive Card set no `data-cursor` at all, so hovering them shows only the spark
-    and tail; the `cursorLabel` props and the `copy.cursor` defaults were removed. The select
-    state stays in the cursor as an **opt-in**: any element (e.g. a work card in 4.x) can set
-    `data-cursor="select"` and `data-cursor-label` (the controls pass these through their rest
-    props). This overrides the board's "Hover · select" tile; don't re-add it without asking.
+    It hides (and gives the system cursor back) when the pointer leaves the window, on blur, and
+    while the tab is hidden.
 - **Magnetic (1.7):** `useMagnetic(ref, { radius = 60, max = 8, strength = 0.3 }, enabled)`.
   - One shared window `pointermove` serves every registered element. Within `radius` px of the
     element's edge it drifts `clamp(offset x 0.3, ±8)`, and it springs back with
@@ -1052,22 +1055,19 @@ Decisions so far (don't re-ask):
   `data-*`. When moving the mouse with `steps`, the pointer crosses neighbours and fires their
   hover sounds; jump straight to the target when counting sounds.
 - **Verified 1.7 (headless Chromium, production build with the /dev flag):**
-  - **Cursor (rebuilt design):**
-    - **Spark:** exactly on the pointer.
-    - **Tail:** `scaleX` 0.71 shortly after a fast move right (heading 0 deg) and 0.95 on a fast
-      move down (90 deg), 0.03 on a slow move, and 0 once stopped.
-    - **Select:** the box lands at exactly the target +/- 6 px (186.2 x 56 around a 174 x 44
-      Button), tag "Button", size "174 × 44". Pressed scales it to 0.979 x 0.929 (the 4 px
-      padding) and fills the handles; it resets to 1 on release.
-    - **Magnetic:** the box tracks a drifting control exactly (box x 575.4 = control - 6). The
-      first build lagged here until `followTarget` moved onto the ticker. (Measured while controls
-      still opted in; after the "no box on controls" decision this applies only to opt-in elements.)
-    - Text gives the caret only. View: the pill shows "View case study" and sits at the pointer.
-    - **After removing the box from controls:** hovering a secondary Button, primary Button, link
-      Button, IconButton, Chip and interactive Card all give `default` with the box at opacity 0
-      and no tag; no control carries `data-cursor`. An opt-in `data-cursor="select"` element
-      still gets the box, tag "Card", size "160 × 80".
-    - Screenshots match the board in both themes.
+  - **Cursor (Orbit):**
+    - **Rest:** the dot is exactly on the pointer, with three specks at 12.4-12.9 px (one amber)
+      turning 91-92° a second. Right after a fast move the specks trail 245-269 px behind.
+    - **Hover:** a secondary Button gives 14 specks (4 amber), 6.7-7.1 px outside its rounded
+      edge, drifting about 10.5 px in 0.5 s (20 px/s); the dot is at opacity 0.
+    - **Pressed:** exactly 2.0 px from the edge, scale 1.33, every speck accent; on release
+      ~7 px, scale 1, amber back.
+    - **Magnetic IconButton:** 8 specks, 6.9-7.0 px out while it has drifted 5.7 px.
+    - **Text:** the caret with two amber specks at exactly (0, ±12).
+    - **View:** the pill is centred on the pointer, with 12 specks 6.9-7.1 px around it.
+    - **Other:** a plain `<a>` gives orbit; a disabled Button gives default. Leaving the window
+      hides it. No cursor on touch or with reduced motion.
+    - Screenshots match the board.
   - **Magnetic:** at 40 px outside, `--mx` = 8px (the cap), `translate: 8px`, and GSAP never writes
     `style.transform`. On leave it springs back to 0px. Primary buttons are `.magnetic`; secondary
     ones aren't.

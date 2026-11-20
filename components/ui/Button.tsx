@@ -177,6 +177,7 @@ export function Button(props: ButtonProps) {
     return (
       <MotionLink
         href={href}
+        data-cursor="orbit"
         {...linkRest}
         {...withSound(onPointerEnter, onClick)}
         ref={mergeRefs(own, ref)}
@@ -203,6 +204,7 @@ export function Button(props: ButtonProps) {
   return (
     <m.button
       type={type}
+      data-cursor={inactive ? undefined : "orbit"}
       {...buttonRest}
       ref={mergeRefs(own, ref)}
       onPointerEnter={handlers.onPointerEnter}
