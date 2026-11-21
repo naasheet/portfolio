@@ -153,8 +153,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
    store in `lib/store.ts`. The canvas and the UI only read from it. Features never import
    or call each other directly. Terminal `ar on` and the AR button flip the same store flag.
    Example: `RouteWatcher` (persistent layer) is the only writer of `page.id`, from the URL; the
-   island and the menu read it, and the canvas morphs per page (`canvas/ScrollMorph.tsx`, R.2's
-   RouteMorph). DOM code never imports `canvas/` (it would also pull
+   island and the menu read it, and the canvas morphs per route (`canvas/RouteMorph.tsx`). DOM code never imports `canvas/` (it would also pull
    three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
    (progress), `page` (id: which of the six pages, or null), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
@@ -497,7 +496,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1 done; R.2, the route morph, is next; phase 4 follows)
+Current phase: **R — Separate pages and the particle room** (R.1 and R.2 done; R.3, the room, is next; phase 4 follows)
 (phases 0, 2 and 3 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
@@ -506,7 +505,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -516,8 +515,8 @@ Carry-over into later chunks:
   - **`DELAY_SPAN` (0.4) in `morph.ts` must match `particles.vert.glsl`** (and the smoothstep), or
     the CPU freeze of a running morph won't match what's on screen and particles will pop.
   - **Pages (R.1):** `ChapterSection` and every per-chapter ScrollTrigger are gone. `page.id` comes
-    from the URL (`RouteWatcher`); nothing writes `scroll.progress` until R.2 feeds it from each
-    page's own scroll.
+    from the URL (`RouteWatcher`), which (R.2) also writes `scroll.progress`: the current page's
+    own scroll, 0–1.
   - **4.2 NameCard:** the name is fitted into `SHAPE_BOX` like every shape. 4.2 fits it into the
     card's box (pass a box to `normalize`, or scale the mesh). The 2.2 board's "particles form the
     name during the gate's exit" also belongs there: today the name morph runs under the gate.
@@ -527,8 +526,9 @@ Carry-over into later chunks:
     `canvas/particles/pointer.ts` turns a client position into the smoothed z = 0 point, velocity
     and strength; give it a second input (e.g. `feed(clientX, clientY)` from `ar.hand`) rather than
     a second tracker, so mouse and hand never fight over `uPointer`.
-  - **Scroll response constants** (top of `Particles.tsx`): rotate up to 0.5 rad on Y and tilt 0.12
-    on X over the whole page, parallax ±0.15 per chapter, smoothed with τ 0.35 s. Tune by feel.
+  - **Scroll response constants** (top of `Particles.tsx`): from the current page's own scroll
+    (`scroll.progress`, R.2): rotate up to 0.5 rad on Y, tilt 0.12 on X, lift up to 0.3 (parallax),
+    smoothed with τ 0.35 s. A page that doesn't scroll leaves the mesh at rest. Tune by feel.
   - **Laptop:** the screen frame and deck read, but the keys are a brighter band rather than
     separate keys at 30k (the model's keys are shallow). A model with deeper key gaps would fix it.
   - **Per-frame writes** go through the `points` ref (`mesh.material.uniforms.uX.value = …`), never
@@ -558,7 +558,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.3 KB after R.1**, **206.0 KB after 3.6** (205.5 after 3.5),
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.4 KB after R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
   (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
   nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
@@ -649,9 +649,7 @@ Carry-over into later chunks:
   - **Island / menu:** follow `page.id`; off the six pages (credits, dev, terminal, 404) the island
     shows "Menu", no number, every dot dim. Keyboard-opening the links focuses the current link, or
     the first one there. The phone menu's current item just closes the menu.
-  - **Canvas bridge:** `ScrollMorph` maps `pathname` through `pageFromPath()` (same table) to that
-    page's shape and mood; Home keeps the name until R.3; pages outside the six get the calm-down.
-    R.2 replaces it with RouteMorph.
+  - **Canvas:** replaced in R.2 by `RouteMorph` (see below).
   - **Home:** `app/page.tsx` is exactly `h-dvh` with `overflow-hidden` (no scroll). Desktop (md up):
     the status line (`LocalTime`, shared with `GateClock`), "Hi, I'm Nasheet.", two lines and the
     hint row centred 40 px from the bottom. Phone: eyebrow, "This is my desk." and a chip row of the
@@ -669,6 +667,46 @@ Carry-over into later chunks:
     page to a long one landed at 0.
   - **Phones:** the name shape is wider than a 390 px screen (the old "scale the mesh by aspect"
     carry-over, canvas scope: R.2 / R.3).
+- **Canvas retrofit (R.2):** `canvas/RouteMorph.tsx` (was ScrollMorph), `morph.ts`, `mood.ts`,
+  `Particles.tsx`, `particles.frag.glsl`, `colors.ts` (comments), `RouteWatcher.tsx`, and
+  `shapePageAt()` / `SCATTER_FADE` in `content/chapters.ts`.
+  - **Already in place from 3.5:** opaque canvas cleared to bg/base (tweened 400 ms with the
+    theme), the one premultiplied blend for both themes (no separate light path), body on bg/base.
+  - **Route → shape:** `shapePageAt(path)` = the page whose own route is exactly `path`. Only the
+    six routes get a shape; every other route (case studies, `/arcade/*`, 404, `/terminal`,
+    `/credits`, `/dev`) gets the scatter, `fallbackMood` and `uFade` = `SCATTER_FADE` (0.6), even
+    where the island says Work / Arcade (Nasheet's call). Home keeps the name until R.3.
+  - **Timing:** shape, mood and fade all tween together over `MORPH_DURATION` = 0.9 s,
+    `power3.inOut` (was 1.2 s for chapters and 2.4 s for the calm-down). The 3.3 coalescing and
+    freeze-on-retarget are unchanged.
+  - **`uFade` (0–1):** 0 full strength, 1 the background colour. The shader multiplies the
+    premultiplied output by `1 - uFade` (in both blends that pulls the colour toward the clear
+    colour). `FADE_KEEP` is gone; 0.6 looks the same as 3.5's "keep 40%".
+  - **Scroll:** `RouteWatcher` writes `scroll.progress` (this page's `scrollY / (scrollHeight -
+    innerHeight)`, 0 if it doesn't scroll) on scroll, resize and route change (its layout effect
+    runs after the template placed the page). `Particles` no longer reads Lenis.
+- **Verified R.2 (headless Chromium on the Iris Xe, production build; Firefox and Safari are manual):**
+  - **Frames, before -> after** (1280 x 720, two runs each): idle p50 6.1 / p95 6.2 -> 6.1 / 6.2-6.3;
+    one page switch 6.1 / 6.2-6.3 -> 6.1 / 6.2-6.3 (max 12.4); rapid switching (8 pages, one every
+    ~350 ms, through every shape) 6.1 / 6.2 -> 6.1 / 6.2-6.3, 0 frames over 20 ms after (1 of 2 runs
+    before had one 26 ms frame).
+  - **Theme toggle:** the first toggle after a load costs one 90–97 ms frame **in both builds**
+    (pre-existing cold path, not the canvas: see follow-up), later toggles 12–18 ms max in both.
+    Screenshots at 0 / 120 / 240 / 480 ms: the clear colour and particles slide from dark to light
+    with no pop.
+  - **Morphs:** About → Work filmstrip (300 / 550 / 800 / 1300 ms) dissolves the sphere into the
+    laptop smoothly; Work → Skills → Work reverses without a pop and settles on the laptop.
+  - **Scatter routes:** `/work/some-case`, `/nope` and a push to `/credits` show the faint scatter
+    (0.6); Contact → `/credits` fades and morphs together.
+  - **Reduced motion:** a route change draws one correct frame (controller, scatter).
+  - **Not verified:** the page-scroll parallax by eye (`/dev` shows only the faint scatter; no long
+    page with a shape exists until Phase 4).
+  - First-load JS on `/` 206.4 KB (+0.1 KB).
+  - **[manual]** The theme toggle in **Firefox and Safari** (no pop, no flash); the 0.9 s morph by
+    feel; the parallax on `/work` once it's long (4.x).
+  - **Follow-up (10.4):** the first theme toggle per page load has a ~90 ms frame (both before and
+    after R.2; the profile points at app JS and Framer's projection, e.g. the island alert's first
+    layout). Profile it in the performance pass.
 - **Verified R.1 (headless Chromium on the Iris Xe, production build with the /dev flag):**
   - **Reload** of `/`, `/about`, `/work`, `/skills`, `/arcade`, `/contact`: `data-page` and the static
     shell's label are right at DOMContentLoaded, and the live island matches (e.g. "Navigation: 03
@@ -1662,10 +1700,9 @@ Decisions so far (don't re-ask):
     integrates `uDriftTime += delta x drift` (so speed changes never jump the drift). Moods: Home
     0.9 / 0.6 / 0.5 (crisp name), About 1.1 / 1 / 1.2, Work 1 / 0.8 / 0.7, Skills 1 / 1.3 / 1, Arcade
     1.1 / 1.6 / 1.1, Contact 0.95 / 0.7 / 0.8; `fallbackMood` 0.85 / 0.35 / 1.3.
-  - **Other routes:** `morphTo(scatter, { duration: 2.4 })`, the fallback mood over 2.4 s, and
-    `fadeTo(1)` over 1.2 s (back to `/`: 0 over 0.8 s). `uFade` scales alpha to 40% (`FADE_KEEP`),
-    which in both blends pulls the particles toward the background. The first route of a visit
-    starts faded with no tween (in dev, StrictMode's second effect run tweens it once).
+  - **Other routes:** superseded by R.2 (`RouteMorph`: one 0.9 s morph, and `uFade` 0.6 on the
+    scatter routes). The first route of a visit starts at its fade with no tween (in dev,
+    StrictMode's second effect run tweens it once).
 - **Verified 3.5 (headless Chromium on the Iris Xe, production build):**
   - **Frames (1280 x 720), before -> after:** idle p50 6.1 / p95 6.2-6.3 -> 6.1 / 6.2 ms in both themes.
     Morphing into each of the 6 chapters in both themes, the 0.4 s theme tween and the 2.5 s route

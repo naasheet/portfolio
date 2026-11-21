@@ -23,7 +23,7 @@ export function FrameDriver() {
   useEffect(() => {
     if (reduced) {
       advance(0);
-      // Instant shape swaps (ScrollMorph) ask for a frame through canvas/frame.ts.
+      // Instant shape swaps (RouteMorph) ask for a frame through canvas/frame.ts.
       setFrameRequester(() => advance(0));
       return () => setFrameRequester(null);
     }

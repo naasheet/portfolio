@@ -12,8 +12,8 @@ export type ParticleMesh = Points<BufferGeometry, ShaderMaterial>;
 
 /** Must match particles.vert.glsl: delay = aRandom.x * DELAY_SPAN, progress over 1 - DELAY_SPAN. */
 const DELAY_SPAN = 0.4;
-/** A chapter morph's length and easing; mood.ts tweens the chapter mood with the same. */
-export const MORPH_DURATION = 1.2;
+/** A page morph's length and easing (R.2); mood.ts tweens the mood and the fade with the same. */
+export const MORPH_DURATION = 0.9;
 export const MORPH_EASE = "power3.inOut";
 
 let tween: gsap.core.Tween | null = null;
@@ -30,7 +30,7 @@ let pending: {
  * task are coalesced (only the last one runs, on a microtask), and a morph that's already
  * running is frozen where it is, on the CPU, before the new one starts, so nothing pops.
  * `instant` (reduced motion) swaps without a morph and asks for one frame. `duration` (s) slows
- * it down, e.g. the calm move to the scatter off the homepage.
+ * it down.
  */
 export function morphTo(
   mesh: ParticleMesh,

@@ -3,7 +3,7 @@
 import { ShapeCycler } from "./dev/ShapeCycler";
 import { FrameDriver } from "./FrameDriver";
 import { Particles } from "./particles/Particles";
-import { ScrollMorph } from "./ScrollMorph";
+import { RouteMorph } from "./RouteMorph";
 
 /** Everything inside the one R3F canvas. */
 export function Scene({
@@ -19,7 +19,7 @@ export function Scene({
   return (
     <>
       <Particles count={count} pointScale={pointScale} />
-      <ScrollMorph pathname={pathname} />
+      <RouteMorph pathname={pathname} />
       {/* Dev only: `]` cycles through the shapes (dropped from production builds). */}
       {process.env.NODE_ENV === "development" ? <ShapeCycler /> : null}
       {/* Last on purpose: effects run in sibling order, so the scene's own setup (the draw

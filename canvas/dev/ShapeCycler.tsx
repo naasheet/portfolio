@@ -9,7 +9,7 @@ import { SHAPE_IDS, getShape } from "../shapes/registry";
 /**
  * Development only (rendered behind a NODE_ENV check in Scene): `]` morphs to the next ready
  * shape through the same morphTo as the scroll morph, so a press mid-morph doesn't pop.
- * Scrolling into another chapter takes over again.
+ * Changing page takes over again.
  */
 export function ShapeCycler() {
   const scene = useThree((s) => s.scene);

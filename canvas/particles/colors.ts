@@ -13,7 +13,10 @@ export type CanvasColors = {
   b: Color;
   /** bg/base: the canvas is opaque and clears to it every frame (scene.background). */
   bg: Color;
-  /** `uTheme`: 0 dark (additive look), 1 light (normal "over" blending). */
+  /**
+   * `uTheme`: 0 dark, 1 light. One blend for both (ONE / ONE_MINUS_SRC_ALPHA, premultiplied):
+   * alpha = a x uTheme, so dark adds light and light paints over, and the tween has no pop.
+   */
   theme: number;
 };
 

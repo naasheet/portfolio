@@ -4,8 +4,8 @@ import { requestFrame } from "../frame";
 import { MORPH_DURATION, MORPH_EASE } from "./morph";
 
 /**
- * The live mood (3.5): the chapter mood's size / drift / spread, plus `fade` (0 on the homepage,
- * 1 elsewhere: the particles fade toward the background). One object for the one Points mesh;
+ * The live mood (3.5): the page mood's size / drift / spread, plus `fade` (uFade, R.2: 0 full
+ * strength, 1 all the way to the background; the scatter routes use SCATTER_FADE). One object for the one Points mesh;
  * Particles copies it into the uniforms every frame (drift speed is integrated there, so a
  * speed change never jumps the drift).
  */
@@ -38,10 +38,13 @@ export function moodTo(
   });
 }
 
-/** Fade the particles toward the background (1) or back to full (0). */
+/** Fade the particles toward the background (1) or back to full (0), with the morph's timing. */
 export function fadeTo(
   fade: number,
-  { duration, instant = false }: { duration: number; instant?: boolean },
+  {
+    duration = MORPH_DURATION,
+    instant = false,
+  }: { duration?: number; instant?: boolean } = {},
 ): void {
   fadeTween?.kill();
   fadeTween = null;
@@ -50,7 +53,7 @@ export function fadeTo(
     requestFrame();
     return;
   }
-  fadeTween = gsap.to(liveMood, { fade, duration, ease: "power2.out" });
+  fadeTween = gsap.to(liveMood, { fade, duration, ease: MORPH_EASE });
 }
 
 /** Drop running tweens (unmount). */

@@ -28,20 +28,15 @@ import {
 } from "./pointer";
 import { mulberry32 } from "../shapes/random";
 import { loadShapes, scatterShape } from "../shapes/registry";
-import { getLenis } from "@/lib/motion/lenis";
 import { useStore } from "@/lib/store";
 
 export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
 
-/** Overall page scroll, 0–1: Lenis's progress, or native scroll when Lenis is off. */
-function pageProgress(): number {
-  const lenis = getLenis();
-  if (lenis) return Number.isFinite(lenis.progress) ? lenis.progress : 0;
-  const max = document.documentElement.scrollHeight - window.innerHeight;
-  return max > 0 ? window.scrollY / max : 0;
-}
-
-/** Scroll response: rotation (rad) over the whole page, and parallax (world units) per chapter. */
+/**
+ * Scroll response (R.2): the current page's own scroll progress (scroll.progress, written by
+ * RouteWatcher) turns the mesh (rad over the whole page) and lifts it (parallax, world units),
+ * so long pages such as /work move the canvas; pages that don't scroll leave it at rest.
+ */
 const SCROLL_ROTATE_Y = 0.5;
 const SCROLL_TILT_X = 0.12;
 const PARALLAX_Y = 0.3;
@@ -171,8 +166,8 @@ export function Particles({
     if (!mesh) return;
     return watchTheme(mesh.material, colors.bg);
   }, [colors]);
-  // Smoothed scroll values, kept in a ref (fast values skip React, CLAUDE.md §5.3).
-  const scroll = useRef({ page: 0, chapter: 0.5 });
+  // Smoothed scroll progress, kept in a ref (fast values skip React, CLAUDE.md §5.3).
+  const scroll = useRef(0);
   useFrame((state, delta) => {
     const mesh = points.current;
     if (!mesh) return;
@@ -188,15 +183,14 @@ export function Particles({
     if (u.uSpread) u.uSpread.value = liveMood.spread;
     if (u.uFade) u.uFade.value = liveMood.fade;
 
-    // Rotation and parallax, scrubbed to scroll and separate from the morphs (3.3).
-    const s = scroll.current;
+    // Rotation and parallax, scrubbed to the page's scroll and separate from the morphs.
     const k = 1 - Math.exp(-Math.max(delta, 0) / SCROLL_TAU);
-    s.page += (pageProgress() - s.page) * k;
-    s.chapter += (useStore.getState().scroll.progress - s.chapter) * k;
-    if (u.uScroll) u.uScroll.value = s.page;
-    mesh.rotation.y = s.page * SCROLL_ROTATE_Y;
-    mesh.rotation.x = Math.sin(s.page * Math.PI) * SCROLL_TILT_X;
-    mesh.position.y = (s.chapter - 0.5) * PARALLAX_Y;
+    scroll.current += (useStore.getState().scroll.progress - scroll.current) * k;
+    const s = scroll.current;
+    if (u.uScroll) u.uScroll.value = s;
+    mesh.rotation.y = s * SCROLL_ROTATE_Y;
+    mesh.rotation.x = Math.sin(s * Math.PI) * SCROLL_TILT_X;
+    mesh.position.y = s * PARALLAX_Y;
 
     // Pointer: parts the particles like water (3.4).
     const p = pointer.current?.update(state.camera, delta);

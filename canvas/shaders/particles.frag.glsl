@@ -10,7 +10,7 @@
 uniform vec3 uColorA;  // canvas/particle-a (teal)
 uniform vec3 uColorB;  // canvas/particle-b (amber)
 uniform float uTheme;  // 0 dark, 1 light
-uniform float uFade;   // 0 homepage, 1 other routes: the particles fade toward the background
+uniform float uFade;   // 0 full strength .. 1 the background colour (scatter routes: 0.6, R.2)
 
 varying float vMix;
 varying float vAlpha;
@@ -18,8 +18,6 @@ varying float vAlpha;
 // Light theme: darker, so the points read as ink on paper, not glare. (Alpha is kept as a knob.)
 const float LIGHT_SHADE = 0.7;
 const float LIGHT_ALPHA = 1.0;
-// Other routes keep about 40% of the particles' strength.
-const float FADE_KEEP = 0.4;
 
 void main() {
   float d = length(gl_PointCoord - 0.5);
@@ -29,7 +27,9 @@ void main() {
   vec3 color = mix(uColorA, uColorB, vMix) * mix(1.0, LIGHT_SHADE, uTheme);
   float alpha = a * a * vAlpha
     * mix(1.0, LIGHT_ALPHA, uTheme)
-    * mix(1.0, FADE_KEEP, uFade);
+    // Scaling the premultiplied colour pulls it toward the background in both blends:
+    // additive (dark) adds less light, "over" (light) covers less of the clear colour.
+    * (1.0 - uFade);
 
   // Convert to the output colour space first, then premultiply.
   gl_FragColor = vec4(color, 1.0);

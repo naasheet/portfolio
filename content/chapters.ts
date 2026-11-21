@@ -91,6 +91,12 @@ export const chapters = [
 /** The shape on every other route, and before the first chapter shape is ready. */
 export const fallbackShape: ShapeSpec = { kind: "scatter" };
 
+/**
+ * How far the scatter is pulled toward the background on every other route (uFade, R.2):
+ * 0 = full strength, 1 = gone.
+ */
+export const SCATTER_FADE = 0.6;
+
 /** The mood on every other route: small, slow and loose, so the canvas calms behind content. */
 export const fallbackMood: Mood = { size: 0.85, drift: 0.35, spread: 1.3 };
 
@@ -113,4 +119,12 @@ export function pageFromPath(path: string): PageId | null {
     if (path === route || (nested && path.startsWith(route + "/"))) return id;
   }
   return null;
+}
+
+/**
+ * The page whose shape the canvas shows (R.2): only a page's own route, never deeper ones, so a
+ * case study or a game shows the scatter even though the island counts it as Work / Arcade.
+ */
+export function shapePageAt(path: string): Chapter | undefined {
+  return chapters.find((c) => c.route === path);
 }

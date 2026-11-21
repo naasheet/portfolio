@@ -49,7 +49,7 @@ export type AudioSlice = {
 };
 
 export type ScrollSlice = {
-  /** FAST. 0–1 scroll progress through the current page (fed per page from R.2). */
+  /** FAST. 0–1 scroll progress through the current page (RouteWatcher, R.2). */
   progress: number;
   setProgress: (progress: number) => void;
 };
