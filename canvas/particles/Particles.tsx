@@ -28,6 +28,8 @@ import {
 } from "./pointer";
 import { mulberry32 } from "../shapes/random";
 import { getRoom, loadShapes, scatterShape } from "../shapes/registry";
+import { updateRoomView } from "../room/hitAreas";
+import { liveHot, watchHot } from "../room/hot";
 import { useStore } from "@/lib/store";
 
 export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
@@ -144,6 +146,11 @@ export function Particles({
           uDeskY: { value: 0 },
           uPool: { value: new Vector4() },
           uSteam: { value: new Vector4(0, 0, 0, 1) },
+          // The module array itself: hot.ts's tweens write it, the uniform reads it each draw.
+          uHot: { value: liveHot },
+          uAnyHot: { value: 0 },
+          uFocus: { value: -1 },
+          uBurst: { value: 0 },
         },
       }),
     [colors],
@@ -210,6 +217,8 @@ export function Particles({
 
   // Uniforms are written through the mesh ref: refs are the place for per-frame mutation.
   const points = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
+  // The room's hover / focus highlight follows the store's room.hot (R.4).
+  useEffect(() => watchHot(), []);
   // Theme changes tween the particle colours and the clear colour (3.5).
   useEffect(() => {
     const mesh = points.current;
@@ -241,6 +250,7 @@ export function Particles({
     (u.uPool?.value as Vector4 | undefined)?.set(r.poolX, r.poolY, r.poolZ, r.poolR);
     (u.uSteam?.value as Vector4 | undefined)?.set(r.steamX, r.steamY, r.steamZ, r.steamH);
     if (reflection.current) reflection.current.visible = r.room > 0.001;
+    if (u.uAnyHot) u.uAnyHot.value = Math.max(...liveHot);
 
     // Rotation and parallax, scrubbed to the page's scroll and separate from the morphs.
     const k = 1 - Math.exp(-Math.max(delta, 0) / SCROLL_TAU);
@@ -268,6 +278,10 @@ export function Particles({
         Math.sin(s * Math.PI) * SCROLL_TILT_X + (roomTilt + tilt.current.x) * r.room;
       obj.position.y = s * PARALLAX_Y + lift * r.room;
     }
+
+    // R.4: where each object is on screen, for the DOM's hit test, tags and hover card.
+    const layout = getRoom()?.layout[r.phone > 0.5 ? "phone" : "desktop"];
+    updateRoomView(mesh, state.camera, state.size, layout?.boxes ?? null, r.room);
 
     if (p) {
       (u.uPointer?.value as Vector2 | undefined)?.set(p.x, p.y);

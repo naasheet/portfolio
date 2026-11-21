@@ -29,6 +29,13 @@ uniform float uLamp;             // 1 lamp on (dark theme), 0 off (light theme)
 uniform float uDeskY;            // the desk plane's height, shape units (reflections flip here)
 uniform vec4 uPool;              // light pool: centre xyz, radius
 uniform vec4 uSteam;             // steam: origin xyz, rise height
+// R.4: hover / focus highlight per object (content/room.ts order) and the strongest of them.
+uniform float uHot[9];
+uniform float uAnyHot;
+// R.4: opening a page from the room (or coming back): the focus object grows first, the rest
+// bursts outward (uBurst 0 -> 1 -> 0) and re-forms. uFocus -1 = none. Matches morph.ts.
+uniform float uFocus;
+uniform float uBurst;
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
@@ -44,7 +51,11 @@ varying float vAlpha;
 
 void main() {
   // Each particle's own morph progress: later delays start later, all end by uMorph = 1.
-  float delay = aRandom.x * 0.4;
+  float delay = aRandom.x;
+  if (uFocus > -0.5) {
+    delay = abs(aRoom.x - uFocus) < 0.5 ? delay * 0.15 : 0.3 + delay * 0.7;
+  }
+  delay *= 0.4;
   float progress = clamp((uMorph - delay) / (1.0 - 0.4), 0.0, 1.0);
   progress = progress * progress * (3.0 - 2.0 * progress);
   vec3 pos = mix(aFrom, aTo, progress);
@@ -106,6 +117,17 @@ void main() {
   roomAlpha = mix(roomAlpha, 0.3, toDust);
   roomSize = mix(roomSize, 0.55, toDust);
 
+  // Hover / focus (R.4): the hot object grows 1.25x, brightens 1.35x and glows; other objects
+  // fade to 20%, the ambience to 70%.
+  if (aRoom.x > -0.5) {
+    float hot = uHot[int(floor(aRoom.x + 0.5))];
+    roomSize *= 1.0 + 0.25 * hot;
+    roomColor *= 1.0 + 0.35 * hot;
+    roomAlpha = min(1.0, roomAlpha + 0.3 * hot) * mix(1.0, 0.2, uAnyHot * (1.0 - hot));
+  } else {
+    roomAlpha *= mix(1.0, 0.7, uAnyHot);
+  }
+
   vColor = mix(color, roomColor, isRoom);
   float alphaScale = mix(1.0, roomAlpha, isRoom);
   float sizeScale = mix(1.0, roomSize, isRoom);
@@ -131,6 +153,13 @@ void main() {
   // from the camera; take its point at this particle's depth, so the parting sits under the
   // cursor whatever the depth.
   vec4 world = modelMatrix * vec4(pos, 1.0);
+
+  // The burst (R.4): everything but the focus object flies out about 380 px and comes back.
+  if (uFocus > -0.5 && uBurst > 0.0 && abs(aRoom.x - uFocus) >= 0.5) {
+    float len = max(length(world.xy), 0.3);
+    world.xy += world.xy / len * uBurst * 1.6 * (0.6 + 0.4 * aRandom.w);
+    world.z += uBurst * 0.5 * (aRandom.z - 0.5);
+  }
   float depth = (world.z - cameraPosition.z) / (0.0 - cameraPosition.z);
   vec2 pointerAt = cameraPosition.xy + (uPointer - cameraPosition.xy) * depth;
   vec2 d = world.xy - pointerAt;

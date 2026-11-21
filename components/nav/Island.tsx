@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, m } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -11,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { chapterNumber, chapters } from "@/content/chapters";
+import { roomObjects } from "@/content/room";
 import { copy } from "@/content/copy";
 import { focusRing } from "@/components/ui/controlStyles";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
@@ -62,6 +64,7 @@ export function Island() {
     getServerIsland,
   );
   const page = useStore((s) => s.page.id);
+  const hot = useStore((s) => s.room.hot);
   const playing = useStore((s) => s.audio.playing);
   const menuOpen = useStore((s) => s.ui.menuOpen);
   const reduced = useReducedMotion();
@@ -90,6 +93,12 @@ export function Island() {
   const index = current ? chapters.indexOf(current) : -1;
   const number = current ? chapterNumber(index) : "";
   const label = current?.name ?? copy.nav.menuTitle;
+  // Peek (R.4): pointing at a room object on Home shows where it goes, "01 Home → 03 Work ↵".
+  const hotOpens = roomObjects.find((o) => o.id === hot)?.opens;
+  const peek =
+    page === "home" && hotOpens?.kind === "page"
+      ? chapters.find((c) => c.id === hotOpens.page)
+      : undefined;
 
   useEffect(() => () => window.clearTimeout(retract.current), []);
 
@@ -183,20 +192,46 @@ export function Island() {
         focusRing,
       )}
     >
-      {number ? (
-        <span className="text-caption-2 font-mono text-island-accent">
-          {number}
-        </span>
-      ) : null}
-      <span
-        className={cn(
-          "text-island-text",
-          small ? "text-footnote" : "text-subhead font-semibold",
-        )}
-      >
-        {label}
-      </span>
-      {small ? null : <ChapterDots current={index} />}
+      {peek && !small ? (
+        <>
+          <span className="text-caption-2 font-mono text-island-text-secondary">
+            {number}
+          </span>
+          <span className="text-subhead text-island-text-secondary">
+            {label}
+          </span>
+          <ArrowRight aria-hidden className="size-4 text-island-accent" />
+          <span className="text-caption-2 font-mono text-island-accent">
+            {chapterNumber(chapters.indexOf(peek))}
+          </span>
+          <span className="text-subhead font-semibold text-island-text">
+            {peek.name}
+          </span>
+          <kbd
+            aria-hidden
+            className="flex h-5 min-w-5 items-center justify-center rounded-key border border-island-border text-caption-2 font-mono text-island-text-secondary"
+          >
+            ↵
+          </kbd>
+        </>
+      ) : (
+        <>
+          {number ? (
+            <span className="text-caption-2 font-mono text-island-accent">
+              {number}
+            </span>
+          ) : null}
+          <span
+            className={cn(
+              "text-island-text",
+              small ? "text-footnote" : "text-subhead font-semibold",
+            )}
+          >
+            {label}
+          </span>
+          {small ? null : <ChapterDots current={index} />}
+        </>
+      )}
       {small || !playing ? null : (
         <EqBars className="ml-1 text-island-accent" />
       )}

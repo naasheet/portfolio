@@ -61,9 +61,15 @@ const prefersReducedMotion = () =>
 
 /**
  * Leave the current page with the exit animation, then push `href`. Next's own scroll handling
- * is off (`scroll: false`): the template decides where the new page starts.
+ * is off (`scroll: false`): the template decides where the new page starts. `immediate` pushes
+ * at once with no exit (opening a page from the particle room, R.4: the canvas's morph is the
+ * transition).
  */
-export function navigate(router: PushRouter, href: string): void {
+export function navigate(
+  router: PushRouter,
+  href: string,
+  { immediate = false }: { immediate?: boolean } = {},
+): void {
   if (leaving) return;
   rememberScroll(window.location.pathname, window.scrollY);
   // Until the next page takes over, nothing files positions (the exit doesn't scroll).
@@ -72,7 +78,7 @@ export function navigate(router: PushRouter, href: string): void {
     pushing = true;
     router.push(href, { scroll: false });
   };
-  if (prefersReducedMotion()) {
+  if (immediate || prefersReducedMotion()) {
     push();
     return;
   }

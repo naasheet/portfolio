@@ -78,6 +78,17 @@ export const copy = {
       /** Accessible name of the phone's chip row. */
       pages: "Pages",
     },
+    /** The particle room's hover, focus and open (R.4; Home — hovering the laptop). */
+    room: {
+      /** The cursor's view pill over an object. */
+      open: "Open ↗",
+      /** Hover card footer: "Click, or [3]". */
+      clickOr: "Click, or",
+      /** Accessible name of the visually hidden list of the room's links. */
+      links: "Things on the desk",
+      /** TODO(content): Work's three project tiles until content/projects.ts exists (4.1). */
+      projectTile: (n: number) => `Project ${n}`,
+    },
   },
   /** Placeholder pill in the persistent layer (2.3); 7.4 replaces it with the Ask bubble. */
   layer: {

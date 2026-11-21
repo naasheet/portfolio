@@ -1,4 +1,6 @@
 import { Hand } from "lucide-react";
+import { RoomLinks } from "@/components/home/RoomLinks";
+import { RoomOverlayLoader } from "@/components/home/RoomOverlayLoader";
 import { ChapterLink } from "@/components/nav/ChapterLink";
 import { Kbd } from "@/components/ui/Kbd";
 import { LocalTime } from "@/components/ui/LocalTime";
@@ -39,7 +41,11 @@ export default function Home() {
       </section>
 
       {/* Desktop (Home — particle room, desktop 1440). */}
-      <section className="hidden flex-col gap-4 px-12 pt-28 md:flex">
+      {/* data-room-avoid: the room's hover card keeps clear of it (R.4). */}
+      <section
+        data-room-avoid
+        className="hidden w-fit flex-col gap-4 px-12 pt-28 md:flex"
+      >
         <p className="flex items-center gap-2 text-subhead text-text-secondary">
           <span aria-hidden className="relative inline-flex size-2">
             <span className="absolute inset-0 animate-status-pulse rounded-chip bg-status-success" />
@@ -59,6 +65,9 @@ export default function Home() {
         </p>
       </section>
 
+      {/* The room for the keyboard and screen readers (R.4): visually hidden, the Tab stops. */}
+      <RoomLinks />
+
       {/* Hint row, desktop. */}
       <p className="absolute inset-x-0 bottom-10 hidden items-center justify-center gap-3 text-footnote text-text-secondary md:flex">
         {t.hints.look}
@@ -77,6 +86,9 @@ export default function Home() {
           {t.hints.hand}
         </span>
       </p>
+
+      {/* The room's tags, hover card and hit areas (R.4), over the canvas. */}
+      <RoomOverlayLoader />
 
       {/* Chip row, phone: a plain way into the five pages, above the Ask button. */}
       <nav

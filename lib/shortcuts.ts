@@ -89,7 +89,8 @@ function openPageByNumber(key: string): boolean {
     return false;
   const page = chapters[Number(key) - 1];
   if (!page || page.id === "home") return false;
-  navigate(router, page.route);
+  // Same as clicking the object in the room (R.4): push at once, the morph is the transition.
+  navigate(router, page.route, { immediate: true });
   return true;
 }
 

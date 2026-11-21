@@ -15,6 +15,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 import type { PageId } from "@/content/chapters";
+import type { RoomObjectId } from "@/content/room";
 import { storage } from "./browser";
 import { getTheme, setTheme, type Theme } from "./theme";
 
@@ -111,10 +112,32 @@ export type ThemeSlice = {
   toggleMode: () => void;
 };
 
+/** Objects in the particle room (content/room.ts roomObjects). */
+export const ROOM_OBJECT_COUNT = 9;
+
+/**
+ * The particle room's interaction (R.4). The canvas projects each object's box to the screen
+ * every frame and writes `view` in place (FAST: a fixed object, never replaced, read with
+ * getState() in a ticker). The DOM (RoomOverlay, RoomLinks) hit-tests the pointer and writes
+ * `hot`, which the canvas highlights and the island and hover card read.
+ */
+export type RoomSlice = {
+  /** The object being pointed at or focused, or null. */
+  hot: RoomObjectId | null;
+  setHot: (hot: RoomObjectId | null) => void;
+  /**
+   * FAST, mutated in place by the canvas. `shown` 0–1 (the room is assembled and on screen);
+   * `boxes`: per object (roomObjects order) its screen rect in CSS px and depth: x0, y0, x1, y1,
+   * depth (smaller = nearer). x0 is NaN when the object isn't shown.
+   */
+  view: { shown: number; boxes: Float32Array };
+};
+
 export type StoreState = {
   audio: AudioSlice;
   scroll: ScrollSlice;
   page: PageSlice;
+  room: RoomSlice;
   ar: ArSlice;
   ui: UiSlice;
   theme: ThemeSlice;
@@ -163,6 +186,17 @@ export const useStore = create<StoreState>()(
         id: null,
         set: (id) => {
           if (get().page.id !== id) patch("page", { id });
+        },
+      },
+
+      room: {
+        hot: null,
+        setHot: (hot) => {
+          if (get().room.hot !== hot) patch("room", { hot });
+        },
+        view: {
+          shown: 0,
+          boxes: new Float32Array(ROOM_OBJECT_COUNT * 5).fill(NaN),
         },
       },
 

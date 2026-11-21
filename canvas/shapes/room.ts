@@ -43,6 +43,11 @@ export type RoomLayout = {
   pool: [number, number, number, number];
   /** Steam: origin x, y, z and the height the wisps rise. */
   steam: [number, number, number, number];
+  /**
+   * Each object's box in shape units (R.4 hit areas), 6 floats per object in content/room.ts
+   * order: min x, y, z, max x, y, z. NaN for an object the layout doesn't show (the phone lamp).
+   */
+  boxes: Float32Array;
 };
 
 export type Room = {
@@ -298,6 +303,29 @@ export function buildRoom(
   };
   const deskMap = fit(desk, DESKTOP_BOX);
   const phoneMap = fit(phone, PHONE_BOX);
+
+  // Per-object boxes (objects, screen code and cursor; not the steam, which moves).
+  const boxesOf = (points: Float32Array, hidden: (object: number) => boolean) => {
+    const count = roomObjects.length;
+    const b = new Float32Array(count * 6);
+    for (let o = 0; o < count; o++) {
+      b.set([Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity], o * 6);
+    }
+    for (let k = 0; k < n; k++) {
+      const o = attr[k * 4]!;
+      const kind = attr[k * 4 + 1]!;
+      if (o < 0 || kind > ROOM_KIND.cursor) continue;
+      for (let d = 0; d < 3; d++) {
+        const v = points[k * 3 + d]!;
+        if (v < b[o * 6 + d]!) b[o * 6 + d] = v;
+        if (v > b[o * 6 + 3 + d]!) b[o * 6 + 3 + d] = v;
+      }
+    }
+    for (let o = 0; o < count; o++) if (hidden(o)) b.fill(NaN, o * 6, o * 6 + 6);
+    return b;
+  };
+  const deskBoxes = boxesOf(desk, () => false);
+  const phoneBoxes = boxesOf(phone, (o) => roomObjects[o]?.phone === null);
   const scaleOf = (map: (p: Vec3) => [number, number, number]) =>
     map([1, 0, 0])[0] - map([0, 0, 0])[0];
 
@@ -311,11 +339,13 @@ export function buildRoom(
       deskY: deskMap([0, 0, 0])[1],
       pool: [dPool[0], dPool[1], dPool[2], pool.radius * ds] as RoomLayout["pool"],
       steam: [dSteam[0], dSteam[1], dSteam[2], g.steam.height * ds] as RoomLayout["steam"],
+      boxes: deskBoxes,
     },
     phone: {
       deskY: phoneMap([0, 0, 0])[1],
       pool: [0, 0, 0, 0] as RoomLayout["pool"],
       steam: [pSteam[0], pSteam[1], pSteam[2], g.steam.height * ps * phoneScaleSteam] as RoomLayout["steam"],
+      boxes: phoneBoxes,
     },
   };
 

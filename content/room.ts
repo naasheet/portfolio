@@ -24,6 +24,9 @@ export type RoomOpens =
   | { kind: "page"; page: PageId }
   | { kind: "music" | "theme" | "now" | "plant" };
 
+/** The faint label at rest (R.4): its prefix ("03", "T", "♪") and whether it sits above or below. */
+export type RoomTag = { prefix: string; place: "above" | "below" };
+
 /** Where an object stands in the phone layout: its centre on the desk (x, z) and a scale. */
 export type PhonePlace = { x: number; z: number; scale: number };
 
@@ -33,6 +36,8 @@ export type RoomObject = {
   node: string;
   /** The tag next to the object. Plant has none (it's a secret). */
   label: string | null;
+  /** How the tag reads and where it sits (null: no tag). */
+  tag: RoomTag | null;
   opens: RoomOpens;
   /** Its keyboard shortcut, if any. */
   key: string | null;
@@ -49,6 +54,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "about",
     node: "about",
     label: "About",
+    tag: { prefix: "02", place: "above" },
     opens: { kind: "page", page: "about" },
     key: "2",
     share: 0.07,
@@ -59,6 +65,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "music",
     node: "music",
     label: "Music",
+    tag: { prefix: "♪", place: "below" },
     opens: { kind: "music" },
     key: null,
     share: 0.07,
@@ -69,6 +76,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "now",
     node: "mug",
     label: "Now",
+    tag: { prefix: "·", place: "below" },
     opens: { kind: "now" },
     key: null,
     share: 0.05,
@@ -79,6 +87,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "work",
     node: "work",
     label: "Work",
+    tag: { prefix: "03", place: "below" },
     opens: { kind: "page", page: "work" },
     key: "3",
     share: 0.23,
@@ -89,6 +98,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "skills",
     node: "skills",
     label: "Skills",
+    tag: { prefix: "04", place: "above" },
     opens: { kind: "page", page: "skills" },
     key: "4",
     share: 0.06,
@@ -99,6 +109,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "arcade",
     node: "arcade",
     label: "Arcade",
+    tag: { prefix: "05", place: "below" },
     opens: { kind: "page", page: "arcade" },
     key: "5",
     share: 0.08,
@@ -109,6 +120,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "lights",
     node: "lamp",
     label: "Lights",
+    tag: { prefix: "T", place: "above" },
     opens: { kind: "theme" },
     key: "T",
     share: 0.06,
@@ -119,6 +131,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "contact",
     node: "contact",
     label: "Contact",
+    tag: { prefix: "06", place: "below" },
     opens: { kind: "page", page: "contact" },
     key: "6",
     share: 0.07,
@@ -129,6 +142,7 @@ export const roomObjects: readonly RoomObject[] = [
     id: "plant",
     node: "plant",
     label: null,
+    tag: null,
     opens: { kind: "plant" },
     key: null,
     share: 0.06,
@@ -169,3 +183,20 @@ export const roomGeometry = {
   /** Steam over the mug: three wisps from the rim, rising this high. */
   steam: { origin: [-1.75, 0.66, 1.55], height: 0.95, wisps: 3, share: 0.4 },
 } as const;
+
+/**
+ * Tab order through the room (R.4): left to right on screen. R.4 makes only the page objects
+ * interactive; R.5 adds the headphones, the mug and the lamp. The plant is never in it.
+ */
+export const roomTabOrder: readonly RoomObjectId[] = [
+  "about",
+  "work",
+  "arcade",
+  "skills",
+  "contact",
+];
+
+/** The object that opens `page`, if any. */
+export function roomObjectForPage(page: string): RoomObject | undefined {
+  return roomObjects.find((o) => o.opens.kind === "page" && o.opens.page === page);
+}

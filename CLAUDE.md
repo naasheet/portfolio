@@ -156,7 +156,8 @@ Put new code in the folder that owns it. Don't create new top-level folders with
    island and the menu read it, and the canvas morphs per route (`canvas/RouteMorph.tsx`). DOM code never imports `canvas/` (it would also pull
    three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
-   (progress), `page` (id: which of the six pages, or null), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
+   (progress), `page` (id: which of the six pages, or null), `room` (hot object; `view`, the
+   canvas's projected object boxes, mutated in place), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
    chat open, chat streaming, sound enabled), `theme`.
 3. **Fast values skip React.** Audio levels, hand position and scroll progress change every
    frame. Read them with `useStore.getState()` inside `useFrame` or the ticker, and keep them
@@ -298,7 +299,8 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 - Uniforms: `uTime`, `uMorph`, `uScroll`, `uPointer`, `uPointerRadius`, `uPointerStrength`,
   `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`. Added since: `uPointerVelocity`,
   `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), `uRoom`, `uPhone`, `uLamp`, `uDeskY`,
-  `uPool`, `uSteam` (R.3), plus `uPixelRatio` and `uSize`. Attributes since: `aRoom` (R.3).
+  `uPool`, `uSteam` (R.3), `uHot[9]`, `uAnyHot`, `uFocus`, `uBurst` (R.4), plus `uPixelRatio` and
+  `uSize`. Attributes since: `aRoom` (R.3).
 - The canvas is **opaque** (`alpha: false`) and clears to the theme's `bg/base` (3.5); `<body>` stays
   on `bg/base` for the first paint and the no-WebGL case.
 - Fallbacks: reduced motion gets a still frame of the hero shape; no WebGL gets a CSS gradient.
@@ -498,7 +500,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1–R.3 done; R.4 is next; phase 4 follows)
+Current phase: **R — Separate pages and the particle room** (R.1–R.4 done; R.5 is next; phase 4 follows)
 (phases 0, 2 and 3 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
@@ -507,7 +509,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -561,7 +563,8 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
+  plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
   (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
   nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
@@ -723,6 +726,48 @@ Carry-over into later chunks:
   - **Preload:** `room.glb` (102 KB gzipped) is in the gate's manifest.
   - **Not built (later R chunks):** hover and click, labels, idle motions other than steam (pencils,
     buttons, bulb flicker, flap, leaves), the arrival sequence.
+- **Room hover, focus and open (R.4):** `canvas/room/hitAreas.ts`, `canvas/room/hot.ts`,
+  `components/home/RoomOverlay.tsx` (+ `RoomOverlayLoader`, lazy), `HoverCard.tsx`, `RoomLinks.tsx`.
+  - **Data flow (DOM never imports canvas):** the canvas projects each object's box (per layout,
+    from the room build) through the mesh's current transform every frame and writes the screen
+    rects + depth into `room.view` (mutated in place, FAST). `RoomOverlay` hit-tests window
+    pointer moves against them (padded 16 px, nearest wins; not over links, buttons or the nav)
+    and writes `room.hot`; `RoomLinks` focus writes it too. The canvas watches `room.hot`
+    (`watchHot`) and tweens `liveHot` (the `uHot` array itself; in 180 ms, out 240 ms).
+  - **Shader:** the hot object's points x1.25 size, x1.35 colour, +0.3 alpha; other objects x0.2,
+    ambience x0.7 (all by `uAnyHot`).
+  - **DOM layer** (one gsap ticker, transforms only, CLS 0): faint tags (prefix + label, above or
+    below per `content/room.ts`; not the plant; desktop with a fine pointer only), an invisible
+    100 px hit element scaled over the hot object (`data-cursor="view"`, "Open ↗": the cursor only
+    re-reads modes on pointerover, so a hit element is needed; it also takes the click), and the
+    320 px HoverCard with a dashed connector. The card keeps clear of Home's intro
+    (`data-room-avoid`, `w-fit`).
+  - **Interactive in R.4:** only the five page objects (`roomTabOrder`: About, Work, Arcade,
+    Skills, Contact). Headphones, mug and lamp have tags but no hover until R.5.
+  - **Opening:** click, Enter or keys 2–6 → `navigate(router, route, { immediate: true })` (no
+    exit fade; still marked as a push). Island links keep the fade.
+  - **Focus morph:** `RouteMorph` gives `morphTo` a `focus` (the object for the page being opened
+    or left; Back runs it in reverse). Focus particles' delay x0.15, others 0.3 + 0.7 x delay
+    (`FOCUS_EARLY` / `FOCUS_LATE` in `morph.ts`, mirrored in the shader and in the CPU freeze), and
+    `uBurst` (its own 0 -> 1 -> 0 timeline, 0.3 s out) pushes the others ~1.6 units (~380 px)
+    outward. Reduced motion: no focus, instant swap.
+  - **Island peek:** "01 Home → 03 Work ↵" while a page object is hot on Home.
+  - **TODO(content):** Work's card shows three placeholder tiles ("Project 1–3") until
+    `content/projects.ts` (4.1).
+- **Verified R.4 (headless Chromium on the Iris Xe, production build):**
+  - **Hover** on the laptop: card "03 Work · Case studies and side projects · Project 1–3 ·
+    Click, or 3 · /work" open, island "01 Home → 03 Work ↵", cursor state `view`; others dim to
+    20%, tags fade. Moving away clears it. Screenshots match the hover frame.
+  - **Keyboard:** Tab goes through the nav, then the room links "02 About: Who's behind this",
+    "03 Work: …"; each focused object looks hovered (card, island peek); Esc blurs and clears.
+  - **Open / Back:** About and Work open at once (`/about`, `/work`), the object grows into the
+    page's shape while the rest bursts and re-forms; Back returns to `/` and runs it in reverse.
+    Frames during the morph max 18 ms; after it 6.5 ms. Idle / switch / rapid p50 6.1 ms, 0 frames
+    over 20 ms. CLS 0 across hover, focus and open.
+  - **Testing note:** a `page.screenshot` taken during a client navigation can return a stale or
+    white frame in headless; wait ~300 ms or check with rAF timings.
+  - **[manual]** The feel of the 180 / 240 ms highlight, the burst size and the card placement;
+    VoiceOver / NVDA reading the room links.
 - **Verified R.3 (headless Chromium on the Iris Xe, dev and production builds):**
   - **Compute:** the room takes 54–71 ms in total, but its longest single task is 20–25 ms; all
     10 shapes 124–145 ms in total (60k points each now).

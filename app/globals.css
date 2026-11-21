@@ -930,3 +930,28 @@ html[data-gate="done"] .entry-gate {
     }
   }
 }
+
+/*
+ * The particle room's DOM layer on Home (R.4, components/home/RoomOverlay.tsx). Positions are
+ * written as transforms every frame; only opacity transitions here: the hover card in over
+ * 180 ms and out over 240 ms (the canvas highlight's timing), the tags 200 ms.
+ */
+@layer components {
+  .room-card {
+    opacity: 0;
+    transition: opacity 240ms var(--ease-out);
+  }
+  .room-card[data-open] {
+    opacity: 1;
+    transition-duration: 180ms;
+  }
+  .room-tag {
+    transition: opacity 200ms var(--ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .room-card,
+    .room-tag {
+      transition: none;
+    }
+  }
+}
