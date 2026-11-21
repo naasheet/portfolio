@@ -488,14 +488,14 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **3 — Living canvas** (3.1–3.3 built; 3.4, pointer, is next) (phases 0 and 2 are
+Current phase: **3 — Living canvas** (3.1–3.4 built; 3.5, theme and moods, is next) (phases 0 and 2 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
-3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph)
+3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -511,6 +511,10 @@ Carry-over into later chunks:
     name during the gate's exit" also belongs there: today the name morph runs under the gate.
   - **Phones (not done in 3.3):** `SHAPE_BOX` is 4 wide; a 390 px portrait view is only ~1.8 units
     wide at z = 0. Scale the mesh by aspect (3.6 or 4.2); Nasheet chose not to add it in 3.3.
+  - **8.5 AR pointer:** feed the fingertip into the same uniforms. `createPointerTracker()` in
+    `canvas/particles/pointer.ts` turns a client position into the smoothed z = 0 point, velocity
+    and strength; give it a second input (e.g. `feed(clientX, clientY)` from `ar.hand`) rather than
+    a second tracker, so mouse and hand never fight over `uPointer`.
   - **Scroll response constants** (top of `Particles.tsx`): rotate up to 0.5 rad on Y and tilt 0.12
     on X over the whole page, parallax ±0.15 per chapter, smoothed with τ 0.35 s. Tune by feel.
   - **Laptop:** the screen frame and deck read, but the keys are a brighter band rather than
@@ -1518,6 +1522,30 @@ Decisions so far (don't re-ask):
   - **Bundle:** first-load JS on `/` 205.0 KB (+0.4 KB: ChapterSection).
   - **[manual]** The fling feel and 60 fps on the mid-range Android and the low-end laptop (any
     hitch on the first chapter change?); the rotation / parallax amounts by feel.
+- **Pointer (3.4):** `canvas/particles/pointer.ts` (`createPointerTracker()`), the pointer block in
+  `particles.vert.glsl`, wired in `Particles.tsx` (listeners in an effect, `update(camera, delta)` in
+  `useFrame`). No React state, no store: a ref, like the scroll values.
+  - **Input:** `pointermove` on window (mouse and pen always; touch only while down), touch
+    `pointerdown` re-snaps to the new finger; `pointerup` / `pointercancel`, leaving the document and
+    window `blur` just stop feeding moves.
+  - **Per frame:** a camera ray through the pointer, intersected with z = 0; a frame-rate-independent
+    lerp (0.15 per 60 fps frame); velocity smoothed with τ 0.1 s; strength eases (τ 0.08 s) toward
+    `min(1, 0.35 + 0.15 × speed)` while moving (an event in the last 60 ms) and decays with τ 0.2 s
+    (about 5% after 600 ms) once still. dt is clamped to 0.1 s.
+  - **Shader:** done in world space (after `modelMatrix`), so the scroll rotation doesn't skew it.
+    The pointer ray is evaluated at each particle's depth (`cameraPosition` → `uPointer`), so the
+    parting sits under the cursor at any depth. Falloff `(1 - smoothstep(0, uPointerRadius, d))²`,
+    radial push 0.4 world units, swirl = tangent × cross(dir, velocity) × 0.06 (velocity clamped to
+    4 units/s). `uPointerRadius` is 0.8. **New uniform `uPointerVelocity`** (vec2, not in §9.2's
+    list).
+  - **Reduced motion:** nothing renders continuously, so the pointer has no visible effect.
+- **Verified 3.4 (headless Chromium, dev server, About sphere):** a slow move (~250 px/s) opens a
+  small clean hole under the cursor; a fast flick (~3,000 px/s) opens a wider one that trails the
+  cursor and drags its edge along the motion; 1.2 s after stopping, the sphere is closed again. No
+  console errors. Typecheck, lint and build pass; first-load JS on `/` unchanged at 205.0 KB.
+  - **[manual]** The feel (radius 0.8, push 0.4, swirl 0.06 and the 600 ms decay are constants in
+    `pointer.ts` and the shader), touch on a real phone (it competes with scrolling: the browser
+    cancels the pointer once a pan starts), and frame rate while moving on the low-end devices.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.
