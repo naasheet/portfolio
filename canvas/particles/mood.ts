@@ -81,6 +81,9 @@ export const liveRoom = {
   steamY: 0,
   steamZ: 0,
   steamH: 1,
+  /** R.6: how much of the screen code has typed in (0–1, by line) and the lamp's bulb (0–1). */
+  type: 1,
+  bulb: 1,
 };
 
 export type RoomState = Partial<typeof liveRoom>;
@@ -90,7 +93,10 @@ let roomTween: gsap.core.Tween | null = null;
 /** Tween the room state (with the morph's timing), or set it (reduced motion). */
 export function roomTo(
   state: RoomState,
-  { instant = false }: { instant?: boolean } = {},
+  {
+    instant = false,
+    duration = MORPH_DURATION,
+  }: { instant?: boolean; duration?: number } = {},
 ): void {
   roomTween?.kill();
   roomTween = null;
@@ -101,7 +107,7 @@ export function roomTo(
   }
   roomTween = gsap.to(liveRoom, {
     ...state,
-    duration: MORPH_DURATION,
+    duration,
     ease: MORPH_EASE,
   });
 }

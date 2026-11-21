@@ -40,6 +40,9 @@ uniform float uBurst;
 uniform float uLeaf;             // 0 -> 1
 uniform vec4 uLeafAxis;          // plant box: centre x, base y, centre z, height
 uniform float uPlant;            // the plant's object id
+// R.6 intro: the screen code types in line by line, the lamp's bulb flickers on.
+uniform float uType;             // 0 -> 1: lines with aRoom.w above it are hidden
+uniform float uBulb;             // 0 -> 1, times uLamp
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
@@ -47,7 +50,8 @@ attribute vec4 aRandom;          // x: morph delay, y: size, z: seed, w: spare
 // x: object (0-8, content/room.ts order; -1 none), y: kind, z: tint, w: extra.
 // Kinds (ROOM_KIND in room.ts): 0 object, 1 screen code, 2 cursor, 3 dust, 4 front edge,
 // 5 light pool, 6 light cone, 7 mote, 8 steam. Tint: 0 own colour, 1 teal, 2 amber, 3 grey.
-// Extra: the steam's wisp (0-2); for other kinds 1 = becomes dust on phones.
+// Extra: the steam's wisp (0-2); screen code / cursor: its line (1/n … 1, R.6 typing); for the
+// lamp's points, the pool and the cone: 1 = becomes dust on phones.
 attribute vec4 aRoom;
 
 varying vec3 vColor;
@@ -109,9 +113,9 @@ void main() {
   float roomSize = 1.0;
   vec3 grey = mix(vec3(0.86), vec3(0.42), uTheme);
   if (aRoom.z > 0.5) roomColor = aRoom.z < 1.5 ? uColorA : (aRoom.z < 2.5 ? uColorB : grey);
-  float lamp = uLamp * (1.0 - uPhone);
-  if (kind == 1) { roomSize = 0.95; }
-  else if (kind == 2) { roomSize = 0.9; }
+  float lamp = uLamp * uBulb * (1.0 - uPhone);
+  if (kind == 1) { roomSize = 0.95; roomAlpha = step(aRoom.w, uType + 0.001); }
+  else if (kind == 2) { roomSize = 0.9; roomAlpha = step(aRoom.w, uType + 0.001); }
   else if (kind == 3) { roomAlpha = 0.3; roomSize = 0.55; }
   else if (kind == 4) { roomAlpha = 0.7; roomSize = 0.65; }
   else if (kind == 5) { roomAlpha = 0.85 * lamp; roomSize = 0.75; }
@@ -125,7 +129,7 @@ void main() {
     roomColor = mix(roomColor, uColorB, warm * lamp * 0.7);
   }
   // Phones have no lamp: its points, the pool and the cone become desk dust.
-  float toDust = kind != 8 && aRoom.w > 0.5 ? uPhone : 0.0;
+  float toDust = (kind == 0 || kind == 5 || kind == 6) && aRoom.w > 0.5 ? uPhone : 0.0;
   roomColor = mix(roomColor, color, toDust);
   roomAlpha = mix(roomAlpha, 0.3, toDust);
   roomSize = mix(roomSize, 0.55, toDust);

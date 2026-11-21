@@ -195,25 +195,28 @@ export function buildRoom(
     const inset = { u: 0.07, v: 0.1 };
     const lineH = (1 - inset.v * 2) / (lines.length + 0.5);
     const colW = (1 - inset.u * 2) / cols;
-    // Bars: [u0, u1, v, tint, kind], gutter dots first.
-    const bars: [number, number, number, number, number][] = [];
+    // Bars: [u0, u1, v, tint, kind, line], gutter dots first. `line` (1/n … 1) goes into
+    // aRoom.w, so the intro (R.6) can type the code in line by line (uType).
+    const bars: [number, number, number, number, number, number][] = [];
     lines.forEach((line, r) => {
       const v = 1 - inset.v - (r + 0.5) * lineH;
-      bars.push([inset.u, inset.u + colW, v, TINT.grey, ROOM_KIND.screen]);
+      const order = (r + 1) / lines.length;
+      bars.push([inset.u, inset.u + colW, v, TINT.grey, ROOM_KIND.screen, order]);
       for (const b of tokenBars(line)) {
         const u0 = inset.u + (b.col + 3) * colW;
-        bars.push([u0, u0 + b.len * colW, v, b.tint, ROOM_KIND.screen]);
+        bars.push([u0, u0 + b.len * colW, v, b.tint, ROOM_KIND.screen, order]);
       }
     });
     const lastLine = lines[lines.length - 1] ?? "";
     const cu = inset.u + (lastLine.length + 4) * colW;
     const cursorV = 1 - inset.v - (lines.length - 0.5) * lineH;
-    const cursor: [number, number, number, number, number] = [
+    const cursor: [number, number, number, number, number, number] = [
       cu,
       cu + colW * 1.2,
       cursorV,
       TINT.amber,
       ROOM_KIND.cursor,
+      1,
     ];
     const cursorCount = Math.round(total * 0.04);
     const textCount = total - cursorCount;
@@ -232,7 +235,7 @@ export function buildRoom(
       const u = rnd(b[0], b[1]);
       const v = b[2] + rnd(-barH, barH) / 2 * (b[4] === ROOM_KIND.cursor ? 2.2 : 1);
       const p = at(u, v);
-      put(p, toPhone(p), object, b[4], b[3], 0);
+      put(p, toPhone(p), object, b[4], b[3], b[5]);
     };
     // Points per bar in proportion to its length (cumulative pick).
     for (let k = 0; k < textCount; k++) {

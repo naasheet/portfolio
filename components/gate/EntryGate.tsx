@@ -14,6 +14,7 @@ import { useStore } from "@/lib/store";
 import { GateClock } from "./GateClock";
 import { GateScatter } from "./GateScatter";
 import { OrbitSpinner } from "./OrbitSpinner";
+import { startIntro } from "@/lib/motion/intro";
 
 /** A new line every 0.8 s (Nasheet: lines should change often; the board said 1.6 s). */
 const LINE_MS = 800;
@@ -80,6 +81,8 @@ export function EntryGate() {
 
     // Repeat visit: GateScript already hid it before paint.
     if (html.dataset.gate === "skip" || !rootEl) {
+      // Home's intro (R.6) plays as soon as the shapes are ready.
+      startIntro();
       setEntered(true);
       setGone(true);
       return;
@@ -114,6 +117,8 @@ export function EntryGate() {
     };
 
     const exit = () => {
+      // Home's intro (R.6) starts with the exit: the name forms under the wipe.
+      startIntro();
       const reduced = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;

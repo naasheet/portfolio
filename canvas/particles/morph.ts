@@ -38,6 +38,7 @@ let pending: {
   instant: boolean;
   duration: number;
   focus: number;
+  ease: string;
 } | null = null;
 
 /**
@@ -54,15 +55,18 @@ export function morphTo(
     instant = false,
     duration = MORPH_DURATION,
     focus: nextFocus = -1,
+    ease = MORPH_EASE,
   }: {
     instant?: boolean;
+    /** GSAP ease (R.6's intro bursts with power2.out); default MORPH_EASE. */
+    ease?: string;
     duration?: number;
     /** R.4: the room object to grow first and burst the rest around (-1: none). */
     focus?: number;
   } = {},
 ): void {
   const queued = pending !== null;
-  pending = { mesh, shape, instant, duration, focus: nextFocus };
+  pending = { mesh, shape, instant, duration, focus: nextFocus, ease };
   if (!queued) queueMicrotask(flush);
 }
 
@@ -81,7 +85,7 @@ function flush(): void {
   const job = pending;
   pending = null;
   if (!job || job.shape === target) return;
-  const { mesh, shape, instant, duration } = job;
+  const { mesh, shape, instant, duration, ease } = job;
   const uniforms = mesh.material.uniforms;
   const morph = uniforms.uMorph;
   const roomAttr = mesh.geometry.getAttribute("aRoom") as
@@ -159,7 +163,7 @@ function flush(): void {
     tween = gsap.to(morph, {
       value: 1,
       duration,
-      ease: MORPH_EASE,
+      ease,
       onComplete: () => {
         tween = null;
       },

@@ -1010,3 +1010,17 @@ html[data-room="cards"] [data-room-only] {
     transition: none;
   }
 }
+
+/*
+ * Home's intro (R.6): the intro text, the room's tags and the hints wait for the room to
+ * assemble, then fade in over 300 ms (opacity only, so nothing shifts). The head script sets
+ * data-intro="pending" before paint on page loads that land on `/`; lib/motion/intro.ts moves
+ * it to "play" and "done".
+ */
+[data-intro-fade] {
+  transition: opacity 300ms var(--ease-out);
+}
+html[data-intro="pending"] [data-intro-fade],
+html[data-intro="play"] [data-intro-fade] {
+  opacity: 0;
+}

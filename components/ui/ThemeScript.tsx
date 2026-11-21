@@ -23,9 +23,17 @@ const applyPage = `(function(){var r=${JSON.stringify(routeTable)},p=location.pa
  */
 const devHelper = `window.setTheme=function(t){document.documentElement.dataset.theme=t;try{localStorage.setItem(${KEY},t)}catch(e){}};`;
 
+/*
+ * R.6: a page load that lands on Home starts with html[data-intro="pending"], so the intro text,
+ * tags and hints (`[data-intro-fade]`) stay hidden until the room has assembled
+ * (lib/motion/intro.ts). Not under reduced motion (no intro there).
+ */
+const applyIntro = `(function(){try{if(location.pathname==="/"&&!matchMedia("(prefers-reduced-motion: reduce)").matches)document.documentElement.dataset.intro="pending"}catch(e){}})();`;
+
 const script =
   applyTheme +
   applyPage +
+  applyIntro +
   (process.env.NODE_ENV === "production" ? "" : devHelper);
 
 /**

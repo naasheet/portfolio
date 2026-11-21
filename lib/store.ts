@@ -92,6 +92,12 @@ export type UiSlice = {
   shortcutsOpen: boolean;
   /** The phone menu (2.4). */
   menuOpen: boolean;
+  /**
+   * Home's intro (R.6): "pending" until the gate starts leaving, "play" while the name forms and
+   * assembles into the room, "done" once it has settled (or was skipped). lib/motion/intro.ts.
+   */
+  intro: "pending" | "play" | "done";
+  setIntro: (intro: "pending" | "play" | "done") => void;
   setEntered: (entered: boolean) => void;
   setSoundEnabled: (enabled: boolean) => void;
   toggleSound: () => void;
@@ -229,6 +235,10 @@ export const useStore = create<StoreState>()(
         chatStreaming: false,
         shortcutsOpen: false,
         menuOpen: false,
+        intro: "pending",
+        setIntro: (intro) => {
+          if (get().ui.intro !== intro) patch("ui", { intro });
+        },
         setEntered: (entered) => patch("ui", { entered }),
         setSoundEnabled: (soundEnabled) => {
           patch("ui", { soundEnabled });

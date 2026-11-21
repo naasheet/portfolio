@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
   BufferAttribute,
@@ -160,6 +160,8 @@ export function Particles({
           uLeaf: { value: 0 },
           uLeafAxis: { value: new Vector4() },
           uPlant: { value: PLANT },
+          uType: { value: 1 },
+          uBulb: { value: 1 },
         },
       }),
     [colors],
@@ -221,6 +223,16 @@ export function Particles({
     [geometry, material, reflectMaterial],
   );
   const reflection = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
+
+  // Compile both programs now, in the background (KHR_parallel_shader_compile where available).
+  // The reflection is hidden until Home's room appears, and compiling it on its first draw took
+  // a 300–400 ms frame mid-intro (R.6). compile() includes invisible objects.
+  const gl = useThree((s) => s.gl);
+  const scene = useThree((s) => s.scene);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    void gl.compileAsync(scene, camera).catch(() => {});
+  }, [gl, scene, camera, material, reflectMaterial]);
   // The pointer's tilt of the room, smoothed (rad).
   const tilt = useRef({ x: 0, y: 0 });
 
@@ -279,6 +291,8 @@ export function Particles({
     if (u.uRoom) u.uRoom.value = r.room;
     if (u.uPhone) u.uPhone.value = r.phone;
     if (u.uDeskY) u.uDeskY.value = r.deskY;
+    if (u.uType) u.uType.value = r.type;
+    if (u.uBulb) u.uBulb.value = r.bulb;
     (u.uPool?.value as Vector4 | undefined)?.set(r.poolX, r.poolY, r.poolZ, r.poolR);
     (u.uSteam?.value as Vector4 | undefined)?.set(r.steamX, r.steamY, r.steamZ, r.steamH);
     if (reflection.current) reflection.current.visible = r.room > 0.001;

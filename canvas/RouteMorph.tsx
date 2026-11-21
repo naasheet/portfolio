@@ -4,11 +4,23 @@ import { useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { fallbackMood, SCATTER_FADE, shapePageAt } from "@/content/chapters";
 import { roomObjectForPage, roomObjects } from "@/content/room";
+import { screen } from "@/content/screen";
+import { gsap } from "@/lib/motion/gsap";
+import { finishIntro } from "@/lib/motion/intro";
+import { useStore } from "@/lib/store";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
-import { fadeTo, moodTo, roomTo, stopMood, stopRoom } from "./particles/mood";
+import {
+  fadeTo,
+  liveRoom,
+  moodTo,
+  roomTo,
+  stopMood,
+  stopRoom,
+} from "./particles/mood";
 import { morphTo, stopMorph, type ParticleMesh } from "./particles/morph";
 import {
+  getIntroShapes,
   getRoom,
   getShape,
   loadShapes,
@@ -17,6 +29,33 @@ import {
 
 /** The room's phone layout below the tablet breakpoint (md, 48rem). */
 const PHONE_QUERY = "(max-width: 47.99rem)";
+
+/**
+ * Home's intro (R.6), in seconds from its start (the gate's exit): the name forms (0.9 s), holds
+ * (0.6 s), bursts outward (0.4 s) and assembles into the room (1.0 s). As the room settles the
+ * code types in line by line, the bulb flickers on and the page text fades in (finishIntro).
+ */
+const INTRO = { name: 0, burst: 1.5, room: 1.9, settle: 2.5 } as const;
+
+/** The room's layout state for roomTo (R.3), from a layout. */
+function layoutState(phone: boolean) {
+  const room = getRoom();
+  if (!room) return null;
+  const l = room.layout[phone ? "phone" : "desktop"];
+  return {
+    room: 1,
+    phone: phone ? 1 : 0,
+    deskY: l.deskY,
+    poolX: l.pool[0],
+    poolY: l.pool[1],
+    poolZ: l.pool[2],
+    poolR: l.pool[3],
+    steamX: l.steam[0],
+    steamY: l.steam[1],
+    steamZ: l.steam[2],
+    steamH: l.steam[3],
+  };
+}
 
 /** The room object (content/room.ts index) to focus for a move between two routes, or -1. */
 function focusFor(from: string | null, to: string): number {
@@ -53,6 +92,69 @@ export function RouteMorph({ pathname }: { pathname: string }) {
   const phone = useMediaQuery(PHONE_QUERY);
   const first = useRef(true);
   const previous = useRef<string | null>(null);
+  const intro = useStore((s) => s.ui.intro);
+  const introTimeline = useRef<gsap.core.Timeline | null>(null);
+
+  // Home's intro (R.6): runs once, while ui.intro is "play" on Home.
+  useEffect(() => {
+    const home = shapePageAt(pathname)?.shape.kind === "room";
+    if (!home) {
+      // Left Home mid-intro: drop it and show everything.
+      if (introTimeline.current) {
+        introTimeline.current.kill();
+        introTimeline.current = null;
+        roomTo({ type: 1, bulb: 1 }, { instant: true });
+        finishIntro();
+      }
+      return;
+    }
+    if (intro !== "play" || introTimeline.current) return;
+    let cancelled = false;
+    void loadShapes().then(() => {
+      if (cancelled || introTimeline.current) return;
+      const mesh = scene.getObjectByName("particles") as ParticleMesh | undefined;
+      const shapes = getIntroShapes(phone ? "phone" : "desktop");
+      const roomShape = getShape("home" + (phone ? PHONE_SUFFIX : ""));
+      const state = layoutState(phone);
+      const mood = shapePageAt(pathname)?.mood;
+      if (!mesh || !shapes || !roomShape || !state || !mood) {
+        finishIntro();
+        return;
+      }
+      moodTo(mood, { instant: true });
+      roomTo({ room: 0, type: 0, bulb: 0 }, { instant: true });
+      introTimeline.current = gsap
+        .timeline()
+        .call(() => morphTo(mesh, shapes.name, { duration: 0.9 }), [], INTRO.name)
+        .call(
+          () => morphTo(mesh, shapes.burst, { duration: 0.4, ease: "power2.out" }),
+          [],
+          INTRO.burst,
+        )
+        .call(
+          () => {
+            morphTo(mesh, roomShape, { duration: 1 });
+            roomTo(state, { duration: 1 });
+          },
+          [],
+          INTRO.room,
+        )
+        .call(finishIntro, [], INTRO.settle)
+        .to(
+          liveRoom,
+          { type: 1, duration: 0.5, ease: `steps(${screen.lines.length})` },
+          INTRO.settle,
+        )
+        .to(
+          liveRoom,
+          { keyframes: { bulb: [0, 1, 0.15, 0.9, 0.35, 1] }, duration: 0.5, ease: "none" },
+          INTRO.settle,
+        );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [intro, pathname, phone, scene]);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +164,8 @@ export function RouteMorph({ pathname }: { pathname: string }) {
 
     const from = previous.current;
     previous.current = pathname;
+    // Home before its intro has finished: the intro effect above drives the particles.
+    if (current?.shape.kind === "room" && intro !== "done") return;
     const focus = reduced || !getRoom() ? -1 : focusFor(from, pathname);
     const isRoom = current?.shape.kind === "room";
     const id = current
@@ -75,25 +179,9 @@ export function RouteMorph({ pathname }: { pathname: string }) {
       if (!mesh || !shape) return;
       morphTo(mesh, shape, { instant: reduced, focus });
       moodTo(current?.mood ?? fallbackMood, { instant: reduced });
-      const room = getRoom();
-      if (isRoom && room) {
-        const l = room.layout[phone ? "phone" : "desktop"];
-        roomTo(
-          {
-            room: 1,
-            phone: phone ? 1 : 0,
-            deskY: l.deskY,
-            poolX: l.pool[0],
-            poolY: l.pool[1],
-            poolZ: l.pool[2],
-            poolR: l.pool[3],
-            steamX: l.steam[0],
-            steamY: l.steam[1],
-            steamZ: l.steam[2],
-            steamH: l.steam[3],
-          },
-          { instant: reduced },
-        );
+      const state = isRoom ? layoutState(phone) : null;
+      if (state) {
+        roomTo(state, { instant: reduced });
       } else {
         roomTo({ room: 0 }, { instant: reduced });
       }
@@ -103,10 +191,11 @@ export function RouteMorph({ pathname }: { pathname: string }) {
     return () => {
       cancelled = true;
     };
-  }, [scene, pathname, reduced, phone]);
+  }, [scene, pathname, reduced, phone, intro]);
 
   useEffect(
     () => () => {
+      introTimeline.current?.kill();
       stopMorph();
       stopMood();
       stopRoom();

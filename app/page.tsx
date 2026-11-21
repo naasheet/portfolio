@@ -31,7 +31,10 @@ export default function Home() {
     <div className="relative h-dvh overflow-hidden">
       {/* Phone (Home — phone 390). */}
       {/* Below the nav row, which sits under the notch (88 px without one). */}
-      <section className="flex flex-col gap-2 px-6 pt-[calc(var(--nav-inset-top)+68px)] md:hidden">
+      <section
+        data-intro-fade
+        className="flex flex-col gap-2 px-6 pt-[calc(var(--nav-inset-top)+68px)] md:hidden"
+      >
         <p className="text-caption-1 font-mono text-text-secondary uppercase">
           {t.eyebrow}
         </p>
@@ -45,6 +48,7 @@ export default function Home() {
       {/* data-room-avoid: the room's hover card keeps clear of it (R.4). */}
       <section
         data-room-avoid
+        data-intro-fade
         className="hidden w-fit flex-col gap-4 px-12 pt-[calc(var(--nav-inset-top)+92px)] md:flex"
       >
         <p className="flex items-center gap-2 text-subhead text-text-secondary">
@@ -74,6 +78,7 @@ export default function Home() {
       {/* Hint row, desktop. */}
       <p
         data-room-only
+        data-intro-fade
         className="absolute inset-x-0 bottom-10 hidden items-center justify-center gap-3 text-footnote text-text-secondary md:flex"
       >
         {t.hints.look}
@@ -100,6 +105,7 @@ export default function Home() {
       {/* Chip row, phone: a plain way into the five pages, above the Ask button. */}
       <nav
         data-room-only
+        data-intro-fade
         aria-label={t.hints.pages}
         className="absolute inset-x-0 bottom-[calc(var(--layer-inset-bottom)+80px)] flex flex-col gap-4 md:hidden"
       >

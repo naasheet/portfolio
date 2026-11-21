@@ -224,7 +224,8 @@ export function RoomOverlay() {
 
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      <div aria-hidden>
+      {/* The tags and pin fade in with the intro text (R.6). */}
+      <div aria-hidden data-intro-fade>
         {roomObjects.map((o, i) =>
           o.tag ? (
             <span
