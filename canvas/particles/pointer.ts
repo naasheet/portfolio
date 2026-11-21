@@ -14,7 +14,7 @@ const FOLLOW = 0.15;
 const RISE_TAU = 0.08;
 const DECAY_TAU = 0.2;
 /** Strength for a slow move, and how much each world unit per second adds on top. */
-const BASE_STRENGTH = 0.35;
+const BASE_STRENGTH = 0.5;
 const SPEED_GAIN = 0.15;
 /** Velocity smoothing, so a single jumpy event doesn't spike the swirl. */
 const VELOCITY_TAU = 0.1;
