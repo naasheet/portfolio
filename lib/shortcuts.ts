@@ -11,6 +11,7 @@ import { island } from "./island";
 import { navigate, type PushRouter } from "./motion/pageTransition";
 import { initSfx } from "./sfx";
 import { useStore } from "./store";
+import { revealTheme, type RevealOrigin } from "./theme";
 
 // --- Shared actions --------------------------------------------------------------------------
 
@@ -27,10 +28,25 @@ export function toggleSound(): void {
   });
 }
 
-export function toggleTheme(): void {
+/** The nav's theme button, where T's reveal starts (R.5); null when it isn't on screen. */
+function themeButtonOrigin(): RevealOrigin | null {
+  // The nav and the phone menu each have one; take the one on screen.
+  for (const el of document.querySelectorAll("[data-theme-button]")) {
+    const r = el.getBoundingClientRect();
+    if (r.width > 0) return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+  }
+  return null;
+}
+
+/**
+ * Switch the theme with the reveal (R.5) from `origin`: the lamp's bulb when the lamp is
+ * clicked, otherwise the nav's theme button (the button and T).
+ */
+export function toggleTheme(origin?: RevealOrigin | null): void {
   const { theme } = useStore.getState();
-  theme.toggleMode();
-  const light = useStore.getState().theme.mode === "light";
+  // With View Transitions the switch itself runs a moment later, so decide the alert now.
+  const light = theme.mode !== "light";
+  revealTheme(() => theme.toggleMode(), origin ?? themeButtonOrigin());
   island.alert({
     icon: light ? "sun" : "moon",
     tone: "neutral",
@@ -152,7 +168,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
     key: "T",
     match: ["t", "T"],
     label: copy.shortcuts.theme,
-    run: toggleTheme,
+    run: () => toggleTheme(),
   },
   {
     id: "ar",

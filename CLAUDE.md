@@ -299,7 +299,8 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 - Uniforms: `uTime`, `uMorph`, `uScroll`, `uPointer`, `uPointerRadius`, `uPointerStrength`,
   `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`. Added since: `uPointerVelocity`,
   `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), `uRoom`, `uPhone`, `uLamp`, `uDeskY`,
-  `uPool`, `uSteam` (R.3), `uHot[9]`, `uAnyHot`, `uFocus`, `uBurst` (R.4), plus `uPixelRatio` and
+  `uPool`, `uSteam` (R.3), `uHot[9]`, `uAnyHot`, `uFocus`, `uBurst` (R.4), `uLeaf`, `uLeafAxis`,
+  `uPlant` (R.5), plus `uPixelRatio` and
   `uSize`. Attributes since: `aRoom` (R.3).
 - The canvas is **opaque** (`alpha: false`) and clears to the theme's `bg/base` (3.5); `<body>` stays
   on `bg/base` for the first paint and the no-WebGL case.
@@ -500,7 +501,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1–R.4 done; R.5 is next; phase 4 follows)
+Current phase: **R — Separate pages and the particle room** (R.1–R.5 done; R.6 is next; phase 4 follows)
 (phases 0, 2 and 3 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
@@ -509,7 +510,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -563,7 +564,8 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+  cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
   (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
@@ -754,6 +756,65 @@ Carry-over into later chunks:
   - **Island peek:** "01 Home → 03 Work ↵" while a page object is hot on Home.
   - **TODO(content):** Work's card shows three placeholder tiles ("Project 1–3") until
     `content/projects.ts` (4.1).
+- **Room extras and phone (R.5):** `components/home/roomActions.ts` (one `openRoomObject(id,
+  router)` for every path: hover click, RoomLinks, phone sheet, fallback cards), `roomInfo.ts`,
+  `NowCard.tsx`, `PhoneSheet.tsx`, `RoomCards.tsx`; `lib/theme.ts` `revealTheme`, `lib/secrets.ts`,
+  `lib/quality.ts` `saveData` / `canvasEnabled`.
+  - **Lamp / T / theme button:** `toggleTheme(origin)` → `revealTheme(apply, origin)`. View
+    Transitions: 600 ms clip-path circle on `::view-transition-new(root)` from the bulb (the canvas
+    projects `layout.bulb` into `room.view.bulb`) or the visible `[data-theme-button]`; no API: a
+    400 ms `.theme-veil` crossfade; reduced motion: instant. During a reveal `html[data-theme-reveal]`
+    makes `colors.ts` switch at once (and `uLamp` with it) and the update fires `canvas:draw-now`
+    (`DRAW_NOW_EVENT`), which FrameDriver answers with a synchronous `advance()`. **Never await
+    requestAnimationFrame inside a View Transition update: rendering is paused, it deadlocks until
+    the transition times out.** The island alert is decided before the switch (it runs later).
+  - **Mug:** `openNow()` pushes an island activity of the new kind `"now"` and expands it
+    (NowCard: time, live, headline, chunk + progress, coffee, last commit "x h ago"); it removes
+    itself when the card collapses (Esc, click outside). Content from `content/now.ts`.
+  - **Headphones:** island alert "Music's warming up" (`icon: "music"`, new) until Phase 5 pushes
+    the music activity instead (replace the `music` case in `roomActions.ts`).
+  - **Plant:** no tag, no hover, not in Tab order; a click (or tap) inside its box calls
+    `waterPlant()`: `room.leaf` → the canvas grows the leaf (`uLeaf`, elastic 1.4 s; about 1 in 7
+    of its upper particles reach up and out), and the first time `findSecret("plant")` saves it
+    (`localStorage.secrets`) and shows the amber achievement "You watered the plant · secret 1 of 5"
+    (`copy.home.secrets.total` = 5). The leaf stays grown on later visits.
+  - **Hover and Tab:** all eight objects but the plant, left to right (`roomTabOrder`: Music,
+    About, Now, Work, Arcade, Skills, Contact, Lights). Action objects' cards show their
+    `action` line and key; RoomLinks makes them buttons. The island peek is mouse-only.
+  - **Touch (`(hover: none), (pointer: coarse)`):** first tap selects (`room.hot`, white pin tag,
+    PhoneSheet up), a second tap on it or the sheet's button opens, empty space cancels. The sheet
+    is portalled to `<body>` at `z-overlay`, `bottom: max(12px, env(safe-area-inset-bottom))`. No
+    pointer lean on touch (the 40° phone view stays). The phone intro's top padding follows
+    `--nav-inset-top`.
+  - **No WebGL or Save-Data:** `canvasEnabled()` gates CanvasLoader (three never loads); on Home
+    `RoomCards` (lazy, with the overlay) shows six glass cards (About, Work, Skills, Arcade,
+    Contact, Music) and sets `html[data-room="cards"]`, which hides `[data-room-only]` (hint row,
+    phone chips, RoomLinks).
+  - **Reduced motion:** the room shows, the canvas swaps instantly (no fly-through), and pages fade
+    in over 200 ms (opacity only, unlayered rule after the `.page` block).
+  - Copy for review in `copy.home.room` / `.now` / `.secrets` and the action lines in
+    `content/room.ts`.
+- **Verified R.5 (headless Chromium on the Iris Xe, production build):**
+  - **Mouse:** headphones → "Music's warming up"; mug → the Now card ("chunk R.5 · 28 / 79 ·
+    Coffee today 3 · Last commit 2 h ago"), Esc removes it; plant → "You watered the plant ·
+    secret 1 of 5", `secrets` = ["plant"], a second click shows nothing; lamp → light theme with
+    the "Light theme" alert, the reveal circle grows from the bulb (screenshot); T → back to dark,
+    the circle from the theme button.
+  - **Keyboard:** Tab reaches "♪ Music: Opens the music player." (Enter → the alert) and
+    "T Lights: …" (Enter → light theme).
+  - **Phone (390 x 844, touch, safe area 47 / 34 emulated):** tap the envelope → sheet "06 Contact ·
+    Say hi · Open Contact · Or tap the envelope again" 34 px above the bottom with the white pin
+    tag; tap empty space → closed; tap again → `/contact`; the sheet's button → `/work`; tap the
+    plant → the achievement. Screenshot matches the phone board.
+  - **No WebGL:** six cards, the hint row hidden, the Work card → `/work`.
+  - **Reduced motion:** the new page enters at `data-page="in"` with a 0.2 s opacity transition.
+  - **Frames:** idle / switch / rapid p50 6.1 ms, 0 over 20 ms. The theme reveal has one 25–42 ms
+    frame (the View Transition snapshot). The **first** Now card open after a load has one ~80 ms
+    frame (later opens 9–12 ms): the same cold first-use cost as the first island alert (10.4
+    follow-up).
+  - **[manual]** The reveal in **Safari 18+** (View Transitions) and **Firefox** (crossfade unless
+    it has the API); the phone flow on a real iPhone and Android (home indicator, tap feel); the
+    leaf by eye; copy review.
 - **Verified R.4 (headless Chromium on the Iris Xe, production build):**
   - **Hover** on the laptop: card "03 Work · Case studies and side projects · Project 1–3 ·
     Click, or 3 · /work" open, island "01 Home → 03 Work ↵", cursor state `view`; others dim to
@@ -805,7 +866,8 @@ Carry-over into later chunks:
     feel; the parallax on `/work` once it's long (4.x).
   - **Follow-up (10.4):** the first theme toggle per page load has a ~90 ms frame (both before and
     after R.2; the profile points at app JS and Framer's projection, e.g. the island alert's first
-    layout). Profile it in the performance pass.
+    layout), and so does the first Now card (R.5). Profile the island's first morph in the
+    performance pass.
 - **Verified R.1 (headless Chromium on the Iris Xe, production build with the /dev flag):**
   - **Reload** of `/`, `/about`, `/work`, `/skills`, `/arcade`, `/contact`: `data-page` and the static
     shell's label are right at DOMContentLoaded, and the live island matches (e.g. "Navigation: 03

@@ -72,7 +72,9 @@ export function watchTheme(
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    if (reduced) {
+    // A theme reveal (R.5, lib/theme.ts) captures one still of the new theme: switch at once.
+    const revealing = document.documentElement.dataset.themeReveal !== undefined;
+    if (reduced || revealing) {
       set(1);
       requestFrame();
       return;

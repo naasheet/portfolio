@@ -30,7 +30,8 @@ export default function Home() {
   return (
     <div className="relative h-dvh overflow-hidden">
       {/* Phone (Home — phone 390). */}
-      <section className="flex flex-col gap-2 px-6 pt-22 md:hidden">
+      {/* Below the nav row, which sits under the notch (88 px without one). */}
+      <section className="flex flex-col gap-2 px-6 pt-[calc(var(--nav-inset-top)+68px)] md:hidden">
         <p className="text-caption-1 font-mono text-text-secondary uppercase">
           {t.eyebrow}
         </p>
@@ -44,7 +45,7 @@ export default function Home() {
       {/* data-room-avoid: the room's hover card keeps clear of it (R.4). */}
       <section
         data-room-avoid
-        className="hidden w-fit flex-col gap-4 px-12 pt-28 md:flex"
+        className="hidden w-fit flex-col gap-4 px-12 pt-[calc(var(--nav-inset-top)+92px)] md:flex"
       >
         <p className="flex items-center gap-2 text-subhead text-text-secondary">
           <span aria-hidden className="relative inline-flex size-2">
@@ -66,10 +67,15 @@ export default function Home() {
       </section>
 
       {/* The room for the keyboard and screen readers (R.4): visually hidden, the Tab stops. */}
-      <RoomLinks />
+      <div data-room-only>
+        <RoomLinks />
+      </div>
 
       {/* Hint row, desktop. */}
-      <p className="absolute inset-x-0 bottom-10 hidden items-center justify-center gap-3 text-footnote text-text-secondary md:flex">
+      <p
+        data-room-only
+        className="absolute inset-x-0 bottom-10 hidden items-center justify-center gap-3 text-footnote text-text-secondary md:flex"
+      >
         {t.hints.look}
         <Dot />
         <span className="flex items-center gap-2">
@@ -88,10 +94,12 @@ export default function Home() {
       </p>
 
       {/* The room's tags, hover card and hit areas (R.4), over the canvas. */}
+      {/* Also the no-WebGL / Save-Data cards (R.5): the same objects as glass link cards. */}
       <RoomOverlayLoader />
 
       {/* Chip row, phone: a plain way into the five pages, above the Ask button. */}
       <nav
+        data-room-only
         aria-label={t.hints.pages}
         className="absolute inset-x-0 bottom-[calc(var(--layer-inset-bottom)+80px)] flex flex-col gap-4 md:hidden"
       >

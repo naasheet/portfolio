@@ -38,6 +38,10 @@ export type RoomObject = {
   label: string | null;
   /** How the tag reads and where it sits (null: no tag). */
   tag: RoomTag | null;
+  /** The thing itself, for "Or tap the envelope again" on phones (R.5). */
+  noun: string;
+  /** For objects that don't open a page: one line on the hover card and phone sheet (R.5). */
+  action: string | null;
   opens: RoomOpens;
   /** Its keyboard shortcut, if any. */
   key: string | null;
@@ -55,6 +59,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "about",
     label: "About",
     tag: { prefix: "02", place: "above" },
+    noun: "the frame",
+    action: null,
     opens: { kind: "page", page: "about" },
     key: "2",
     share: 0.07,
@@ -66,6 +72,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "music",
     label: "Music",
     tag: { prefix: "♪", place: "below" },
+    noun: "the headphones",
+    action: "Opens the music player.",
     opens: { kind: "music" },
     key: null,
     share: 0.07,
@@ -77,6 +85,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "mug",
     label: "Now",
     tag: { prefix: "·", place: "below" },
+    noun: "the mug",
+    action: "What I'm working on right now.",
     opens: { kind: "now" },
     key: null,
     share: 0.05,
@@ -88,6 +98,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "work",
     label: "Work",
     tag: { prefix: "03", place: "below" },
+    noun: "the laptop",
+    action: null,
     opens: { kind: "page", page: "work" },
     key: "3",
     share: 0.23,
@@ -99,6 +111,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "skills",
     label: "Skills",
     tag: { prefix: "04", place: "above" },
+    noun: "the pencils",
+    action: null,
     opens: { kind: "page", page: "skills" },
     key: "4",
     share: 0.06,
@@ -110,6 +124,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "arcade",
     label: "Arcade",
     tag: { prefix: "05", place: "below" },
+    noun: "the controller",
+    action: null,
     opens: { kind: "page", page: "arcade" },
     key: "5",
     share: 0.08,
@@ -121,6 +137,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "lamp",
     label: "Lights",
     tag: { prefix: "T", place: "above" },
+    noun: "the lamp",
+    action: "Switches the lights: dark or light theme.",
     opens: { kind: "theme" },
     key: "T",
     share: 0.06,
@@ -132,6 +150,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "contact",
     label: "Contact",
     tag: { prefix: "06", place: "below" },
+    noun: "the envelope",
+    action: null,
     opens: { kind: "page", page: "contact" },
     key: "6",
     share: 0.07,
@@ -143,6 +163,8 @@ export const roomObjects: readonly RoomObject[] = [
     node: "plant",
     label: null,
     tag: null,
+    noun: "the plant",
+    action: null,
     opens: { kind: "plant" },
     key: null,
     share: 0.06,
@@ -172,6 +194,8 @@ export const roomGeometry = {
   /** The light pool on the desk under the lamp's shade, and the shade's mouth above it. */
   pool: { centre: [3.95, 0, -0.95], radius: 1.25 },
   shade: { centre: [4.2, 0.87, -1.2], radius: 0.42 },
+  /** The bulb inside the shade: where the theme reveal starts (R.5). */
+  bulb: [4.35, 1.4, -1.3],
   /** The laptop screen's inner face: bottom-left corner, the right and up edges. */
   screen: {
     origin: [-1.45, 0.275, -1.315],
@@ -185,15 +209,18 @@ export const roomGeometry = {
 } as const;
 
 /**
- * Tab order through the room (R.4): left to right on screen. R.4 makes only the page objects
- * interactive; R.5 adds the headphones, the mug and the lamp. The plant is never in it.
+ * Tab order through the room (R.4, R.5): left to right on screen. The plant is never in it (it's
+ * a secret: no tag, no hover, a click waters it).
  */
 export const roomTabOrder: readonly RoomObjectId[] = [
+  "music",
   "about",
+  "now",
   "work",
   "arcade",
   "skills",
   "contact",
+  "lights",
 ];
 
 /** The object that opens `page`, if any. */

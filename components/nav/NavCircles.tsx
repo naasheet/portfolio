@@ -47,7 +47,8 @@ export function NavCircles() {
       >
         <IconButton
           aria-label={copy.nav.theme}
-          onClick={toggleTheme}
+          data-theme-button
+          onClick={() => toggleTheme()}
           icon={light ? <Moon /> : <Sun />}
           className={navCircle}
         />

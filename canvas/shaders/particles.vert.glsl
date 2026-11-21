@@ -36,6 +36,10 @@ uniform float uAnyHot;
 // bursts outward (uBurst 0 -> 1 -> 0) and re-forms. uFocus -1 = none. Matches morph.ts.
 uniform float uFocus;
 uniform float uBurst;
+// R.5: the watered plant grows a leaf: a few of its particles stretch up and out.
+uniform float uLeaf;             // 0 -> 1
+uniform vec4 uLeafAxis;          // plant box: centre x, base y, centre z, height
+uniform float uPlant;            // the plant's object id
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
@@ -62,6 +66,15 @@ void main() {
 
   float isRoom = uRoom * step(-0.5, aRoom.y);
   int kind = int(floor(aRoom.y + 0.5));
+
+  // The leaf (R.5): one particle in seven of the plant's upper part reaches up and out.
+  if (uLeaf > 0.0 && kind == 0 && abs(aRoom.x - uPlant) < 0.5 && aRandom.w > 0.86) {
+    float up = clamp((pos.y - uLeafAxis.y) / max(uLeafAxis.w, 1e-3), 0.0, 1.0);
+    vec2 side = pos.xz - uLeafAxis.xz;
+    vec3 dir = normalize(vec3(side / max(length(side), 1e-3), 0.0) .xzy + vec3(0.0, 1.1, 0.0));
+    float reach = (aRandom.w - 0.86) / 0.14;
+    pos += dir * uLeaf * isRoom * up * (0.08 + 0.25 * reach) * uLeafAxis.w;
+  }
 
   // Steam (R.3): three wisps rise from the mug, curl and fade with height, always moving.
   float steamFade = 1.0;

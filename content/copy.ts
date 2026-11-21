@@ -88,6 +88,41 @@ export const copy = {
       links: "Things on the desk",
       /** TODO(content): Work's three project tiles until content/projects.ts exists (4.1). */
       projectTile: (n: number) => `Project ${n}`,
+      /** Hover card footer for objects without a key. */
+      click: "Click",
+      /** The headphones until Phase 5 brings the player. */
+      musicSoon: "Music's warming up",
+      musicSoonDetail: "The player lands soon",
+      /** Phone sheet (R.5, Home — phone 390). */
+      openPage: (name: string) => `Open ${name}`,
+      tapAgain: (noun: string) => `Or tap ${noun} again`,
+      sheetLabel: "Selected on the desk",
+      /** No WebGL / Save-Data: the six as cards. */
+      cardsLabel: "On the desk",
+      musicCard: "Starts the player in the island",
+    },
+    /** The Now card in the island (R.5; the mug). */
+    now: {
+      title: "Now",
+      live: "live",
+      chunk: (id: string) => `chunk ${id}`,
+      coffee: "Coffee today",
+      lastCommit: "Last commit",
+      ago: (ms: number) => {
+        const min = Math.round(ms / 60_000);
+        if (min < 1) return "just now";
+        if (min < 60) return `${min} min ago`;
+        const h = Math.round(min / 60);
+        if (h < 24) return `${h} h ago`;
+        return `${Math.round(h / 24)} d ago`;
+      },
+      label: "What I'm working on now",
+    },
+    /** Secrets (R.5): the plant is the first of five. */
+    secrets: {
+      total: 5,
+      plant: "You watered the plant",
+      count: (found: number, total: number) => `secret ${found} of ${total}`,
     },
   },
   /** Placeholder pill in the persistent layer (2.3); 7.4 replaces it with the Ask bubble. */

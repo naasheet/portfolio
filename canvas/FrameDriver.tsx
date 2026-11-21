@@ -3,6 +3,7 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import { gsap } from "@/lib/motion/gsap";
+import { DRAW_NOW_EVENT } from "@/lib/theme";
 import { setFrameRequester } from "./frame";
 import { usePageVisible } from "@/lib/hooks/usePageVisible";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
@@ -19,6 +20,14 @@ export function FrameDriver() {
   const height = useThree((s) => s.size.height);
   const reduced = useReducedMotion();
   const visible = usePageVisible();
+
+  // The theme reveal (R.5) needs the new colours drawn before the View Transition captures them,
+  // and no animation frames run while it updates: draw one synchronously.
+  useEffect(() => {
+    const drawNow = () => advance(gsap.ticker.time);
+    window.addEventListener(DRAW_NOW_EVENT, drawNow);
+    return () => window.removeEventListener(DRAW_NOW_EVENT, drawNow);
+  }, [advance]);
 
   useEffect(() => {
     if (reduced) {

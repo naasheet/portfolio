@@ -48,6 +48,8 @@ export type RoomLayout = {
    * order: min x, y, z, max x, y, z. NaN for an object the layout doesn't show (the phone lamp).
    */
   boxes: Float32Array;
+  /** The lamp's bulb (R.5), shape units; NaN when the layout has no lamp. */
+  bulb: [number, number, number];
 };
 
 export type Room = {
@@ -340,12 +342,14 @@ export function buildRoom(
       pool: [dPool[0], dPool[1], dPool[2], pool.radius * ds] as RoomLayout["pool"],
       steam: [dSteam[0], dSteam[1], dSteam[2], g.steam.height * ds] as RoomLayout["steam"],
       boxes: deskBoxes,
+      bulb: deskMap(g.bulb),
     },
     phone: {
       deskY: phoneMap([0, 0, 0])[1],
       pool: [0, 0, 0, 0] as RoomLayout["pool"],
       steam: [pSteam[0], pSteam[1], pSteam[2], g.steam.height * ps * phoneScaleSteam] as RoomLayout["steam"],
       boxes: phoneBoxes,
+      bulb: [NaN, NaN, NaN] as RoomLayout["bulb"],
     },
   };
 

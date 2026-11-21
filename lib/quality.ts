@@ -68,3 +68,19 @@ export function hasWebGL(): boolean {
   }
   return webglSupport;
 }
+
+/** The visitor asked to save data (Chromium's Save-Data / Lite mode; elsewhere false). */
+export function saveData(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean } })
+    .connection;
+  return connection?.saveData === true;
+}
+
+/**
+ * Whether to run the WebGL canvas (R.5): WebGL works and Save-Data is off. Otherwise the CSS
+ * gradient shows, three is never downloaded, and Home shows the room's objects as cards.
+ */
+export function canvasEnabled(): boolean {
+  return hasWebGL() && !saveData();
+}

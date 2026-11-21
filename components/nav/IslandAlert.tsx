@@ -4,6 +4,7 @@ import {
   Info,
   Moon,
   MousePointer2,
+  Music,
   Star,
   Sun,
   Volume2,
@@ -23,6 +24,7 @@ const ICONS: Record<AlertIcon, LucideIcon> = {
   mouse: MousePointer2,
   hand: Hand,
   star: Star,
+  music: Music,
 };
 
 /** The alert shape's content: an icon in a tinted circle, the text, an optional short detail. */

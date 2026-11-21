@@ -2,7 +2,8 @@
  * The island's store (2.4): the centre of the nav, and the site's live-activity centre.
  * Features push what they're doing here; components/nav/Island.tsx shows the winner.
  *
- *   island.push({ id, kind, lead, trail, expanded })   a live activity (music, AR, chat, game)
+ *   island.push({ id, kind, lead, trail, expanded })   a live activity (music, AR, chat, game,
+ *                                                      or the mug's Now card, R.5)
  *   island.remove(id)                                  it ended
  *   island.alert({ icon, text, detail })               a 2.5 s confirmation ("Light theme")
  *   island.expand(id) / island.collapse()              open an activity's expanded card
@@ -13,7 +14,7 @@
  */
 import type { ReactNode } from "react";
 
-export type ActivityKind = "music" | "ar" | "chat" | "game";
+export type ActivityKind = "music" | "ar" | "chat" | "game" | "now";
 
 export type IslandActivity = {
   id: string;
@@ -40,7 +41,8 @@ export type AlertIcon =
   | "mute"
   | "mouse"
   | "hand"
-  | "star";
+  | "star"
+  | "music";
 
 export type AlertTone = "teal" | "neutral" | "amber";
 
@@ -65,6 +67,7 @@ const KIND_ORDER: Record<ActivityKind, number> = {
   ar: 1,
   chat: 2,
   game: 3,
+  now: 4,
 };
 
 let state: IslandState = { activities: [], alert: null, expandedId: null };

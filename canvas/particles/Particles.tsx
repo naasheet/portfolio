@@ -30,6 +30,9 @@ import { mulberry32 } from "../shapes/random";
 import { getRoom, loadShapes, scatterShape } from "../shapes/registry";
 import { updateRoomView } from "../room/hitAreas";
 import { liveHot, watchHot } from "../room/hot";
+import { roomObjects } from "@/content/room";
+import { gsap } from "@/lib/motion/gsap";
+import { hasSecret } from "@/lib/secrets";
 import { useStore } from "@/lib/store";
 
 export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
@@ -52,6 +55,9 @@ const BASE_SIZE = 16;
  */
 const ROOM_TILT = { desktop: (25 * Math.PI) / 180, phone: (40 * Math.PI) / 180 };
 const POINTER_TILT = (3 * Math.PI) / 180;
+/** The plant (R.5): its index, whose box anchors the leaf that grows when it's watered. */
+const PLANT = roomObjects.findIndex((o) => o.id === "plant");
+
 /** The room sits low in the view, under Home's intro (shape units). */
 const ROOM_LIFT = { desktop: 0.05, phone: 0.2 };
 
@@ -151,6 +157,9 @@ export function Particles({
           uAnyHot: { value: 0 },
           uFocus: { value: -1 },
           uBurst: { value: 0 },
+          uLeaf: { value: 0 },
+          uLeafAxis: { value: new Vector4() },
+          uPlant: { value: PLANT },
         },
       }),
     [colors],
@@ -219,6 +228,29 @@ export function Particles({
   const points = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
   // The room's hover / focus highlight follows the store's room.hot (R.4).
   useEffect(() => watchHot(), []);
+  // The plant's leaf (R.5): grown if it was ever watered (lib/secrets.ts), grows when it is.
+  const leaf = useRef({ v: 0 });
+  useEffect(() => {
+    if (hasSecret("plant")) leaf.current.v = 1;
+    let tween: gsap.core.Tween | null = null;
+    const unsubscribe = useStore.subscribe(
+      (s) => s.room.leaf,
+      (grown) => {
+        if (!grown) return;
+        tween?.kill();
+        tween = gsap.to(leaf.current, { v: 1, duration: 1.4, ease: "elastic.out(1, 0.6)" });
+      },
+    );
+    return () => {
+      unsubscribe();
+      tween?.kill();
+    };
+  }, []);
+  // No pointer lean on touch screens (R.5): there's no hover to follow.
+  const finePointer = useRef(true);
+  useEffect(() => {
+    finePointer.current = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  }, []);
   // Theme changes tween the particle colours and the clear colour (3.5).
   useEffect(() => {
     const mesh = points.current;
@@ -263,8 +295,9 @@ export function Particles({
 
     // The room tilts toward the viewer (25°) and follows the pointer by up to 3°.
     const half = { x: state.viewport.width / 2, y: state.viewport.height / 2 };
-    const px = p && half.x > 0 ? Math.max(-1, Math.min(1, p.x / half.x)) : 0;
-    const py = p && half.y > 0 ? Math.max(-1, Math.min(1, p.y / half.y)) : 0;
+    const lean = p && finePointer.current;
+    const px = lean && half.x > 0 ? Math.max(-1, Math.min(1, p.x / half.x)) : 0;
+    const py = lean && half.y > 0 ? Math.max(-1, Math.min(1, p.y / half.y)) : 0;
     const tk = 1 - Math.exp(-Math.max(delta, 0) / 0.4);
     tilt.current.x += (-py * POINTER_TILT - tilt.current.x) * tk;
     tilt.current.y += (px * POINTER_TILT - tilt.current.y) * tk;
@@ -281,7 +314,26 @@ export function Particles({
 
     // R.4: where each object is on screen, for the DOM's hit test, tags and hover card.
     const layout = getRoom()?.layout[r.phone > 0.5 ? "phone" : "desktop"];
-    updateRoomView(mesh, state.camera, state.size, layout?.boxes ?? null, r.room);
+    // R.5: the leaf grows from the plant's box (centre x / z, base y, height).
+    if (u.uLeaf) u.uLeaf.value = leaf.current.v;
+    if (layout) {
+      const b = PLANT * 6;
+      const bx = layout.boxes;
+      (u.uLeafAxis?.value as Vector4 | undefined)?.set(
+        (bx[b]! + bx[b + 3]!) / 2,
+        bx[b + 1]!,
+        (bx[b + 2]! + bx[b + 5]!) / 2,
+        bx[b + 4]! - bx[b + 1]!,
+      );
+    }
+    updateRoomView(
+      mesh,
+      state.camera,
+      state.size,
+      layout?.boxes ?? null,
+      r.room,
+      layout?.bulb ?? null,
+    );
 
     if (p) {
       (u.uPointer?.value as Vector2 | undefined)?.set(p.x, p.y);

@@ -16,15 +16,25 @@ export function updateRoomView(
   size: { width: number; height: number },
   boxes: Float32Array | null,
   shown: number,
+  bulb: readonly [number, number, number] | null = null,
 ): void {
   const out = useStore.getState().room.view;
   out.shown = boxes ? shown : 0;
   const count = out.boxes.length / 5;
   if (!boxes || shown <= 0) {
     out.boxes.fill(NaN);
+    out.bulb.fill(NaN);
     return;
   }
   mesh.updateMatrixWorld();
+  // The lamp's bulb (R.5): where the theme reveal starts.
+  if (bulb && !Number.isNaN(bulb[0])) {
+    corner.set(bulb[0], bulb[1], bulb[2]).applyMatrix4(mesh.matrixWorld).project(camera);
+    out.bulb[0] = (corner.x * 0.5 + 0.5) * size.width;
+    out.bulb[1] = (-corner.y * 0.5 + 0.5) * size.height;
+  } else {
+    out.bulb.fill(NaN);
+  }
   for (let o = 0; o < count; o++) {
     const b = o * 6;
     if (Number.isNaN(boxes[b]!)) {

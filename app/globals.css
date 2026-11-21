@@ -955,3 +955,58 @@ html[data-gate="done"] .entry-gate {
     }
   }
 }
+
+/*
+ * Theme reveal (R.5, lib/theme.ts revealTheme): the View Transition's own crossfade is off; the
+ * new theme is revealed by a clip-path circle animated on ::view-transition-new(root). Without
+ * the API, .theme-veil (the old background colour) fades out over 400 ms.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+.theme-veil {
+  position: fixed;
+  inset: 0;
+  /* Over everything but the cursor. */
+  z-index: calc(var(--z-index-cursor) - 1);
+  pointer-events: none;
+}
+
+/* The phone's selection sheet in the room (R.5): slides up with a transform. */
+@layer components {
+  .phone-sheet {
+    transform: translateY(calc(100% + 24px));
+    transition: transform 320ms var(--ease-out);
+  }
+  .phone-sheet[data-open] {
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .phone-sheet {
+      transition: opacity 200ms var(--ease-out);
+      transform: none;
+      opacity: 0;
+    }
+    .phone-sheet[data-open] {
+      opacity: 1;
+    }
+  }
+}
+
+/* Home without the canvas (R.5): the cards replace the room, so its hints go. */
+html[data-room="cards"] [data-room-only] {
+  display: none;
+}
+
+/* Reduced motion (R.5): no fly-through, but pages still crossfade in 200 ms (opacity only). */
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    transition: opacity 200ms var(--ease-out);
+  }
+  .page[data-page="from"] {
+    opacity: 0;
+    transition: none;
+  }
+}

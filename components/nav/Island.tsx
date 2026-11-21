@@ -15,6 +15,7 @@ import { chapterNumber, chapters } from "@/content/chapters";
 import { roomObjects } from "@/content/room";
 import { copy } from "@/content/copy";
 import { focusRing } from "@/components/ui/controlStyles";
+import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import {
   getIsland,
@@ -65,6 +66,8 @@ export function Island() {
   );
   const page = useStore((s) => s.page.id);
   const hot = useStore((s) => s.room.hot);
+  // The peek is for pointing (R.4); on touch the phone sheet says where a tap goes (R.5).
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   const playing = useStore((s) => s.audio.playing);
   const menuOpen = useStore((s) => s.ui.menuOpen);
   const reduced = useReducedMotion();
@@ -96,7 +99,7 @@ export function Island() {
   // Peek (R.4): pointing at a room object on Home shows where it goes, "01 Home → 03 Work ↵".
   const hotOpens = roomObjects.find((o) => o.id === hot)?.opens;
   const peek =
-    page === "home" && hotOpens?.kind === "page"
+    finePointer && page === "home" && hotOpens?.kind === "page"
       ? chapters.find((c) => c.id === hotOpens.page)
       : undefined;
 

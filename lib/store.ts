@@ -125,12 +125,16 @@ export type RoomSlice = {
   /** The object being pointed at or focused, or null. */
   hot: RoomObjectId | null;
   setHot: (hot: RoomObjectId | null) => void;
+  /** The plant has been watered (R.5): its leaf is grown. Saved by lib/secrets.ts. */
+  leaf: boolean;
+  setLeaf: (leaf: boolean) => void;
   /**
    * FAST, mutated in place by the canvas. `shown` 0–1 (the room is assembled and on screen);
    * `boxes`: per object (roomObjects order) its screen rect in CSS px and depth: x0, y0, x1, y1,
-   * depth (smaller = nearer). x0 is NaN when the object isn't shown.
+   * depth (smaller = nearer). x0 is NaN when the object isn't shown. `bulb`: the lamp's bulb on
+   * screen (x, y; NaN without a lamp), where the theme reveal starts (R.5).
    */
-  view: { shown: number; boxes: Float32Array };
+  view: { shown: number; boxes: Float32Array; bulb: Float32Array };
 };
 
 export type StoreState = {
@@ -194,9 +198,14 @@ export const useStore = create<StoreState>()(
         setHot: (hot) => {
           if (get().room.hot !== hot) patch("room", { hot });
         },
+        leaf: false,
+        setLeaf: (leaf) => {
+          if (get().room.leaf !== leaf) patch("room", { leaf });
+        },
         view: {
           shown: 0,
           boxes: new Float32Array(ROOM_OBJECT_COUNT * 5).fill(NaN),
+          bulb: new Float32Array(2).fill(NaN),
         },
       },
 
