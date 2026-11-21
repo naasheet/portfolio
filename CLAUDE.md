@@ -507,7 +507,7 @@ NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
 | 2 | Entry gate, preloader, persistent layer, nav and shortcuts, page transitions (2.1–2.5) | 4 |
 | 3 | Living canvas: particles, shapes, scroll morph, pointer, theme and moods, quality tiers (3.1–3.6) | 5–6 |
 | R | Separate pages and the particle room: pages (R.1), route-driven canvas (R.2), room shape (R.3), hover and open (R.4), extras and phone (R.5), Home intro (R.6), CLAUDE.md edits (R.7) | — |
-| 4 | Homepage chapters and content: content model, hero, about, work, case studies, skills, contact, SEO, MVP review (4.1–4.9) — **MVP** | 7–8 |
+| 4 | Pages and content: content model, ~~hero~~ (4.2, replaced by phase R), about, work, case studies, skills, contact, SEO, MVP review (4.1–4.9) — **MVP** | 7–8 |
 | 5 | Music: engine, mini-player, expanded player, audio-reactive canvas, now-playing card (5.1–5.5) | 9 |
 | 6 | Terminal: UI, parser and registry, virtual filesystem, core and site commands, mobile (6.1–6.6) | 10 |
 | 7 | Chatbot: knowledge, API, rate limits, UI, actions (7.1–7.5) | 11 |
@@ -523,8 +523,8 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1–R.7 done); now phase 4: 4.1 (the
-content model) done, 4.2 next. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
+Current phase: **4 — Pages and content** (4.1 done; 4.2 replaced by phase R; 4.3, About, is next).
+Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
 Phase R checklist (the R.7 brief asked for R.1–R.6 unticked; they were built before R.7, so they
@@ -543,7 +543,8 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
+R.3–R.6)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -849,6 +850,9 @@ Carry-over into later chunks:
     0.9 s from scatter routes).
   - **Shader precompile:** `gl.compileAsync(scene, camera)` on mount compiles the hidden reflection
     program too; compiling it on its first draw cost a 300–400 ms frame mid-intro.
+- **4.2 Home: replaced by phase R.** R.3–R.6 build Home as the particle room. The Hero B frames
+  (`stuff/reference/Hero — desktop 1440 (B · Bento)@2x.png`, `— phone 390`) stay for reference
+  only; their cards (profile, stats, photo, socials …) move to the About page (4.3).
 - **Content model (4.1):** `content/profile.ts` (`Profile`: name, title, location `{ city, timeZone,
   zoneLabel }`, availability, tagline, bio, offScreen, photos, resume `/resume.pdf`, email),
   `content/projects.ts` (`Project`: slug, title, year, role, summary, domain, stack, links, cover,
