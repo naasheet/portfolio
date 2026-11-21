@@ -37,7 +37,7 @@ export function readCanvasColors(): CanvasColors {
 
 /**
  * Follow the theme (3.5): watches `data-theme` on <html> and tweens `uColorA`, `uColorB`,
- * `uTheme` and the clear colour (`background`, which is scene.background) to the new theme's
+ * `uTheme` (and the room's `uLamp`, R.3) and the clear colour (`background`, which is scene.background) to the new theme's
  * values over 400 ms. Reduced motion swaps them and asks for one frame. Returns the cleanup.
  */
 export function watchTheme(
@@ -66,6 +66,8 @@ export function watchTheme(
       b.lerpColors(from.b, target.b, t);
       background.lerpColors(from.bg, target.bg, t);
       theme.value = from.theme + (target.theme - from.theme) * t;
+      // The room's lamp is on in dark, off in light (Home board: "light theme = lamp off").
+      if (u.uLamp) u.uLamp.value = 1 - (theme.value as number);
     };
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",

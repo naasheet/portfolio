@@ -1,6 +1,6 @@
-/** Attributes are sized for the maximum (CLAUDE.md §6: 20k–40k); setDrawRange picks the count. */
-export const MAX_PARTICLES = 40_000;
-export const DEFAULT_PARTICLES = 30_000;
+/** Attributes are sized for the maximum (CLAUDE.md §6: 20k–60k, R.3); setDrawRange picks the count. */
+export const MAX_PARTICLES = 60_000;
+export const DEFAULT_PARTICLES = 36_000;
 
 /** A shape: exactly MAX_PARTICLES × 3 floats (x, y, z), shuffled, so any prefix covers it all. */
 export type ShapePoints = Float32Array;

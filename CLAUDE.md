@@ -182,8 +182,9 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 - **First-load JS around 200 KB gzipped** or less on `/`. Check with `@next/bundle-analyzer`.
 - **Largest content visible in under 2.5 s** on a throttled connection.
 - Animate **only `transform` and `opacity`** on DOM elements. Never width, height, top, left or margin.
-- Cap `devicePixelRatio` at 1–1.75 (by tier). Particle count is 12k–40k (by tier, 3.6) in **one draw call**.
-- **Quality tiers (3.6):** high 40k / DPR 1.75, medium 24k / 1.5, low 12k / 1.0, picked from the
+- Cap `devicePixelRatio` at 1–1.75 (by tier). Particle count is 20k–60k (by tier; R.3) in **one draw
+  call**, plus one more on Home only: the room's reflection pass (same geometry, no extra particles).
+- **Quality tiers (3.6, raised in R.3):** high 60k / DPR 1.75, medium 36k / 1.5, low 20k / 1.0, picked from the
   hardware; drei's `PerformanceMonitor` steps down a tier when frames are slow (draw range and DPR
   only, never up).
 - No main-thread task over 50 ms. Hand detection runs in a worker, capped at about 30 fps.
@@ -296,7 +297,8 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
   random delay per particle.
 - Uniforms: `uTime`, `uMorph`, `uScroll`, `uPointer`, `uPointerRadius`, `uPointerStrength`,
   `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`. Added since: `uPointerVelocity`,
-  `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), plus `uPixelRatio` and `uSize`.
+  `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), `uRoom`, `uPhone`, `uLamp`, `uDeskY`,
+  `uPool`, `uSteam` (R.3), plus `uPixelRatio` and `uSize`. Attributes since: `aRoom` (R.3).
 - The canvas is **opaque** (`alpha: false`) and clears to the theme's `bg/base` (3.5); `<body>` stays
   on `bg/base` for the first paint and the no-WebGL case.
 - Fallbacks: reduced motion gets a still frame of the hero shape; no WebGL gets a CSS gradient.
@@ -496,7 +498,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1 and R.2 done; R.3, the room, is next; phase 4 follows)
+Current phase: **R — Separate pages and the particle room** (R.1–R.3 done; R.4 is next; phase 4 follows)
 (phases 0, 2 and 3 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
@@ -505,12 +507,12 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
-    `canvas/particles/morph.ts` (never write `aFrom` / `aTo` / `uMorph` directly). Shapes are 40k
-    points, shuffled, so the draw range's prefix (30k, or 15k for 3.6's low tier through the
+    `canvas/particles/morph.ts` (never write `aFrom` / `aTo` / `uMorph` directly). Shapes are 60k
+    points (R.3), shuffled, so the draw range's prefix (the tier's 60k / 36k / 20k through the
     `count` prop) always covers the whole shape.
   - **`DELAY_SPAN` (0.4) in `morph.ts` must match `particles.vert.glsl`** (and the smoothstep), or
     the CPU freeze of a running morph won't match what's on screen and particles will pop.
@@ -520,8 +522,9 @@ Carry-over into later chunks:
   - **4.2 NameCard:** the name is fitted into `SHAPE_BOX` like every shape. 4.2 fits it into the
     card's box (pass a box to `normalize`, or scale the mesh). The 2.2 board's "particles form the
     name during the gate's exit" also belongs there: today the name morph runs under the gate.
-  - **Phones (not done in 3.3):** `SHAPE_BOX` is 4 wide; a 390 px portrait view is only ~1.8 units
-    wide at z = 0. Scale the mesh by aspect (3.6 or 4.2); Nasheet chose not to add it in 3.3.
+  - **Phones:** the room has its own phone layout (R.3), but the other shapes still use `SHAPE_BOX`
+    (4 wide) while a 390 px portrait view is only ~1.8 units wide at z = 0: the sphere, laptop etc.
+    overflow on phones. Scale the mesh by aspect when the pages are built (4.x / 10.2).
   - **8.5 AR pointer:** feed the fingertip into the same uniforms. `createPointerTracker()` in
     `canvas/particles/pointer.ts` turns a client position into the smoothed z = 0 point, velocity
     and strength; give it a second input (e.g. `feed(clientX, clientY)` from `ar.hand`) rather than
@@ -558,7 +561,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.4 KB after R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
   (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
   nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
@@ -685,6 +688,57 @@ Carry-over into later chunks:
   - **Scroll:** `RouteWatcher` writes `scroll.progress` (this page's `scrollY / (scrollHeight -
     innerHeight)`, 0 if it doesn't scroll) on scroll, resize and route change (its layout effect
     runs after the template placed the page). `Particles` no longer reads Lenis.
+- **Room shape (R.3):** Home's shape is the particle room (`{ kind: "room", url: "/models/room.glb" }`);
+  the name is still registered as shape "name" (for the arrival sequence later).
+  - **Content:** `content/room.ts` (one entry per room.glb node in a fixed order = the object id
+    0–8 in `aRoom.x`: label, opens, key, share, idle motion, phone place; the ambience shares; the
+    model-space geometry of the desk, light pool, shade, screen plane and steam),
+    `content/screen.ts` (11 real lines of `RouteMorph.tsx`), `content/now.ts` (the Now card:
+    chunk, 26 / 79 done, coffee 3, last commit; **update it as chunks land**; generating
+    `lastCommit` from git at build time is a follow-up for the Now card).
+  - **Model:** room.glb's 9 nodes carry no transforms (vertices are in place, Y up, desk at y = 0,
+    ~12 × 5.3 units). `fromScene()` samples each node with 3.2's sampler (`sampleGeometry`, now
+    exported from `fromModel.ts`), one idle callback per node.
+  - **Build (`canvas/shapes/room.ts`):** objects by share (75%), the laptop's screen code (25% of its
+    share: token bars, names teal, strings / numbers amber, keywords and punctuation grey, line-number
+    dots, an amber cursor), the mug's steam (40% of its share), then ambience (25%: dust, the
+    front edge line, the pool, the cone, motes). Both layouts come from the same samples in the
+    same order and one shuffle, so `aRoom` (object, kind, tint, extra) is fixed per particle and
+    is uploaded once (Particles, after `loadShapes()`). Kinds and tints must match the vertex
+    shader. Desktop is fitted to 5.6 wide, phone to 1.75.
+  - **Shader:** everything room-specific is gated by `uRoom` (tweened with the morph), so other
+    shapes behave as object −1. Steam animates in the vertex shader from `uTime` (three wisps,
+    curl, fade with height). Warm light is computed from the distance to `uPool` (not baked: the
+    phone layout moves the points), times `uLamp` (= 1 − theme, set in `colors.ts`). Colour moved
+    to the vertex shader (`vColor`).
+  - **Reflection:** a second `Points` with the same geometry and `REFLECT` defined, sharing the
+    uniforms object; flips about `uDeskY`, alpha x 0.16, fading with height, objects / code / steam
+    only; hidden unless `uRoom` > 0.
+  - **View:** the mesh (not the camera) tilts 25° on Home (40° on phones, so the rows separate),
+    plus up to 3° following the pointer, and lifts (`ROOM_LIFT`); all x `uRoom`.
+  - **Phones (< 768 px, `(max-width: 47.99rem)` in RouteMorph, live):** shape "home-phone", three
+    rows from `content/room.ts`; the lamp, pool and cone become dust (`aRoom.w` = 1, `uPhone`).
+  - **State:** `liveRoom` / `roomTo()` in `mood.ts` (room, phone, desk, pool, steam), tweened with
+    the morph by RouteMorph.
+  - **Preload:** `room.glb` (102 KB gzipped) is in the gate's manifest.
+  - **Not built (later R chunks):** hover and click, labels, idle motions other than steam (pencils,
+    buttons, bulb flicker, flap, leaves), the arrival sequence.
+- **Verified R.3 (headless Chromium on the Iris Xe, dev and production builds):**
+  - **Compute:** the room takes 54–71 ms in total, but its longest single task is 20–25 ms; all
+    10 shapes 124–145 ms in total (60k points each now).
+  - **Frames, before (R.2, 40k) -> after (60k + reflection):** 1280 x 720 idle on Home p50 6.1 / p95
+    6.2 -> 6.1 / 6.2; page switch and rapid switching unchanged (p50 6.1, p95 6.2, max ~12 ms).
+    Stress, 1920 x 1080 at device scale 2 (canvas 3360 px wide): Home 156–164 fps vs About
+    154–166 fps over three runs (one Home run had p95 24 ms that didn't repeat).
+  - **Screenshots:** desktop matches the Home frame (all nine objects readable, code with an amber
+    cursor on the laptop, steam over the mug, an amber pool under the lamp, faint cone, desk edge
+    line, soft reflections). Light theme: lamp off, desk faint. Phone (390 x 844): three rows, no
+    lamp, clear of the chip row. Resizing 1280 -> 390 -> 1280 morphs between layouts with no
+    reload. About (sphere) is unaffected (no tilt).
+  - First-load JS on `/` 206.4 KB (unchanged).
+  - **[manual]** 60 fps on your laptop and **at least 50 fps on a mid-range phone** (headless can't
+    show GPU limits: frames stayed at the 6.1 ms floor even at 3360 px); every object's readability
+    by eye; the phone layout on a real phone.
 - **Verified R.2 (headless Chromium on the Iris Xe, production build; Firefox and Safari are manual):**
   - **Frames, before -> after** (1280 x 720, two runs each): idle p50 6.1 / p95 6.2 -> 6.1 / 6.2-6.3;
     one page switch 6.1 / 6.2-6.3 -> 6.1 / 6.2-6.3 (max 12.4); rapid switching (8 pages, one every

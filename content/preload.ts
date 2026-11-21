@@ -51,6 +51,8 @@ export const preloadManifest: PreloadEntry[] = [
   //   sizes: "(min-width: 1024px) 33vw, 100vw", vw: 0.33, weight: 120 },
 
   // The particle shapes' models (chunk 3.2), so canvas/shapes/registry.ts reads them from cache.
+  // The particle room on Home (R.3); 102 KB gzipped over the wire.
+  { id: "model-room", kind: "url", url: "/models/room.glb", weight: 102 },
   { id: "model-laptop", kind: "url", url: "/models/laptop.glb", weight: 13 },
   {
     id: "model-controller",

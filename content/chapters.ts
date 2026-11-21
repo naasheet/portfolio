@@ -3,7 +3,6 @@
  * and (from 4.x) the chapter sections all read this list. `id` is the section's anchor.
  * Subtitles are from the Navigation board (2.4).
  */
-import { profile } from "./profile";
 
 /**
  * The particle shape a chapter morphs into (canvas/shapes/registry.ts computes them).
@@ -12,6 +11,8 @@ import { profile } from "./profile";
 export type ShapeSpec =
   | { kind: "text"; text: string }
   | { kind: "model"; url: string }
+  /** The particle room (R.3): room.glb's nodes plus ambience, screen code and steam. */
+  | { kind: "room"; url: string }
   | { kind: "sphere" | "grid" | "ring" | "scatter" };
 
 /**
@@ -40,8 +41,8 @@ export const chapters = [
     route: "/",
     name: "Home",
     subtitle: "Where the particles live",
-    // 4.2 fits it into the hero's NameCard.
-    shape: { kind: "text", text: profile.name },
+    // The particle room (R.3); the name shape is still registered as "name".
+    shape: { kind: "room", url: "/models/room.glb" },
     mood: { size: 0.9, drift: 0.6, spread: 0.5 }, // tight and slow, so the name stays crisp
   },
   {

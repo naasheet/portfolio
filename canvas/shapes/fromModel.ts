@@ -30,7 +30,7 @@ export async function fetchModel(url: string): Promise<ArrayBuffer> {
 }
 
 /** Every mesh of the scene in world space, merged into one position-only, non-indexed geometry. */
-function mergeMeshes(root: import("three").Object3D): BufferGeometry {
+export function mergeMeshes(root: import("three").Object3D): BufferGeometry {
   root.updateMatrixWorld(true);
   const parts: Float32Array[] = [];
   root.traverse((obj) => {
@@ -80,6 +80,25 @@ export async function fromModel(
   geo.translate(-cx, -cy, -cz);
   geo.scale(scale, scale, scale);
 
+  sampleGeometry(geo, out, 0, MAX_PARTICLES, rand, EDGE_JITTER);
+  geo.dispose();
+  return out;
+}
+
+/**
+ * 3.2's sampler: `count` points of `geo` written into `out` from point `start`. EDGE_SHARE of
+ * them along sharp edges (> EDGE_ANGLE, picked in proportion to edge length, ± `jitter` in the
+ * geometry's units), the rest across the surface (MeshSurfaceSampler). The room (R.3) samples
+ * each node with it.
+ */
+export function sampleGeometry(
+  geo: BufferGeometry,
+  out: Float32Array,
+  start: number,
+  count: number,
+  rand: () => number,
+  jitter: number,
+): void {
   // Sharp edges, as segment pairs, with a cumulative length table for weighted picks.
   const edges = new EdgesGeometry(geo, EDGE_ANGLE);
   const e = edges.getAttribute("position").array as Float32Array;
@@ -96,8 +115,9 @@ export async function fromModel(
     cumulative[s] = length;
   }
 
-  const edgeCount = segments > 0 ? Math.round(MAX_PARTICLES * EDGE_SHARE) : 0;
-  for (let i = 0; i < edgeCount; i++) {
+  const edgeCount = segments > 0 ? Math.round(count * EDGE_SHARE) : 0;
+  for (let n = 0; n < edgeCount; n++) {
+    const i = start + n;
     // Binary search the segment whose cumulative length passes the pick.
     const pick = rand() * length;
     let lo = 0,
@@ -109,7 +129,7 @@ export async function fromModel(
     }
     const o = lo * 6;
     const t = rand();
-    const j = () => (rand() * 2 - 1) * EDGE_JITTER;
+    const j = () => (rand() * 2 - 1) * jitter;
     out[i * 3] = e[o]! + (e[o + 3]! - e[o]!) * t + j();
     out[i * 3 + 1] = e[o + 1]! + (e[o + 4]! - e[o + 1]!) * t + j();
     out[i * 3 + 2] = e[o + 2]! + (e[o + 5]! - e[o + 2]!) * t + j();
@@ -123,7 +143,7 @@ export async function fromModel(
   ).setRandomGenerator(rand);
   sampler.build();
   const p = new Vector3();
-  for (let i = edgeCount; i < MAX_PARTICLES; i++) {
+  for (let i = start + edgeCount; i < start + count; i++) {
     sampler.sample(p);
     out[i * 3] = p.x;
     out[i * 3 + 1] = p.y;
@@ -131,6 +151,4 @@ export async function fromModel(
   }
 
   edges.dispose();
-  geo.dispose();
-  return out;
 }

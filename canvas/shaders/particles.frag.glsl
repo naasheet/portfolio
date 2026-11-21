@@ -7,12 +7,10 @@
 // without a pop. The canvas is opaque (alpha: false) and clears to bg/base every frame, so the
 // alpha written here only matters inside the framebuffer: the same result in every browser.
 
-uniform vec3 uColorA;  // canvas/particle-a (teal)
-uniform vec3 uColorB;  // canvas/particle-b (amber)
 uniform float uTheme;  // 0 dark, 1 light
 uniform float uFade;   // 0 full strength .. 1 the background colour (scatter routes: 0.6, R.2)
 
-varying float vMix;
+varying vec3 vColor;   // teal / amber mix and the room's tints (vertex shader)
 varying float vAlpha;
 
 // Light theme: darker, so the points read as ink on paper, not glare. (Alpha is kept as a knob.)
@@ -24,7 +22,7 @@ void main() {
   if (d > 0.5) discard;
   float a = smoothstep(0.5, 0.0, d);
 
-  vec3 color = mix(uColorA, uColorB, vMix) * mix(1.0, LIGHT_SHADE, uTheme);
+  vec3 color = vColor * mix(1.0, LIGHT_SHADE, uTheme);
   float alpha = a * a * vAlpha
     * mix(1.0, LIGHT_ALPHA, uTheme)
     // Scaling the premultiplied colour pulls it toward the background in both blends:

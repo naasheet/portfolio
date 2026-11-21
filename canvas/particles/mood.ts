@@ -62,3 +62,52 @@ export function stopMood(): void {
   fadeTween?.kill();
   moodTween = fadeTween = null;
 }
+
+/**
+ * The room (R.3), live: `room` 0–1 shows the room's extras (aRoom kinds, warm light, steam,
+ * reflection, the 25° tilt), `phone` 0–1 the phone layout's rules (no lamp, no pool), plus the
+ * layout's reference points in shape units. Tweened with the morph, so a page change or a
+ * desktop / phone switch slides instead of jumping. Particles copies it into the uniforms.
+ */
+export const liveRoom = {
+  room: 0,
+  phone: 0,
+  deskY: 0,
+  poolX: 0,
+  poolY: 0,
+  poolZ: 0,
+  poolR: 0,
+  steamX: 0,
+  steamY: 0,
+  steamZ: 0,
+  steamH: 1,
+};
+
+export type RoomState = Partial<typeof liveRoom>;
+
+let roomTween: gsap.core.Tween | null = null;
+
+/** Tween the room state (with the morph's timing), or set it (reduced motion). */
+export function roomTo(
+  state: RoomState,
+  { instant = false }: { instant?: boolean } = {},
+): void {
+  roomTween?.kill();
+  roomTween = null;
+  if (instant) {
+    Object.assign(liveRoom, state);
+    requestFrame();
+    return;
+  }
+  roomTween = gsap.to(liveRoom, {
+    ...state,
+    duration: MORPH_DURATION,
+    ease: MORPH_EASE,
+  });
+}
+
+/** Drop the room tween (unmount). */
+export function stopRoom(): void {
+  roomTween?.kill();
+  roomTween = null;
+}

@@ -8,7 +8,7 @@
 export type TierName = "high" | "medium" | "low";
 
 export type Tier = {
-  /** Particles drawn (the draw range; the geometry always holds 40k). */
+  /** Particles drawn (the draw range; the geometry always holds 60k). */
   count: number;
   /** DPR cap: the canvas renders at min(devicePixelRatio, dpr), never below 1. */
   dpr: number;
@@ -17,9 +17,9 @@ export type Tier = {
 };
 
 export const TIERS: Record<TierName, Tier> = {
-  high: { count: 40_000, dpr: 1.75, pointScale: 1 },
-  medium: { count: 24_000, dpr: 1.5, pointScale: 1.1 },
-  low: { count: 12_000, dpr: 1, pointScale: 1.2 },
+  high: { count: 60_000, dpr: 1.75, pointScale: 1 },
+  medium: { count: 36_000, dpr: 1.5, pointScale: 1.1 },
+  low: { count: 20_000, dpr: 1, pointScale: 1.2 },
 };
 
 /**

@@ -20,14 +20,14 @@ import fragmentShader from "../shaders/particles.frag.glsl";
 import vertex from "../shaders/particles.vert.glsl";
 import { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
 import { readCanvasColors, watchTheme } from "./colors";
-import { liveMood } from "./mood";
+import { liveMood, liveRoom } from "./mood";
 import {
   RIPPLE_SLOTS,
   createPointerTracker,
   type PointerTracker,
 } from "./pointer";
 import { mulberry32 } from "../shapes/random";
-import { loadShapes, scatterShape } from "../shapes/registry";
+import { getRoom, loadShapes, scatterShape } from "../shapes/registry";
 import { useStore } from "@/lib/store";
 
 export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
@@ -44,8 +44,20 @@ const PARALLAX_Y = 0.3;
 const SCROLL_TAU = 0.35;
 /** Base point size (CSS px at depth 1); the mood scales it. */
 const BASE_SIZE = 16;
+/**
+ * The room (R.3): seen from about 25° above the desk (40° on phones, so the three rows separate
+ * on a tall screen); the pointer tilts it up to 3°.
+ */
+const ROOM_TILT = { desktop: (25 * Math.PI) / 180, phone: (40 * Math.PI) / 180 };
+const POINTER_TILT = (3 * Math.PI) / 180;
+/** The room sits low in the view, under Home's intro (shape units). */
+const ROOM_LIFT = { desktop: 0.05, phone: 0.2 };
 
-/** The one Points mesh (CLAUDE.md §9.2): one draw call, a custom ShaderMaterial. */
+/**
+ * The one Points mesh (CLAUDE.md §9.2): one draw call, a custom ShaderMaterial. On Home (R.3) a
+ * second Points draws the same geometry as the desk's reflection (one more draw call, no more
+ * particles); it's hidden everywhere else.
+ */
 export function Particles({
   count = DEFAULT_PARTICLES,
   pointScale = 1,
@@ -74,6 +86,14 @@ export function Particles({
     geo.setAttribute("aFrom", new BufferAttribute(from, 3));
     geo.setAttribute("aTo", new BufferAttribute(to, 3));
     geo.setAttribute("aRandom", new BufferAttribute(random, 4));
+    // The room's per-particle records (R.3), filled once the room is computed. Until then
+    // kind -1: no particle is part of the room.
+    const room = new Float32Array(MAX_PARTICLES * 4);
+    for (let i = 0; i < room.length; i += 4) {
+      room[i] = -1;
+      room[i + 1] = -1;
+    }
+    geo.setAttribute("aRoom", new BufferAttribute(room, 4));
     // No `position` attribute, so three can't compute bounds: give it a fixed sphere.
     geo.boundingSphere = new Sphere(new Vector3(), 5);
     return geo;
@@ -118,10 +138,25 @@ export function Particles({
           uSize: { value: BASE_SIZE },
           uDriftTime: { value: 0 },
           uSpread: { value: 1 },
+          uRoom: { value: 0 },
+          uPhone: { value: 0 },
+          uLamp: { value: 1 - colors.theme },
+          uDeskY: { value: 0 },
+          uPool: { value: new Vector4() },
+          uSteam: { value: new Vector4(0, 0, 0, 1) },
         },
       }),
     [colors],
   );
+
+  // The reflection (R.3): same shaders with REFLECT, sharing the uniforms object, so every
+  // write (theme, mood, pointer) reaches both.
+  const reflectMaterial = useMemo(() => {
+    const m = material.clone();
+    m.uniforms = material.uniforms;
+    m.defines = { REFLECT: "" };
+    return m;
+  }, [material]);
 
   // Pointer (3.4): window listeners, read once per frame below.
   const pointer = useRef<PointerTracker | null>(null);
@@ -134,10 +169,21 @@ export function Particles({
     };
   }, []);
 
-  // Compute every other shape while the gate is up, one idle callback each.
+  // Compute every other shape while the gate is up, one idle callback each. Once the room
+  // exists, its per-particle records go into aRoom (once).
   useEffect(() => {
-    void loadShapes();
-  }, []);
+    let cancelled = false;
+    void loadShapes().then(() => {
+      const room = getRoom();
+      if (cancelled || !room) return;
+      const attr = geometry.getAttribute("aRoom") as BufferAttribute;
+      (attr.array as Float32Array).set(room.attr);
+      attr.needsUpdate = true;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [geometry]);
 
   useEffect(() => {
     geometry.setDrawRange(0, Math.min(count, MAX_PARTICLES));
@@ -154,9 +200,13 @@ export function Particles({
     () => () => {
       geometry.dispose();
       material.dispose();
+      reflectMaterial.dispose();
     },
-    [geometry, material],
+    [geometry, material, reflectMaterial],
   );
+  const reflection = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
+  // The pointer's tilt of the room, smoothed (rad).
+  const tilt = useRef({ x: 0, y: 0 });
 
   // Uniforms are written through the mesh ref: refs are the place for per-frame mutation.
   const points = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
@@ -183,17 +233,42 @@ export function Particles({
     if (u.uSpread) u.uSpread.value = liveMood.spread;
     if (u.uFade) u.uFade.value = liveMood.fade;
 
+    // The room (R.3): tweened with the morph by RouteMorph (mood.ts liveRoom).
+    const r = liveRoom;
+    if (u.uRoom) u.uRoom.value = r.room;
+    if (u.uPhone) u.uPhone.value = r.phone;
+    if (u.uDeskY) u.uDeskY.value = r.deskY;
+    (u.uPool?.value as Vector4 | undefined)?.set(r.poolX, r.poolY, r.poolZ, r.poolR);
+    (u.uSteam?.value as Vector4 | undefined)?.set(r.steamX, r.steamY, r.steamZ, r.steamH);
+    if (reflection.current) reflection.current.visible = r.room > 0.001;
+
     // Rotation and parallax, scrubbed to the page's scroll and separate from the morphs.
     const k = 1 - Math.exp(-Math.max(delta, 0) / SCROLL_TAU);
     scroll.current += (useStore.getState().scroll.progress - scroll.current) * k;
     const s = scroll.current;
     if (u.uScroll) u.uScroll.value = s;
-    mesh.rotation.y = s * SCROLL_ROTATE_Y;
-    mesh.rotation.x = Math.sin(s * Math.PI) * SCROLL_TILT_X;
-    mesh.position.y = s * PARALLAX_Y;
 
     // Pointer: parts the particles like water (3.4).
     const p = pointer.current?.update(state.camera, delta);
+
+    // The room tilts toward the viewer (25°) and follows the pointer by up to 3°.
+    const half = { x: state.viewport.width / 2, y: state.viewport.height / 2 };
+    const px = p && half.x > 0 ? Math.max(-1, Math.min(1, p.x / half.x)) : 0;
+    const py = p && half.y > 0 ? Math.max(-1, Math.min(1, p.y / half.y)) : 0;
+    const tk = 1 - Math.exp(-Math.max(delta, 0) / 0.4);
+    tilt.current.x += (-py * POINTER_TILT - tilt.current.x) * tk;
+    tilt.current.y += (px * POINTER_TILT - tilt.current.y) * tk;
+    const lift = ROOM_LIFT.desktop + (ROOM_LIFT.phone - ROOM_LIFT.desktop) * r.phone;
+    const roomTilt =
+      ROOM_TILT.desktop + (ROOM_TILT.phone - ROOM_TILT.desktop) * r.phone;
+    for (const obj of [mesh, reflection.current]) {
+      if (!obj) continue;
+      obj.rotation.y = s * SCROLL_ROTATE_Y + tilt.current.y * r.room;
+      obj.rotation.x =
+        Math.sin(s * Math.PI) * SCROLL_TILT_X + (roomTilt + tilt.current.x) * r.room;
+      obj.position.y = s * PARALLAX_Y + lift * r.room;
+    }
+
     if (p) {
       (u.uPointer?.value as Vector2 | undefined)?.set(p.x, p.y);
       (u.uPointerVelocity?.value as Vector2 | undefined)?.set(p.vx, p.vy);
@@ -207,6 +282,14 @@ export function Particles({
     <>
       {/* The canvas is opaque (alpha: false) and clears to bg/base every frame (3.5). */}
       <primitive object={colors.bg} attach="background" />
+      <points
+        ref={reflection}
+        geometry={geometry}
+        material={reflectMaterial}
+        frustumCulled={false}
+        renderOrder={-1}
+        visible={false}
+      />
       <points
         ref={points}
         name="particles"
