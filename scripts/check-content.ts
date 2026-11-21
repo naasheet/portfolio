@@ -51,7 +51,7 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
 
 {
   const at = (field: string) => `content/profile.ts › ${field}`;
-  for (const field of ["name", "title", "tagline", "offScreen", "email"] as const) {
+  for (const field of ["name", "title", "degree", "tagline", "offScreen", "email"] as const) {
     if (!filled(profile[field])) fail(at(field), "is required");
   }
   if (!filled(profile.location.city)) fail(at("location.city"), "is required");
@@ -72,6 +72,7 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
   }
   if (profile.bio.some(placeholder)) warnings.push("content/profile.ts › bio is a placeholder");
   if (profile.photos.length === 0) warnings.push("content/profile.ts › no photos yet");
+  if (profile.interests.some(placeholder)) warnings.push("content/profile.ts › interests are placeholders");
 }
 
 // --- Projects ----------------------------------------------------------------------------
