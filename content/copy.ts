@@ -54,6 +54,30 @@ export const copy = {
     ar: "Mouse / Hand mode",
     shortcuts: "Shortcuts (⇧ + /)",
     escape: "Close what's open",
+    pages: "Open About, Work, Skills, Arcade or Contact",
+    groups: { everywhere: "Everywhere", home: "Home" },
+  },
+  /** Home (R.1, Home board): the intro and the hint row. The room arrives in R.3. */
+  home: {
+    // TODO(content): confirm "Open to work" and the role line (from the Home board).
+    status: "Open to work",
+    /** Desktop title (the teal full stop is drawn separately). */
+    title: "Hi, I'm Nasheet",
+    lines: [
+      "Designer and frontend developer.",
+      "This is my desk. Pick something up.",
+    ],
+    /** The phone's eyebrow and title (Home — phone 390). */
+    eyebrow: "Hi, I'm Nasheet",
+    phoneTitle: "This is my desk",
+    hints: {
+      look: "Hover to look, click to open",
+      or: "or",
+      hand: "Pinch in Hand mode",
+      phone: "Tap something on the desk. Or jump straight there:",
+      /** Accessible name of the phone's chip row. */
+      pages: "Pages",
+    },
   },
   /** Placeholder pill in the persistent layer (2.3); 7.4 replaces it with the Ask bubble. */
   layer: {

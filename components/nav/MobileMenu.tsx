@@ -2,16 +2,15 @@
 
 import { X } from "lucide-react";
 import { m } from "framer-motion";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useId, type MouseEvent } from "react";
-import { chapterNumber, chapters } from "@/content/chapters";
+import { chapterNumber, chapters, type PageId } from "@/content/chapters";
 import { copy } from "@/content/copy";
 import { OverlayRoot } from "@/components/overlay/OverlayRoot";
 import { usePanelMotion } from "@/components/overlay/usePanelMotion";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { focusRing } from "@/components/ui/controlStyles";
-import { scrollTo, whenUnlocked } from "@/lib/motion/lenis";
 import { navigate } from "@/lib/motion/pageTransition";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -33,28 +32,22 @@ const FIRST_DELAY_S = 0.08;
  */
 export function MobileMenu() {
   const open = useStore((s) => s.ui.menuOpen);
-  const chapter = useStore((s) => s.scroll.chapter);
+  const page = useStore((s) => s.page.id);
   const setOpen = useStore((s) => s.ui.setMenuOpen);
-  const pathname = usePathname();
   const router = useRouter();
   const titleId = useId();
   const motion = usePanelMotion({ opacity: 0 }, { opacity: 1 });
 
   const close = () => setOpen(false);
 
-  // On `/`, glide once the menu has left and released the scroll lock; elsewhere, leave with
-  // the page transition and land on that chapter.
-  const go = (id: string, e?: MouseEvent) => {
+  // Each chapter is its own route (R.1): close the menu and leave with the page transition.
+  // The current page just closes the menu.
+  const go = (id: PageId, e?: MouseEvent) => {
     e?.preventDefault();
     close();
-    if (pathname === "/") {
-      whenUnlocked(() => {
-        window.history.pushState(window.history.state, "", `#${id}`);
-        scrollTo(`#${id}`);
-      });
-    } else {
-      navigate(router, `/#${id}`);
-    }
+    if (id === page) return;
+    const route = chapters.find((c) => c.id === id)?.route ?? "/";
+    navigate(router, route);
   };
 
   return (
@@ -86,7 +79,7 @@ export function MobileMenu() {
         <nav aria-label={copy.nav.label} className="flex-1">
           <ol className="flex flex-col gap-1">
             {chapters.map((c, i) => {
-              const current = i === chapter;
+              const current = c.id === page;
               return (
                 <m.li
                   key={c.id}
@@ -100,7 +93,7 @@ export function MobileMenu() {
                   }}
                 >
                   <a
-                    href={`/#${c.id}`}
+                    href={c.route}
                     aria-current={current ? "location" : undefined}
                     onClick={(e) => go(c.id, e)}
                     className={cn(

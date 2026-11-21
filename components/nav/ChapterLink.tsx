@@ -1,22 +1,19 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import type { ComponentPropsWithRef } from "react";
+import { chapters, type PageId } from "@/content/chapters";
 import { TransitionLink } from "./TransitionLink";
 
 export type ChapterLinkProps = Omit<ComponentPropsWithRef<"a">, "href"> & {
-  /** The chapter's section id (content/chapters.ts). */
-  chapter: string;
+  /** The page's id (content/chapters.ts). */
+  chapter: PageId;
 };
 
 /**
- * A link to a homepage chapter. On `/` it's a plain anchor, so SmoothScroll glides to it
- * (next/link would jump natively). On any other route it's a TransitionLink (2.5): the page
- * exits, the homepage enters at that chapter, and the persistent layer and music stay.
+ * A link to one of the six pages (R.1: each is its own route). A TransitionLink, so the page
+ * exits with the 2.5 animation and the persistent layer and music stay.
  */
 export function ChapterLink({ chapter, ...rest }: ChapterLinkProps) {
-  const pathname = usePathname();
-  const href = `/#${chapter}`;
-  if (pathname === "/") return <a href={href} {...rest} />;
-  return <TransitionLink href={href} {...rest} />;
+  const route = chapters.find((c) => c.id === chapter)?.route ?? "/";
+  return <TransitionLink href={route} {...rest} />;
 }

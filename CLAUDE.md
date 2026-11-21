@@ -21,8 +21,8 @@ more than adding features. A feature that drops frames is not finished.
 The whole site sits on **one continuous WebGL particle scene** that every feature talks to.
 Content floats on top of it in clean, frosted-glass panels set in iOS-style typography.
 
-- **Scroll** reshapes the particles. Each homepage chapter has a target shape (your name →
-  sphere → grid → controller → envelope).
+- **Pages** reshape the particles. Each of the six pages (its own URL since phase R) has a
+  target shape; Home is the particle room (a desk of objects, R.3), and each object opens its page.
 - **Music** makes the particles breathe and pulse with the track.
 - **Hand (AR)** pushes the particles away like water, and a pinch acts as a click.
 - **Terminal commands** change the scene live (`particles --explode`, `theme light`).
@@ -45,7 +45,9 @@ Non-goals: no OS/desktop metaphor, no whiteboard or kanban board, no iOS-looking
 
 ### Routes
 
-- `/` — homepage scroll chapters: Hero → About → Work → Skills → Arcade → Contact
+- `/` — Home: only the particle room (the intro and hint row until R.3 builds the room). Doesn't scroll.
+- `/about`, `/work`, `/skills`, `/contact` — one page per former homepage chapter (R.1); `/arcade` below.
+  Numbers and order (01 Home … 06 Contact) come from `content/chapters.ts`.
 - `/work/[slug]` — case studies (MDX)
 - `/arcade`, `/arcade/slice`, `/arcade/stack`
 - `/terminal` — full-page terminal for mobile
@@ -100,7 +102,8 @@ Any package not in this table needs approval, including ones a build-plan chunk 
 app/
   layout.tsx            # mounts Canvas, Gate, Nav, PersistentLayer, Cursor ONCE
   template.tsx          # page-transition enter
-  page.tsx              # homepage scroll chapters
+  page.tsx              # Home: the particle room (R.3)
+  about/ work/ skills/ contact/   # one page each (R.1); placeholders until Phase 4
   work/[slug]/page.tsx  # case studies
   arcade/               # layout.tsx, page.tsx, slice/, stack/
   terminal/page.tsx
@@ -149,11 +152,12 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 1. **One store.** Every input (scroll, music, hand, terminal, chatbot) writes to the Zustand
    store in `lib/store.ts`. The canvas and the UI only read from it. Features never import
    or call each other directly. Terminal `ar on` and the AR button flip the same store flag.
-   Example: homepage chapters (`ChapterSection`) only write `scroll.chapter`; the canvas watches
-   it and morphs (`canvas/ScrollMorph.tsx`). DOM code never imports `canvas/` (it would also pull
+   Example: `RouteWatcher` (persistent layer) is the only writer of `page.id`, from the URL; the
+   island and the menu read it, and the canvas morphs per page (`canvas/ScrollMorph.tsx`, R.2's
+   RouteMorph). DOM code never imports `canvas/` (it would also pull
    three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
-   (chapter, progress), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
+   (progress), `page` (id: which of the six pages, or null), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
    chat open, chat streaming, sound enabled), `theme`.
 3. **Fast values skip React.** Audio levels, hand position and scroll progress change every
    frame. Read them with `useStore.getState()` inside `useFrame` or the ticker, and keep them
@@ -476,6 +480,7 @@ NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
 | 1 | Design system and UI kit: primitives, cards and bento, text motion, card kit, overlays, media, cursor and sounds, design review (1.1–1.8) | 2–3 |
 | 2 | Entry gate, preloader, persistent layer, nav and shortcuts, page transitions (2.1–2.5) | 4 |
 | 3 | Living canvas: particles, shapes, scroll morph, pointer, theme and moods, quality tiers (3.1–3.6) | 5–6 |
+| R | Separate pages and the particle room: one URL per chapter (R.1), route morph (R.2), the room (R.3), … | — |
 | 4 | Homepage chapters and content: content model, hero, about, work, case studies, skills, contact, SEO, MVP review (4.1–4.9) — **MVP** | 7–8 |
 | 5 | Music: engine, mini-player, expanded player, audio-reactive canvas, now-playing card (5.1–5.5) | 9 |
 | 6 | Terminal: UI, parser and registry, virtual filesystem, core and site commands, mobile (6.1–6.6) | 10 |
@@ -492,7 +497,8 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Homepage chapters and content** (phase 3 complete; 4.1, the content model, is next) (phases 0 and 2 are
+Current phase: **R — Separate pages and the particle room** (R.1 done; R.2, the route morph, is next; phase 4 follows)
+(phases 0, 2 and 3 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
@@ -500,7 +506,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -509,8 +515,9 @@ Carry-over into later chunks:
     `count` prop) always covers the whole shape.
   - **`DELAY_SPAN` (0.4) in `morph.ts` must match `particles.vert.glsl`** (and the smoothstep), or
     the CPU freeze of a running morph won't match what's on screen and particles will pop.
-  - **4.x homepage chapters:** every chapter section is a `ChapterSection` (`id`, `index`); it's
-    the only writer of `scroll.chapter` / `scroll.progress`.
+  - **Pages (R.1):** `ChapterSection` and every per-chapter ScrollTrigger are gone. `page.id` comes
+    from the URL (`RouteWatcher`); nothing writes `scroll.progress` until R.2 feeds it from each
+    page's own scroll.
   - **4.2 NameCard:** the name is fitted into `SHAPE_BOX` like every shape. 4.2 fits it into the
     card's box (pass a box to `normalize`, or scale the mesh). The 2.2 board's "particles form the
     name during the gate's exit" also belongs there: today the name morph runs under the gate.
@@ -551,7 +558,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.0 KB after 3.6** (205.5 after 3.5),
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.3 KB after R.1**, **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
   (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
   nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
@@ -575,13 +582,11 @@ Carry-over into later chunks:
   the terminal, then an expanded island card. Each feature pushes its own island activity
   (AR: camera dot + hand, chat: "Writing a reply…", game: live score; a new best is
   `island.alert({ icon: "star", tone: "amber", … })`). The "Hint · first use" state is not built yet.
-- **4.5 chapter on other routes:** the island shows `scroll.chapter`, which only the homepage
-  sections update. On a case study it keeps the last chapter; set it (e.g. Work) from the route.
 - **Every in-site navigation goes through `TransitionLink` or `navigate()`** (`components/nav/`,
   `lib/motion/pageTransition.ts`), never a bare `next/link` or `router.push`. Besides the exit
   animation, that's how a new page knows it was pushed: a page that mounts without the push mark
-  is treated as Back / Forward and restored to its saved scroll position. (Homepage chapter links:
-  `ChapterLink`, which uses TransitionLink off `/`.)
+  is treated as Back / Forward and restored to its saved scroll position. (Page links:
+  `ChapterLink`, a TransitionLink to the page's route.)
 - **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
   `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
 - **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
@@ -624,12 +629,61 @@ Carry-over into later chunks:
 - **10.x:** Tooltip has no automatic collision handling. 2.4 added `align="end"` (bubble lined up
   with the trigger's right edge) for the nav's right-hand circles; use it, or add real flip / shift,
   for any other tooltip near an edge.
-- **Chapter links:** use `components/nav/ChapterLink.tsx` (`chapter="work"`): a plain anchor on `/`
-  (SmoothScroll glides it) and a `next/link` to `/#id` elsewhere (keeps the layer and music alive).
-  From inside an overlay, close it and glide with `whenUnlocked(() => scrollTo("#id"))`
-  (`lib/motion/lenis.ts`), as the phone menu does: a stopped Lenis ignores `scrollTo`.
+- **Page links:** use `components/nav/ChapterLink.tsx` (`chapter="work"`), a TransitionLink to the
+  page's route from `content/chapters.ts` (R.1). From inside an overlay, close it and call
+  `navigate(router, route)`, as the phone menu does. Same-page `#hash` glides (SmoothScroll) still
+  work inside long pages; from an overlay use `whenUnlocked(() => scrollTo("#id"))`.
 - **Fonts and ScrollTrigger:** call `ScrollTrigger.refresh()` after `document.fonts.ready` once
-  real chapters exist (3.3 / 4.x), so trigger positions account for the loaded fonts.
+  real pages with triggers exist (4.x), so trigger positions account for the loaded fonts.
+- **Separate pages (R.1):** `content/chapters.ts` gives each page a `route` (and `nested` for Work
+  and Arcade); `routeTable` / `pageFromPath()` are the one path → page rule (exact route, or deeper
+  for nested; else null).
+  - **Store:** `scroll.chapter` is gone; `page.id` (`PageId | null`) is written only by
+    `components/layer/RouteWatcher.tsx` (persistent layer, layout effect). It also keeps
+    `html[data-page]` in step on client navigation.
+  - **Head script:** `ThemeScript` is the one inline script for theme and page: it embeds
+    `routeTable` as JSON and sets `html[data-page]` (`none` off the six) before paint. `NavShell`
+    renders every page's island label plus "Menu" and a generated `<style>` shows the one matching
+    `data-page`, so a reload paints the right island. Without JS there's no `data-page` and the shell
+    shows "Menu".
+  - **Island / menu:** follow `page.id`; off the six pages (credits, dev, terminal, 404) the island
+    shows "Menu", no number, every dot dim. Keyboard-opening the links focuses the current link, or
+    the first one there. The phone menu's current item just closes the menu.
+  - **Canvas bridge:** `ScrollMorph` maps `pathname` through `pageFromPath()` (same table) to that
+    page's shape and mood; Home keeps the name until R.3; pages outside the six get the calm-down.
+    R.2 replaces it with RouteMorph.
+  - **Home:** `app/page.tsx` is exactly `h-dvh` with `overflow-hidden` (no scroll). Desktop (md up):
+    the status line (`LocalTime`, shared with `GateClock`), "Hi, I'm Nasheet.", two lines and the
+    hint row centred 40 px from the bottom. Phone: eyebrow, "This is my desk." and a chip row of the
+    five pages (horizontal scroll inside the row) 80 px above the Ask pill. Strings in `copy.home`.
+  - **Placeholders:** `/about` `/work` `/skills` `/arcade` `/contact` render `PagePlaceholder`
+    (number, name, subtitle) until Phase 4.
+  - **Keys 2–6:** `lib/shortcuts.ts` `pages` shortcut (group "home"), only when `page.id` is home and
+    nothing is open (terminal, chat, menu, ? overlay, any `[data-overlay]`); typing and modifiers are
+    skipped as for every shortcut. `ShortcutsProvider` hands the router in (`setShortcutRouter`).
+    Shortcuts now have a `group` (`everywhere` / `home`) and optional `lit` keys; the ? overlay lists
+    both groups.
+  - **Scroll memory:** never saved or restored for `/`. Restored only on Back / Forward; every link
+    goes to the top (unchanged rule). Fix: `placeNewPage` calls `getLenis().resize()` before the
+    immediate `scrollTo`, because Lenis still held the previous page's limit and Back from a short
+    page to a long one landed at 0.
+  - **Phones:** the name shape is wider than a 390 px screen (the old "scale the mesh by aspect"
+    carry-over, canvas scope: R.2 / R.3).
+- **Verified R.1 (headless Chromium on the Iris Xe, production build with the /dev flag):**
+  - **Reload** of `/`, `/about`, `/work`, `/skills`, `/arcade`, `/contact`: `data-page` and the static
+    shell's label are right at DOMContentLoaded, and the live island matches (e.g. "Navigation: 03
+    Work"). `/work/some-case` → Work, `/arcade/slice` → Arcade, `/dev` and `/nope` → "Menu".
+  - **ScrollTrigger.getAll()** (exposed in a throwaway QA build): 0 on every page except `/dev`
+    (8, its own reveal / count-up demos).
+  - **Navigation:** key 2 → `/about`, island link → `/work`, Back → `/about`, Back → `/`, Forward →
+    `/about`, wordmark → `/`; `data-mounts` stayed 1 throughout.
+  - **Keys:** ignored with the ? overlay open, with Ctrl, while typing in an input, and off Home
+    (3 on `/contact` stays); 6 on Home opens `/contact`.
+  - **Scroll memory:** `/dev` at 1080 → island About (lands at 0) → Back → 1080; no `/` entry saved.
+  - **No scroll on Home:** scrollHeight = viewport at 1440 × 900 and 390 × 844. Screenshots match
+    the boards' intro and hint row. Console: only the favicon 404 (and the 404 test URLs).
+  - First-load JS on `/` 206.3 KB (+0.3 KB).
+  - **[manual]** Reload and Back / Forward on a real phone; the Home intro at your screen sizes.
 - **4.x Marquee:** §8 lists the only loops (status dot, now-playing bars, terminal cursor). `Marquee` exists
   (1.3), but using it on a page needs Nasheet's OK first.
 - **4.x pages:** compose chapters from `components/cards/*` inside `BentoItem`s and pass
@@ -656,8 +710,8 @@ Open TODO(content) items:
 - `public/models/*.glb`: record each model's source and licence for `/credits` (11.2). Weights = their size in KB as the Network tab shows it.
 - `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
   name for `/credits` (11.2).
-- `app/page.tsx` — six fake test chapters for the 2.4 nav (4.x replaces them; keep `id` and
-  `data-chapter`) and the homepage placeholder line → `content/copy.ts` (chunk 4.1)
+- `content/copy.ts` `home` (R.1) — "Open to work" and "Designer and frontend developer." come from
+  the Home board: Nasheet to confirm the wording.
 - `content/copy.ts` — the island alert lines for theme, sound and mode ("Light theme · T to switch
   back" is the board's; "Dark theme", "Sound on/off", "Hand/Mouse mode" follow its pattern) and
   the nav's accessible names ("Navigation", "Pointer", "Open the menu"): Nasheet to review.

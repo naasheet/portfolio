@@ -61,7 +61,7 @@ export function Island() {
     getIsland,
     getServerIsland,
   );
-  const chapter = useStore((s) => s.scroll.chapter);
+  const page = useStore((s) => s.page.id);
   const playing = useStore((s) => s.audio.playing);
   const menuOpen = useStore((s) => s.ui.menuOpen);
   const reduced = useReducedMotion();
@@ -85,9 +85,11 @@ export function Island() {
           ? "live"
           : "idle";
 
-  const current =
-    chapters[Math.min(chapter, chapters.length - 1)] ?? chapters[0];
-  const number = chapterNumber(chapters.indexOf(current));
+  // null on pages outside the six: no number, every dot dim, and "Menu".
+  const current = chapters.find((c) => c.id === page);
+  const index = current ? chapters.indexOf(current) : -1;
+  const number = current ? chapterNumber(index) : "";
+  const label = current?.name ?? copy.nav.menuTitle;
 
   useEffect(() => () => window.clearTimeout(retract.current), []);
 
@@ -95,9 +97,11 @@ export function Island() {
   useEffect(() => {
     if (shape !== "nav" || !focusCurrentLink.current) return;
     focusCurrentLink.current = false;
-    root.current
-      ?.querySelector<HTMLElement>("[aria-current='location']")
-      ?.focus();
+    // Off the six pages there's no current link: focus the first one.
+    (
+      root.current?.querySelector<HTMLElement>("[aria-current='location']") ??
+      root.current?.querySelector<HTMLElement>("li a")
+    )?.focus();
   }, [shape]);
 
   // An expanded card closes on Esc or a click outside the island.
@@ -171,7 +175,7 @@ export function Island() {
       type="button"
       data-island-centre
       data-cursor="orbit"
-      aria-label={`${copy.nav.island}: ${number} ${current.name}`}
+      aria-label={`${copy.nav.island}: ${number ? `${number} ` : ""}${label}`}
       aria-expanded={navOpen || menuOpen}
       onClick={onCentreClick}
       className={cn(
@@ -179,18 +183,20 @@ export function Island() {
         focusRing,
       )}
     >
-      <span className="text-caption-2 font-mono text-island-accent">
-        {number}
-      </span>
+      {number ? (
+        <span className="text-caption-2 font-mono text-island-accent">
+          {number}
+        </span>
+      ) : null}
       <span
         className={cn(
           "text-island-text",
           small ? "text-footnote" : "text-subhead font-semibold",
         )}
       >
-        {current.name}
+        {label}
       </span>
-      {small ? null : <ChapterDots current={chapters.indexOf(current)} />}
+      {small ? null : <ChapterDots current={index} />}
       {small || !playing ? null : (
         <EqBars className="ml-1 text-island-accent" />
       )}

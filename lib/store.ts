@@ -14,6 +14,7 @@
 
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
+import type { PageId } from "@/content/chapters";
 import { storage } from "./browser";
 import { getTheme, setTheme, type Theme } from "./theme";
 
@@ -48,12 +49,16 @@ export type AudioSlice = {
 };
 
 export type ScrollSlice = {
-  /** Index of the homepage chapter in view. */
-  chapter: number;
-  /** FAST. 0–1 progress through the current chapter. */
+  /** FAST. 0–1 scroll progress through the current page (fed per page from R.2). */
   progress: number;
-  setChapter: (chapter: number) => void;
   setProgress: (progress: number) => void;
+};
+
+/** Which of the six pages is on screen (R.1). Written only by RouteWatcher, from the URL. */
+export type PageSlice = {
+  /** null on pages outside the six (credits, dev, terminal, 404). */
+  id: PageId | null;
+  set: (id: PageId | null) => void;
 };
 
 export type ArStatus = "off" | "loading" | "ready" | "denied" | "error";
@@ -109,6 +114,7 @@ export type ThemeSlice = {
 export type StoreState = {
   audio: AudioSlice;
   scroll: ScrollSlice;
+  page: PageSlice;
   ar: ArSlice;
   ui: UiSlice;
   theme: ThemeSlice;
@@ -148,11 +154,16 @@ export const useStore = create<StoreState>()(
       },
 
       scroll: {
-        chapter: 0,
         progress: 0,
-        setChapter: (chapter) => patch("scroll", { chapter }),
         setProgress: (progress) =>
           patch("scroll", { progress: clamp01(progress) }),
+      },
+
+      page: {
+        id: null,
+        set: (id) => {
+          if (get().page.id !== id) patch("page", { id });
+        },
       },
 
       ar: {

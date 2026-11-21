@@ -23,6 +23,10 @@ export type Mood = { size: number; drift: number; spread: number };
 
 export type Chapter = {
   id: string;
+  /** Its URL. */
+  route: string;
+  /** Deeper URLs count as this page too (/work/[slug], /arcade/slice). */
+  nested?: boolean;
   name: string;
   /** One line under the name in the phone menu. */
   subtitle: string;
@@ -33,6 +37,7 @@ export type Chapter = {
 export const chapters = [
   {
     id: "home",
+    route: "/",
     name: "Home",
     subtitle: "Where the particles live",
     // 4.2 fits it into the hero's NameCard.
@@ -41,6 +46,7 @@ export const chapters = [
   },
   {
     id: "about",
+    route: "/about",
     name: "About",
     subtitle: "Who's behind this",
     shape: { kind: "sphere" },
@@ -48,6 +54,8 @@ export const chapters = [
   },
   {
     id: "work",
+    route: "/work",
+    nested: true,
     name: "Work",
     subtitle: "Case studies and side projects",
     shape: { kind: "model", url: "/models/laptop.glb" },
@@ -55,6 +63,7 @@ export const chapters = [
   },
   {
     id: "skills",
+    route: "/skills",
     name: "Skills",
     subtitle: "What I use, and how much",
     shape: { kind: "ring" },
@@ -62,6 +71,8 @@ export const chapters = [
   },
   {
     id: "arcade",
+    route: "/arcade",
+    nested: true,
     name: "Arcade",
     subtitle: "Small games to waste a minute on",
     shape: { kind: "model", url: "/models/controller.glb" },
@@ -69,6 +80,7 @@ export const chapters = [
   },
   {
     id: "contact",
+    route: "/contact",
     name: "Contact",
     subtitle: "Say hi",
     shape: { kind: "model", url: "/models/envelope.glb" },
@@ -85,3 +97,20 @@ export const fallbackMood: Mood = { size: 0.85, drift: 0.35, spread: 1.3 };
 /** "01" … "06". */
 export const chapterNumber = (index: number) =>
   String(index + 1).padStart(2, "0");
+
+export type PageId = (typeof chapters)[number]["id"];
+
+/**
+ * The route table, [id, route, nested], shared by RouteWatcher and the inline head script
+ * (ThemeScript embeds it as JSON), so the two can't disagree.
+ */
+export const routeTable: readonly (readonly [PageId, string, boolean])[] =
+  chapters.map((c) => [c.id, c.route, "nested" in c && c.nested] as const);
+
+/** The page a path belongs to, or null (credits, dev, terminal, 404). Same rule as the head script. */
+export function pageFromPath(path: string): PageId | null {
+  for (const [id, route, nested] of routeTable) {
+    if (path === route || (nested && path.startsWith(route + "/"))) return id;
+  }
+  return null;
+}

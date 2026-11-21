@@ -17,17 +17,67 @@ const circle = cn(
   "flex items-center justify-center text-text-primary [&_svg]:size-4.5",
 );
 
+/** Pages outside the six (credits, dev, terminal, 404): no number, every dot dim, "Menu". */
+const NONE = "none";
+
+/*
+ * Which island label shows, from html[data-page] (set before paint by ThemeScript, kept in
+ * step by RouteWatcher). Generated from content/chapters.ts, so no page id is typed twice.
+ * Without JS there's no data-page, and "Menu" shows.
+ */
+const labelCss = [
+  "[data-shell-page]{display:none}",
+  `html:not([data-page]) [data-shell-page="${NONE}"]`,
+  ...[...chapters.map((c) => c.id), NONE].map(
+    (id) => `,html[data-page="${id}"] [data-shell-page="${id}"]`,
+  ),
+  "{display:flex}",
+].join("");
+
+/** One island label: the number, the name and the six dots, the current one a teal dash. */
+function ShellLabel({ index }: { index: number }) {
+  const current = chapters[index];
+  return (
+    <span
+      data-shell-page={current?.id ?? NONE}
+      className="items-center gap-2"
+    >
+      {current ? (
+        <span className="text-caption-2 font-mono text-island-accent">
+          {chapterNumber(index)}
+        </span>
+      ) : null}
+      <span className="text-subhead font-semibold text-island-text">
+        {current?.name ?? copy.nav.menuTitle}
+      </span>
+      <span className="flex items-center gap-1">
+        {chapters.map((c, i) => (
+          <span
+            key={c.id}
+            className={cn(
+              "h-1 rounded-chip",
+              i === index
+                ? "w-4 bg-island-accent"
+                : "w-1 bg-island-text-secondary/50",
+            )}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
 /**
  * The nav as static HTML (server-rendered, no JS of its own): what the live NavBar looks like
  * at rest, so the first paint has the full row and the swap after hydration doesn't show.
- * Only the home links work here; everything else arrives with NavBar a moment later.
- * Keep it in step with NavBar, Island (idle) and ModeSwitch.
+ * The island renders every page's label and CSS shows the one for html[data-page] (R.1), so a
+ * reload of any URL paints the right one. Only the wordmark works here; everything else
+ * arrives with NavBar a moment later. Keep it in step with NavBar, Island (idle) and ModeSwitch.
  */
 export function NavShell() {
-  const home = chapters[0];
   const wordmark = (compact: boolean) => (
     <a
-      href={`/#${home.id}`}
+      href={chapters[0].route}
       className={cn(
         "flex items-center gap-2 rounded-chip glass text-headline text-text-primary",
         navHeight,
@@ -68,25 +118,10 @@ export function NavShell() {
           aria-hidden
           className="flex h-11 items-center gap-2 rounded-[22px] border border-island-border bg-island-bg px-4 shadow-lift"
         >
-          <span className="text-caption-2 font-mono text-island-accent">
-            {chapterNumber(0)}
-          </span>
-          <span className="text-subhead font-semibold text-island-text">
-            {home.name}
-          </span>
-          <span className="flex items-center gap-1">
-            {chapters.map((c, i) => (
-              <span
-                key={c.id}
-                className={cn(
-                  "h-1 rounded-chip",
-                  i === 0
-                    ? "w-4 bg-island-accent"
-                    : "w-1 bg-island-text-secondary/50",
-                )}
-              />
-            ))}
-          </span>
+          <style>{labelCss}</style>
+          {[...chapters.keys(), -1].map((i) => (
+            <ShellLabel key={i} index={i} />
+          ))}
         </span>
       }
       rightDesktop={

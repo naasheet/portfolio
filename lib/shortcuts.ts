@@ -5,8 +5,10 @@
  *
  * AR, the terminal and the chat only flip store flags here; their features read the flags.
  */
+import { chapters } from "@/content/chapters";
 import { copy } from "@/content/copy";
 import { island } from "./island";
+import { navigate, type PushRouter } from "./motion/pageTransition";
 import { initSfx } from "./sfx";
 import { useStore } from "./store";
 
@@ -60,22 +62,68 @@ function closeWhatsOpen(): boolean {
   return true;
 }
 
+/** The app router, for shortcuts that change page. Set by ShortcutsProvider. */
+let router: PushRouter | null = null;
+export function setShortcutRouter(next: PushRouter | null): void {
+  router = next;
+}
+
+/** Something sits over the page: the terminal, the chat, the phone menu, any overlay. */
+function somethingOpen(): boolean {
+  const { ui } = useStore.getState();
+  return (
+    ui.terminalOpen ||
+    ui.chatOpen ||
+    ui.menuOpen ||
+    ui.shortcutsOpen ||
+    document.querySelector("[data-overlay]") !== null
+  );
+}
+
+/**
+ * Home only (R.1): 2–6 open About to Contact, the pages' own numbers. Not while something
+ * is open over the page (typing and modifier keys are already skipped by handleShortcut).
+ */
+function openPageByNumber(key: string): boolean {
+  if (!router || useStore.getState().page.id !== "home" || somethingOpen())
+    return false;
+  const page = chapters[Number(key) - 1];
+  if (!page || page.id === "home") return false;
+  navigate(router, page.route);
+  return true;
+}
+
 // --- The map ---------------------------------------------------------------------------------
 
+/** "Everywhere" or "Home" (keys that only work there): the ? overlay's two groups. */
+export type ShortcutGroup = "everywhere" | "home";
+
 export type Shortcut = {
-  id: "terminal" | "chat" | "shortcuts" | "theme" | "sound" | "ar" | "escape";
+  id:
+    | "terminal"
+    | "chat"
+    | "shortcuts"
+    | "theme"
+    | "sound"
+    | "ar"
+    | "escape"
+    | "pages";
+  group: ShortcutGroup;
   /** What the Kbd shows. */
   key: string;
+  /** Keys lit on the ? overlay's keyboard drawing, when not just `key`. */
+  lit?: readonly string[];
   /** KeyboardEvent.key values that trigger it (letters match either case). */
   match: readonly string[];
   label: string;
   /** Returns false when it didn't act (the event is then left alone). */
-  run: () => boolean | void;
+  run: (key: string) => boolean | void;
 };
 
 export const SHORTCUTS: readonly Shortcut[] = [
   {
     id: "terminal",
+    group: "everywhere",
     key: "`",
     match: ["`"],
     label: copy.shortcuts.terminal,
@@ -83,6 +131,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   {
     id: "chat",
+    group: "everywhere",
     key: "/",
     match: ["/"],
     label: copy.shortcuts.chat,
@@ -90,6 +139,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   {
     id: "sound",
+    group: "everywhere",
     key: "M",
     match: ["m", "M"],
     label: copy.shortcuts.sound,
@@ -97,6 +147,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   {
     id: "theme",
+    group: "everywhere",
     key: "T",
     match: ["t", "T"],
     label: copy.shortcuts.theme,
@@ -104,6 +155,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   {
     id: "ar",
+    group: "everywhere",
     key: "A",
     match: ["a", "A"],
     label: copy.shortcuts.ar,
@@ -111,6 +163,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   {
     id: "shortcuts",
+    group: "everywhere",
     key: "?",
     match: ["?"],
     label: copy.shortcuts.shortcuts,
@@ -118,10 +171,20 @@ export const SHORTCUTS: readonly Shortcut[] = [
   },
   {
     id: "escape",
+    group: "everywhere",
     key: "Esc",
     match: ["Escape"],
     label: copy.shortcuts.escape,
     run: closeWhatsOpen,
+  },
+  {
+    id: "pages",
+    group: "home",
+    key: "2–6",
+    lit: ["2", "3", "4", "5", "6"],
+    match: ["2", "3", "4", "5", "6"],
+    label: copy.shortcuts.pages,
+    run: openPageByNumber,
   },
 ];
 
@@ -157,6 +220,6 @@ export function handleShortcut(e: KeyboardEvent): void {
   if (shortcut.id === "escape" && document.querySelector("[data-overlay]"))
     return;
   if (e.repeat) return;
-  const acted = shortcut.run();
+  const acted = shortcut.run(e.key);
   if (acted !== false) e.preventDefault();
 }

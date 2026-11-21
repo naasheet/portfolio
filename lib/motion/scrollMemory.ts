@@ -1,11 +1,12 @@
 /*
  * Scroll memory (2.5). Remembers each route's last scroll position (in memory and
  * sessionStorage, so a reload keeps it for Back) and decides where a new page starts:
- * Back / Forward → the saved position; a `#hash` → that section; anything else → the top.
- * The browser's own restoration is off (`history.scrollRestoration = "manual"`).
+ * Back / Forward → the saved position; a `#hash` → that section; anything else (every link)
+ * → the top. Home (`/`) has none: it never scrolls (R.1). The browser's own restoration is
+ * off (`history.scrollRestoration = "manual"`).
  */
 import { ScrollTrigger } from "./gsap";
-import { scrollTo } from "./lenis";
+import { getLenis, scrollTo } from "./lenis";
 
 const STORAGE_KEY = "scroll-memory";
 
@@ -45,13 +46,18 @@ function persist() {
   }, 200);
 }
 
+/** Routes with no scroll memory: Home holds only the room and never scrolls (R.1). */
+const NO_MEMORY = new Set(["/"]);
+
 /** Record `y` for `path`. */
 export function rememberScroll(path: string, y: number): void {
+  if (NO_MEMORY.has(path)) return;
   load()[path] = Math.max(0, Math.round(y));
   persist();
 }
 
 export function savedScroll(path: string): number | undefined {
+  if (NO_MEMORY.has(path)) return undefined;
   return load()[path];
 }
 
@@ -98,8 +104,11 @@ export function placeNewPage(path: string, popNavigation: boolean): void {
   let y = 0;
   if (saved !== undefined) y = saved;
   else if (target) y = sectionTop(target);
+  // Lenis still holds the previous page's scroll limit (its ResizeObserver runs later), and an
+  // immediate scrollTo clamps to it: Back from a short page to a long one would land at 0.
+  getLenis()?.resize();
   scrollTo(y, { immediate: true, force: true });
 
-  // Trigger positions follow the new layout (the 2.5 carry-over).
+  // Any page's own triggers (text reveals, count-ups) follow the new layout.
   requestAnimationFrame(() => ScrollTrigger.refresh());
 }

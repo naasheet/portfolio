@@ -11,7 +11,7 @@ import { rememberScroll, setScrollPath } from "./scrollMemory";
 
 export const PAGE_EXIT_MS = 300;
 
-type PushRouter = {
+export type PushRouter = {
   push: (href: string, options?: { scroll?: boolean }) => void;
 };
 

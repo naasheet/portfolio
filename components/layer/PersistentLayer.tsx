@@ -2,6 +2,7 @@ import { ARLayerSlot } from "@/components/ar/ARLayerSlot";
 import { ChatBubbleSlot } from "@/components/chat/ChatBubbleSlot";
 import { TerminalDrawerSlot } from "@/components/terminal/TerminalDrawerSlot";
 import { MountCounter } from "./MountCounter";
+import { RouteWatcher } from "./RouteWatcher";
 
 /**
  * Everything that must survive navigation (CLAUDE.md §5.5), mounted once in app/layout.tsx.
@@ -16,6 +17,7 @@ export function PersistentLayer() {
       className="pointer-events-none fixed inset-0 z-persistent"
     >
       <MountCounter />
+      <RouteWatcher />
       <div className="layer-corner-right pointer-events-auto absolute">
         <ChatBubbleSlot />
       </div>
