@@ -9,7 +9,16 @@ import { MORPH_DURATION, MORPH_EASE } from "./morph";
  * Particles copies it into the uniforms every frame (drift speed is integrated there, so a
  * speed change never jumps the drift).
  */
-export const liveMood = { size: 1, drift: 1, spread: 1, fade: 0 };
+export const liveMood = {
+  size: 1,
+  drift: 1,
+  spread: 1,
+  fade: 0,
+  /** The page shape's placement (4.3): offset in world units and scale. */
+  placeX: 0,
+  placeY: 0,
+  placeScale: 1,
+};
 
 let moodTween: gsap.core.Tween | null = null;
 let fadeTween: gsap.core.Tween | null = null;
@@ -38,6 +47,24 @@ export function moodTo(
   });
 }
 
+let placeTween: gsap.core.Tween | null = null;
+
+/** Move the shape to a page's placement (4.3), with the morph's timing. */
+export function placeTo(
+  place: { x: number; y: number; scale: number },
+  { instant = false }: { instant?: boolean } = {},
+): void {
+  placeTween?.kill();
+  placeTween = null;
+  const target = { placeX: place.x, placeY: place.y, placeScale: place.scale };
+  if (instant) {
+    Object.assign(liveMood, target);
+    requestFrame();
+    return;
+  }
+  placeTween = gsap.to(liveMood, { ...target, duration: MORPH_DURATION, ease: MORPH_EASE });
+}
+
 /** Fade the particles toward the background (1) or back to full (0), with the morph's timing. */
 export function fadeTo(
   fade: number,
@@ -60,7 +87,8 @@ export function fadeTo(
 export function stopMood(): void {
   moodTween?.kill();
   fadeTween?.kill();
-  moodTween = fadeTween = null;
+  placeTween?.kill();
+  moodTween = fadeTween = placeTween = null;
 }
 
 /**

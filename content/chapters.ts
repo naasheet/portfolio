@@ -22,6 +22,12 @@ export type ShapeSpec =
  */
 export type Mood = { size: number; drift: number; spread: number };
 
+/**
+ * Where a page's shape sits in the view (4.3), in world units at z = 0 (about 6 × 3.8 on a
+ * 1440 × 900 screen, 1.75 × 3.8 on a phone) and a scale. Default: centred, full size.
+ */
+export type Place = { x: number; y: number; scale: number };
+
 export type Chapter = {
   id: string;
   /** Its URL. */
@@ -33,6 +39,8 @@ export type Chapter = {
   subtitle: string;
   shape: ShapeSpec;
   mood: Mood;
+  /** Desktop (768 px and up) and phone placement of the shape (4.3). */
+  place?: { desktop: Place; phone: Place };
 };
 
 export const chapters = [
@@ -52,6 +60,11 @@ export const chapters = [
     subtitle: "Who's behind this",
     shape: { kind: "model", url: "/models/sphere.glb" },
     mood: { size: 1.1, drift: 1, spread: 1.2 }, // airy
+    // About frames: top right beside the title on desktop, above it on phones.
+    place: {
+      desktop: { x: 1.55, y: 0.6, scale: 0.8 },
+      phone: { x: 0, y: 1.0, scale: 0.4 },
+    },
   },
   {
     id: "work",

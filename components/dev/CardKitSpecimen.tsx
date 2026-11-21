@@ -9,12 +9,15 @@ import { ProfileCard } from "@/components/cards/ProfileCard";
 import { SkillsCard } from "@/components/cards/SkillsCard";
 import { SocialCard } from "@/components/cards/SocialCard";
 import { StatCard } from "@/components/cards/StatCard";
+import { TaglineCard } from "@/components/cards/TaglineCard";
 import { TerminalCard } from "@/components/cards/TerminalCard";
 import { TextCard } from "@/components/cards/TextCard";
 import { GitHubIcon } from "@/components/media/icons/GitHubIcon";
 import { LinkedInIcon } from "@/components/media/icons/LinkedInIcon";
 import { BentoGrid } from "@/components/ui/BentoGrid";
 import { BentoItem } from "@/components/ui/BentoItem";
+import { Button } from "@/components/ui/Button";
+import { DotDigits } from "@/components/ui/DotDigits";
 import * as fx from "./fixtures";
 
 /** Every card from the kit in one bento, fed by the placeholder fixtures. */
@@ -110,6 +113,53 @@ export function CardKitSpecimen() {
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 3 }}>
           <ARCard {...fx.ar} state="blocked" className="h-full" />
+        </BentoItem>
+
+        {/* 4.3 additions (About page): variants and new kit pieces. */}
+        <BentoItem col={{ md: 3, lg: 4 }} row={{ lg: 2 }}>
+          <ProfileCard {...fx.profile} variant="hero" hoverable meta="Indore · 12:00 IST" className="h-full" />
+        </BentoItem>
+        <BentoItem col={{ md: 3, lg: 2 }}>
+          <StatCard label="Dots (hoverable)" value={26} display="dots" monoEyebrow hoverable className="h-full" />
+        </BentoItem>
+        <BentoItem col={{ md: 6, lg: 6 }} row={{ lg: 2 }}>
+          <TaglineCard
+            hoverable
+            className="h-full"
+            status="[Status line]"
+            tagline="[One big sentence about you, with its calls to action under it.]"
+            actions={
+              <>
+                <Button size="lg">[Primary]</Button>
+                <Button size="lg" variant="secondary">[Secondary]</Button>
+              </>
+            }
+          />
+        </BentoItem>
+        <BentoItem col={{ md: 3, lg: 2 }}>
+          <div className="flex h-full flex-col justify-center gap-4 rounded-card border border-border-default p-6">
+            <span className="text-caption-1 font-mono text-text-tertiary">DotDigits 0 / 7 / 12</span>
+            <DotDigits value={0} countUp={false} />
+            <DotDigits value={7} countUp={false} />
+            <DotDigits value={12} />
+          </div>
+        </BentoItem>
+        <BentoItem col={{ md: 6, lg: 6 }}>
+          <TextCard
+            eyebrow="Lead (scrubbed) + footnote"
+            body="[Words fade from grey to full as this card scrolls through the view.]"
+            tone="lead"
+            monoEyebrow
+            footnote="content/profile.ts · bio"
+            hoverable
+            className="h-full"
+          />
+        </BentoItem>
+        <BentoItem col={{ md: 3, lg: 3 }}>
+          <PhotoCard caption="[Placeholder photo]" placeholderLabel="[Photo 1]" className="h-full" />
+        </BentoItem>
+        <BentoItem col={{ md: 3, lg: 3 }}>
+          <ARCard {...fx.ar} state="off" compact={{ body: "[Compact phone row]" }} />
         </BentoItem>
       </BentoGrid>
     </div>

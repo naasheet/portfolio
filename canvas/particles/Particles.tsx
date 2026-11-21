@@ -323,7 +323,9 @@ export function Particles({
       obj.rotation.y = s * SCROLL_ROTATE_Y + tilt.current.y * r.room;
       obj.rotation.x =
         Math.sin(s * Math.PI) * SCROLL_TILT_X + (roomTilt + tilt.current.x) * r.room;
-      obj.position.y = s * PARALLAX_Y + lift * r.room;
+      obj.position.y = s * PARALLAX_Y + lift * r.room + liveMood.placeY;
+      obj.position.x = liveMood.placeX;
+      obj.scale.setScalar(liveMood.placeScale);
     }
 
     // R.4: where each object is on screen, for the DOM's hit test, tags and hover card.

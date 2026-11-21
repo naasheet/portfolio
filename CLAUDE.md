@@ -523,7 +523,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1 done; 4.2 replaced by phase R; 4.3, About, is next).
+Current phase: **4 — Pages and content** (4.1 and 4.3 done; 4.2 replaced by phase R; 4.4, Work, is next).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -544,7 +544,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6)
+R.3–R.6), 4.3 (About page)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -597,7 +597,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -853,6 +853,43 @@ Carry-over into later chunks:
 - **4.2 Home: replaced by phase R.** R.3–R.6 build Home as the particle room. The Hero B frames
   (`stuff/reference/Hero — desktop 1440 (B · Bento)@2x.png`, `— phone 390`) stay for reference
   only; their cards (profile, stats, photo, socials …) move to the About page (4.3).
+- **About page (4.3):** `app/about/page.tsx` → `components/about/About.tsx` (client), from the
+  About frames (`stuff/reference/About — desktop 1440 (4.3)`, `— phone 390`).
+  - **Layout (BentoGrid, lg 12 cols):** row 1 ProfileCard (`variant="hero"`, 4) · two StatCards
+    (`display="dots"`, stacked, 2; side by side on phones) · TaglineCard (6: availability line,
+    `profile.tagline`, See the work → /work, Work with me → /contact, ghost Resume with `download`).
+    Row 2 TextCard "The short version" (`tone="lead"`, ScrubText, 6) · ARCard (3; `compact` row on
+    phones) · TerminalCard (3; hidden on phones). Row 3 three PhotoCards (silhouette placeholders
+    until `profile.photos`; a horizontal snap row on phones) · TextCard "Off the screen" (3). Then
+    the interests Marquee (desktop) and `SiteFooter`.
+  - **New:** `components/ui/DotDigits.tsx` (3 × 5 dots; lit teal + glow, unlit 7%; counts up once
+    on view by toggling `data-on`, no re-renders), `components/motion/Stagger.tsx` (`[data-stagger]`
+    in 60 ms apart, ScrollTrigger.batch, clears transforms after), `components/motion/ScrubText.tsx`
+    (word opacity 0.3 → 1 scrubbed), `components/cards/TaglineCard.tsx`,
+    `components/contact/SocialButtons.tsx` (socials with an icon + email; GitHub / LinkedIn appear
+    when `content/socials.ts` has them), `components/layer/SiteFooter.tsx` (content pages, not Home).
+  - **Kit changes:** `Card` `hoverable` (the hover look without click semantics or the cursor
+    ring; ProfileCard, StatCard, TextCard, TaglineCard and ARCard pass it through), CardEyebrow
+    `mono`, ProfileCard `variant="hero"` + `meta` + `actions`, StatCard `display="dots"`, TextCard
+    `tone` (`lead` / `callout`), optional `heading`, `footnote`; PhotoCard `placeholderLabel`;
+    ARCard `compact`, optional `off.hint`, a hand icon on its button. All on `/dev`'s card kit.
+  - **Bento on phones:** rows are now `auto` below md (the 160 px minimum applies from md);
+    one-column phone cards size to their content.
+  - **Sphere placement:** `Chapter.place` (`{ desktop, phone }` of `{ x, y, scale }`, world units)
+    tweened by `placeTo()` (mood.ts) with the morph; About: desktop (1.55, 0.6) × 0.8, phone
+    (0, 1.0) × 0.4. **Check placement with viewport screenshots:** a full-page screenshot resizes
+    the viewport, so the fixed canvas stretches with it.
+  - **Stats:** `getStats().skills` (distinct non-placeholder skills). `getYearsActive(now)` is
+    separate: `new Date()` during render fails the prerender with cacheComponents.
+  - **Profile** is typed `: Profile` now (not `as const`), so empty lists keep their element type.
+  - **Marquee** of interests: approved with the 4.3 plan (the frame's faded-edge row).
+- **Verified 4.3 (headless Chromium, production build):** all 11 cards show the hover look
+  (border, lift 2 px); Resume downloads `resume.pdf`; Switch to Hand raises "Hand mode"; Back to top
+  → 0; See the work → `/work`, Work with me → `/contact`; CLS 0; no console errors. Viewport
+  screenshots: desktop matches the frame (sphere centre ~(1100, 290) vs (1090, 322)); phone in
+  the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
+  - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
+    the phone photo row, and copy review.
 - **Content model (4.1):** `content/profile.ts` (`Profile`: name, title, location `{ city, timeZone,
   zoneLabel }`, availability, tagline, bio, offScreen, photos, resume `/resume.pdf`, email),
   `content/projects.ts` (`Project`: slug, title, year, role, summary, domain, stack, links, cover,
@@ -1024,6 +1061,10 @@ Open TODO(content) items:
   `content/case-studies/<slug>.mdx` if `hasCaseStudy`.
 - `content/skills.ts` — real areas and skills. `content/socials.ts` — your profiles (empty now).
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
+- About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
+  `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo
+  captions come with `profile.photos` (`copy.about.photoCaptions` are placeholders); the About
+  copy in `copy.about` (lede, AR lines, terminal peek) for review.
 Known issues:
 - `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
   Add `app/icon.*` with the brand assets (11.2 at the latest).

@@ -34,6 +34,11 @@ type OwnProps = {
   rel?: string;
   /** Hover lift, lift shadow, border change and pointer spotlight (mouse only). */
   interactive?: boolean;
+  /**
+   * The hover look of an interactive card (border, spotlight, lift) on a card that isn't itself
+   * clickable (4.3: "every card has its hover state"). No cursor ring, no sounds.
+   */
+  hoverable?: boolean;
   /** Hover and click UI sounds on interactive cards (only audible when sound is on). Default true. */
   sound?: boolean;
   children?: ReactNode;
@@ -55,6 +60,7 @@ export function Card({
   target,
   rel,
   interactive = false,
+  hoverable = false,
   sound = true,
   children,
   className,
@@ -65,6 +71,7 @@ export function Card({
 }: CardProps) {
   const ref = useRef<HTMLElement | null>(null);
   const isInteractive = interactive || href !== undefined;
+  const hasHover = isInteractive || hoverable;
 
   const handlePointerMove = (e: PointerEvent<HTMLElement>) => {
     onPointerMove?.(e);
@@ -84,7 +91,7 @@ export function Card({
 
   const content = (
     <>
-      {isInteractive ? <span aria-hidden className="card-spot" /> : null}
+      {hasHover ? <span aria-hidden className="card-spot" /> : null}
       {variant === "media" ? (
         <div className="relative h-full overflow-hidden rounded-[inherit]">
           {children}
@@ -98,9 +105,9 @@ export function Card({
   const shared = {
     "data-card": "",
     "data-variant": variant,
-    "data-interactive": isInteractive ? "" : undefined,
+    "data-interactive": hasHover ? "" : undefined,
     className: classes,
-    onPointerMove: isInteractive ? handlePointerMove : onPointerMove,
+    onPointerMove: hasHover ? handlePointerMove : onPointerMove,
     onPointerEnter: (e: PointerEvent<HTMLElement>) => {
       if (isInteractive && sound && e.pointerType === "mouse") sfx("hover");
       onPointerEnter?.(e);

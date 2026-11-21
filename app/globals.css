@@ -732,10 +732,12 @@ html[data-gate="done"] .entry-gate {
    * tablets (md, 48rem), 12 on desktop (lg, 64rem), 16 px gap. BentoItem writes resolved spans
    * as --col-* / --row-* inline, so no class names are generated at runtime.
    */
+  /* Phones (one column) size rows to their content (4.3: a compact row card left a 160 px
+     gap); the 160 px minimum row applies from md, where cards share rows. */
   .bento {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    grid-auto-rows: minmax(160px, auto);
+    grid-auto-rows: auto;
     gap: 16px;
   }
   .bento-item {
@@ -745,6 +747,7 @@ html[data-gate="done"] .entry-gate {
   @media (width >= 48rem) {
     .bento {
       grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-auto-rows: minmax(160px, auto);
     }
     .bento-item {
       grid-column: span var(--col-md, 6) / span var(--col-md, 6);
@@ -1023,4 +1026,25 @@ html[data-room="cards"] [data-room-only] {
 html[data-intro="pending"] [data-intro-fade],
 html[data-intro="play"] [data-intro-fade] {
   opacity: 0;
+}
+
+/* DotDigits (4.3, About frame): lit dots teal with a soft glow, unlit at 7%. */
+@layer components {
+  .dot-digit {
+    background: color-mix(in srgb, var(--color-text-primary) 7%, transparent);
+  }
+  .dot-digit[data-on] {
+    background: var(--color-accent-primary);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--color-accent-primary) 55%, transparent);
+  }
+}
+
+/*
+ * Cards stagger in (4.3): [data-stagger] children start hidden only when JS and motion are on;
+ * components/motion/Stagger.tsx reveals them 60 ms apart as they scroll into view.
+ */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  [data-stagger-group]:not([data-stagger-ready]) [data-stagger] {
+    opacity: 0;
+  }
 }

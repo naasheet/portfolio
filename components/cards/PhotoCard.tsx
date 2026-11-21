@@ -12,6 +12,11 @@ export type PhotoCardProps = {
   image?: { src: string; alt: string };
   caption: string;
   subcaption?: string;
+  /**
+   * Without an image: a silhouette placeholder with this mono label (4.3, About frame:
+   * "[Photo 1]") instead of the gradient.
+   */
+  placeholderLabel?: string;
   className?: string;
 };
 
@@ -29,6 +34,7 @@ export function PhotoCard({
   image,
   caption,
   subcaption,
+  placeholderLabel,
   className,
 }: PhotoCardProps) {
   const onPointerMove = (e: PointerEvent<HTMLElement>) => {
@@ -64,6 +70,14 @@ export function PhotoCard({
             sizes="(min-width: 1024px) 25vw, (min-width: 768px) 50vw, 100vw"
             className="object-cover"
           />
+        ) : placeholderLabel ? (
+          <div aria-hidden className="absolute inset-0 overflow-hidden bg-surface-solid">
+            <span className="absolute top-[18%] left-1/2 size-[38%] -translate-x-1/2 rounded-chip bg-surface-glass" />
+            <span className="absolute -bottom-[20%] left-1/2 h-[62%] w-[78%] -translate-x-1/2 rounded-t-[50%] bg-surface-glass" />
+            <span className="absolute bottom-3 left-3 text-caption-2 font-mono text-text-tertiary">
+              {placeholderLabel}
+            </span>
+          </div>
         ) : (
           <div
             aria-hidden

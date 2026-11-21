@@ -24,6 +24,60 @@ export const copy = {
     notFound: "Nothing lives at this address.",
     backHome: "Back to the desk",
   },
+  /** The About page (4.3; About frames). Facts come from profile.ts; these are the labels. */
+  about: {
+    lede: "Who's behind this. The short version first, then the rest.",
+    ledeShort: "Who's behind this.",
+    available: "Available",
+    skills: "Skills",
+    projects: "Projects",
+    seeWork: "See the work",
+    workWithMe: "Work with me",
+    resume: "Resume",
+    shortVersion: "The short version",
+    offScreen: "Off the screen",
+    /** The small source line under a card ("content/profile.ts · bio"). */
+    source: (field: string) => `content/profile.ts · ${field}`,
+    photo: (n: number) => `[Photo ${n}]`,
+    /** TODO(content): photo captions come with the photos (profile.photos). */
+    photoCaptions: ["[A playful caption]", "[Hover: the card tilts toward the pointer]", "[Another caption]"],
+    interests: "Interests",
+    ar: {
+      title: "Steer it with your hand",
+      body: "Point to push the particles, pinch to click. The camera never leaves your device.",
+      bodyShort: "Front camera. Nothing leaves your phone.",
+      action: "Switch to Hand",
+      /** Not shown on About yet (Hand mode arrives in phase 8). */
+      on: {
+        chip: "Hand on",
+        body: "Point to push, pinch to click.",
+        action: "Back to mouse",
+      },
+      blocked: {
+        chip: "Camera blocked",
+        body: "The camera is blocked, so Hand mode can't start.",
+        help: "How to allow the camera",
+      },
+    },
+    terminal: {
+      eyebrow: "terminal",
+      action: "Open the terminal",
+      /** The card's peek: `whoami`, then `ls ./about`. */
+      whoami: "nasheet · designs, then builds",
+      ls: "ls ./about",
+      files: "bio.md photos/ now.md",
+    },
+    social: {
+      github: "GitHub",
+      linkedin: "LinkedIn",
+      email: "Email",
+    },
+  },
+  /** The footer on content pages (4.3; About frames). */
+  footer: {
+    psst: "Psst. Press ` for the terminal.",
+    backToTop: "Back to top",
+  },
   /** Shared empty states (4.1). */
   empty: {
     nothing: "Nothing here yet.",

@@ -14,6 +14,7 @@ import {
   fadeTo,
   liveRoom,
   moodTo,
+  placeTo,
   roomTo,
   stopMood,
   stopRoom,
@@ -26,6 +27,9 @@ import {
   loadShapes,
   PHONE_SUFFIX,
 } from "./shapes/registry";
+
+/** A page shape's default placement: centred, full size (4.3). */
+const CENTRED = { x: 0, y: 0, scale: 1 };
 
 /** The room's phone layout below the tablet breakpoint (md, 48rem). */
 const PHONE_QUERY = "(max-width: 47.99rem)";
@@ -179,6 +183,7 @@ export function RouteMorph({ pathname }: { pathname: string }) {
       if (!mesh || !shape) return;
       morphTo(mesh, shape, { instant: reduced, focus });
       moodTo(current?.mood ?? fallbackMood, { instant: reduced });
+      placeTo(current?.place?.[phone ? "phone" : "desktop"] ?? CENTRED, { instant: reduced });
       const state = isRoom ? layoutState(phone) : null;
       if (state) {
         roomTo(state, { instant: reduced });

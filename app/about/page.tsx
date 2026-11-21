@@ -1,6 +1,6 @@
-import { PagePlaceholder } from "@/components/chapters/PagePlaceholder";
+import { About } from "@/components/about/About";
 
-// TODO(4.x): the real About page replaces the placeholder.
+/** The About page (4.3). */
 export default function AboutPage() {
-  return <PagePlaceholder id="about" />;
+  return <About />;
 }
