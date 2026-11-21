@@ -1817,10 +1817,12 @@ Decisions so far (don't re-ask):
   `DEFAULT_PARTICLES` 30k, `SHAPE_BOX` 4 × 2.4 × 2.4, `SCATTER_BOX` 7 × 4.2 × 3; `Particles.tsx`
   re-exports the counts), `random.ts` (mulberry32 + `seedFrom(id)`: each shape has its own fixed
   seed), `math.ts`, `fromText.ts`, `fromModel.ts`, `normalize.ts` and `registry.ts`.
-  - **Chapter → shape:** `content/chapters.ts` gives each chapter a `shape` (`ShapeSpec`, plain data):
-    Home `{ kind: "text", text: profile.name }` ("Nasheet Khan", Nasheet's choice), About sphere,
-    Work `/models/laptop.glb`, Skills ring, Arcade `/models/controller.glb`, Contact
-    `/models/envelope.glb`; `fallbackShape` (scatter) for other routes. Grid exists but isn't mapped.
+  - **Chapter → shape:** `content/chapters.ts` gives each chapter a `shape` (`ShapeSpec`, plain data).
+    Today: Home the room (`/models/room.glb`, R.3), About `/models/sphere.glb`, Work
+    `/models/laptop.glb`, Skills `/models/rings.glb` (both GLBs added by Nasheet after 4.1; the maths
+    sphere and ring are no longer mapped), Arcade `/models/controller.glb`, Contact
+    `/models/envelope.glb`; `fallbackShape` (scatter) for other routes. The name, grid, sphere and
+    ring maths shapes still exist (the name is the intro's). All GLBs are in the gate's preload.
   - **normalize(points, rand, box):** centres, scales uniformly to fit the box (a flat dimension
     doesn't limit the scale), then Fisher–Yates shuffles whole points.
   - **fromText:** `loadTextFont()` waits for SF Pro Display 700 (`document.fonts.load`, family read

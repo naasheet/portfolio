@@ -50,7 +50,7 @@ export const chapters = [
     route: "/about",
     name: "About",
     subtitle: "Who's behind this",
-    shape: { kind: "sphere" },
+    shape: { kind: "model", url: "/models/sphere.glb" },
     mood: { size: 1.1, drift: 1, spread: 1.2 }, // airy
   },
   {
@@ -67,7 +67,7 @@ export const chapters = [
     route: "/skills",
     name: "Skills",
     subtitle: "What I use, and how much",
-    shape: { kind: "ring" },
+    shape: { kind: "model", url: "/models/rings.glb" },
     mood: { size: 1, drift: 1.3, spread: 1 },
   },
   {
