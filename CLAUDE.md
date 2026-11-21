@@ -485,20 +485,28 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **3 — Living canvas** (3.1 built; 3.2, shapes, is next) (phases 0 and 2 are
+Current phase: **3 — Living canvas** (3.1–3.2 built; 3.3, scroll morph, is next) (phases 0 and 2 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
-3.1 (particle scene)
+3.1 (particle scene), 3.2 (shape library)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
-  - **Shapes (3.2):** write into the `aFrom` / `aTo` attributes of the geometry in
-    `canvas/particles/Particles.tsx` (both are 40k × 3; today both hold the same seeded cloud) and
-    set `needsUpdate`. Shapes must be 40k points; the draw range picks 30k (or 15k for 3.6's low tier,
-    through the `count` prop).
+  - **Switching shapes (3.3):** copy the current target into `aFrom`, write the next shape
+    (`getShape(id)` from `canvas/shapes/registry.ts`, keyed by chapter id, `"scatter"` for other
+    routes) into `aTo`, set both `needsUpdate`, and tween `uMorph` 0 → 1. `canvas/dev/ShapeCycler.tsx`
+    is a working example. Shapes are 40k points, shuffled, so the draw range's prefix (30k, or 15k
+    for 3.6's low tier through the `count` prop) always covers the whole shape. `getShape` returns
+    `undefined` until that shape is computed; fall back to scatter or wait for `loadShapes()`.
+  - **4.2 NameCard:** the name is fitted into `SHAPE_BOX` like every shape. 4.2 fits it into the
+    card's box (pass a box to `normalize`, or scale the mesh).
+  - **Phones:** `SHAPE_BOX` is 4 wide; a 390 px portrait view is only ~1.8 units wide at z = 0.
+    3.3 / 4.2 scale the mesh by aspect.
+  - **Laptop:** the screen frame and deck read, but the keys are a brighter band rather than
+    separate keys at 30k (the model's keys are shallow). A model with deeper key gaps would fix it.
   - **Per-frame writes** go through the `points` ref (`mesh.material.uniforms.uX.value = …`), never
     through the memoised `material`: the React Compiler lint (`react-hooks/immutability`) rejects
     mutating a value that went through a hook.
@@ -616,9 +624,10 @@ Carry-over into later chunks:
   theme change (watch `data-theme` on `<html>`). 3.1 reads them once, when the material is created
   (`readColor` in `Particles.tsx`), so a theme switch doesn't recolour the particles yet.
 Open TODO(content) items:
-- `content/preload.ts`: add the hero photo (4.2, `kind: "image"`), the first particle shape's
-  GLB (3.2, `kind: "url"`) and the first track's first chunk (5.1, `kind: "url"` + `range`,
-  `when: "sound"`) once those files exist. Weights = their size in KB as the Network tab shows it.
+- `content/preload.ts`: add the hero photo (4.2, `kind: "image"`) and the first track's first
+  chunk (5.1, `kind: "url"` + `range`, `when: "sound"`) once those files exist (the three GLBs
+  are in since 3.2).
+- `public/models/*.glb`: record each model's source and licence for `/credits` (11.2). Weights = their size in KB as the Network tab shows it.
 - `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
   name for `/credits` (11.2).
 - `app/page.tsx` — six fake test chapters for the 2.4 nav (4.x replaces them; keep `id` and
@@ -1421,6 +1430,53 @@ Decisions so far (don't re-ask):
   - **[manual]** 60 fps with the Performance panel recording on a mid-range Android phone and the
     low-end laptop; GPU memory flat over 5 minutes (Chrome Task Manager → "GPU memory" column, or
     the Performance panel's memory track). Headless can't read GPU memory.
+- **Shape library (3.2):** `canvas/shapes/` holds `constants.ts` (`MAX_PARTICLES` 40k,
+  `DEFAULT_PARTICLES` 30k, `SHAPE_BOX` 4 × 2.4 × 2.4, `SCATTER_BOX` 7 × 4.2 × 3; `Particles.tsx`
+  re-exports the counts), `random.ts` (mulberry32 + `seedFrom(id)`: each shape has its own fixed
+  seed), `math.ts`, `fromText.ts`, `fromModel.ts`, `normalize.ts` and `registry.ts`.
+  - **Chapter → shape:** `content/chapters.ts` gives each chapter a `shape` (`ShapeSpec`, plain data):
+    Home `{ kind: "text", text: profile.name }` ("Nasheet Khan", Nasheet's choice), About sphere,
+    Work `/models/laptop.glb`, Skills ring, Arcade `/models/controller.glb`, Contact
+    `/models/envelope.glb`; `fallbackShape` (scatter) for other routes. Grid exists but isn't mapped.
+  - **normalize(points, rand, box):** centres, scales uniformly to fit the box (a flat dimension
+    doesn't limit the scale), then Fisher–Yates shuffles whole points.
+  - **fromText:** `loadTextFont()` waits for SF Pro Display 700 (`document.fonts.load`, family read
+    from `--font-sf-display`), then draws on a 1024 × 256 `OffscreenCanvas`, fitting 94% of the width,
+    samples pixels with alpha > 128, ±6 px Z jitter (~0.05 world units).
+  - **fromModel:** `fetchModel(url)` then `fromModel(buffer, rand)` (the chunk's `fromModel(url)`
+    is split so network time stays outside the timing). `GLTFLoader.parseAsync`, every mesh merged
+    into one non-indexed position-only geometry in world space, fitted to `SHAPE_BOX` first (so the
+    ±0.012 jitter is in world units), 55% on `EdgesGeometry(geo, 25)` segments picked by length
+    (cumulative table + binary search), 45% via `MeshSurfaceSampler`. `@types/three` 0.187 lacks
+    `setRandomGenerator`, so it's called through a narrow cast.
+  - **Registry:** `scatterShape()` is synchronous (the canvas starts from it). `loadShapes()` (once,
+    started by `Particles` on mount, i.e. while the gate is up) computes the rest in order, one
+    `requestIdleCallback` each (`setTimeout` 16 ms on Safari), with font / model fetches awaited
+    before the timed part. A failing shape logs an error and is skipped. In dev it logs
+    `[shapes] …` and writes the same line to `html[data-shapes]` (headless consoles skip info).
+  - **Preload:** the three GLBs are `url` entries in `content/preload.ts` (13 / 52 / 4 KB), so the
+    gate warms the cache; the registry's fetch is then a revalidation.
+  - **Dev `]`:** `canvas/dev/ShapeCycler.tsx`, rendered only when `NODE_ENV === "development"`
+    (absent from the production build), cycles every ready shape with a 1.2 s `uMorph` tween and
+    writes `html[data-shape]`. It ignores typing targets and modifier combos. Under reduced motion
+    the morph isn't drawn (the frame driver renders only on resize).
+  - **Drift change (vertex shader):** 3.1's drift fed each particle's seed into the noise, so
+    neighbours wandered apart and thin strokes (the name) smeared. It's now one smooth field shared
+    by neighbours (amplitude 0.14) plus a tiny per-particle wobble (0.008). Outlines stay crisp.
+- **Verified 3.2 (headless Chromium on the Iris Xe):**
+  - **Timing (dev build):** 8 shapes, compute **82.4 ms** in total (home 29.7, about 3.8, work 16.1,
+    skills 5.3, arcade 17.1, contact 5.9, grid 4.5; scatter is synchronous at mount), 196 ms wall
+    including idle waits and fetches. No single shape near 50 ms.
+  - **Readability at 30k (screenshots, dark):** the name reads "Nasheet Khan" with crisp strokes;
+    the controller shows its D-pad, four face buttons, two centre buttons and the grips; the envelope
+    its flap V, border and seal; the laptop its screen frame and deck; sphere, ring and the 12 × 7
+    grid are clean.
+  - **Production:** the gate still completes (5.1 s with its 3.2 s minimum), all three GLBs load,
+    the canvas renders, `]` does nothing, and no dev attributes are written. Console: only the
+    favicon 404.
+  - **Bundle:** first-load JS on `/` 204.6 KB (+0.3 KB: the shape data in `content/chapters.ts`).
+  - **[manual]** Judge each shape at real size on your screens (and how the name sits once 4.2's
+    NameCard exists); the timing on the low-end laptop.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.

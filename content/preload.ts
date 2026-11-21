@@ -50,8 +50,15 @@ export const preloadManifest: PreloadEntry[] = [
   // { id: "hero-photo", kind: "image", src: heroPhoto, width: 1200, height: 1500,
   //   sizes: "(min-width: 1024px) 33vw, 100vw", vw: 0.33, weight: 120 },
 
-  // TODO(content): the first particle shape's model (chunk 3.2, a GLB in public/models/), e.g.
-  // { id: "shape-1", kind: "url", url: "/models/[shape].glb", weight: 180 },
+  // The particle shapes' models (chunk 3.2), so canvas/shapes/registry.ts reads them from cache.
+  { id: "model-laptop", kind: "url", url: "/models/laptop.glb", weight: 13 },
+  {
+    id: "model-controller",
+    kind: "url",
+    url: "/models/controller.glb",
+    weight: 52,
+  },
+  { id: "model-envelope", kind: "url", url: "/models/envelope.glb", weight: 4 },
 
   // TODO(content): the first track's first chunk (chunk 5.1), only if sound was chosen before, e.g.
   // { id: "track-1", kind: "url", url: "/audio/[track].mp3", range: [0, 262143], weight: 256,

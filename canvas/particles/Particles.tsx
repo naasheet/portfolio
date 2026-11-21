@@ -16,39 +16,11 @@ import {
 import noise from "../shaders/noise.glsl";
 import fragmentShader from "../shaders/particles.frag.glsl";
 import vertex from "../shaders/particles.vert.glsl";
+import { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
+import { mulberry32 } from "../shapes/random";
+import { loadShapes, scatterShape } from "../shapes/registry";
 
-/** Attributes are sized for the maximum (CLAUDE.md §6: 20k–40k); setDrawRange picks the count. */
-export const MAX_PARTICLES = 40_000;
-export const DEFAULT_PARTICLES = 30_000;
-
-/** Seeded PRNG (mulberry32), so the cloud is the same on every visit. */
-function mulberry32(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-/**
- * A soft ellipsoid cloud filling the view (FOV 35 at z = 6 sees about 3.8 units tall).
- * Placeholder for aFrom / aTo until the shapes arrive in 3.2.
- */
-function fillCloud(target: Float32Array, rand: () => number): void {
-  for (let i = 0; i < target.length; i += 3) {
-    // Uniform direction, radius biased towards the centre.
-    const u = rand() * 2 - 1;
-    const phi = rand() * Math.PI * 2;
-    const s = Math.sqrt(1 - u * u);
-    const r = Math.cbrt(rand()) * (0.6 + 0.4 * rand());
-    target[i] = Math.cos(phi) * s * r * 3.6;
-    target[i + 1] = u * r * 2.2;
-    target[i + 2] = Math.sin(phi) * s * r * 1.6;
-  }
-}
+export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
 
 function readColor(name: string): Color {
   const value = getComputedStyle(document.documentElement)
@@ -64,7 +36,8 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
     const from = new Float32Array(MAX_PARTICLES * 3);
     const to = new Float32Array(MAX_PARTICLES * 3);
     const random = new Float32Array(MAX_PARTICLES * 4);
-    fillCloud(from, rand);
+    // Start from the idle scatter; the chapter shapes are computed in idle time (3.2).
+    from.set(scatterShape());
     to.set(from);
     for (let i = 0; i < random.length; i += 4) {
       random[i] = rand(); // morph delay
@@ -112,6 +85,11 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
     [],
   );
 
+  // Compute every other shape while the gate is up, one idle callback each.
+  useEffect(() => {
+    void loadShapes();
+  }, []);
+
   useEffect(() => {
     geometry.setDrawRange(0, Math.min(count, MAX_PARTICLES));
   }, [geometry, count]);
@@ -138,6 +116,7 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
   return (
     <points
       ref={points}
+      name="particles"
       geometry={geometry}
       material={material}
       frustumCulled={false}

@@ -29,15 +29,17 @@ void main() {
   progress = progress * progress * (3.0 - 2.0 * progress);
   vec3 pos = mix(aFrom, aTo, progress);
 
-  // Slow drift: a small offset from 3D simplex noise, each particle on its own seed.
+  // Slow drift: one smooth noise field, so neighbours move together and outlines stay crisp
+  // (3.2: per-particle seeds in the field smeared thin strokes), plus a tiny per-particle wobble.
   float t = uTime * 0.06;
-  float seed = aRandom.z * 100.0;
   vec3 q = pos * 0.35;
   pos += vec3(
-    snoise(q + vec3(t, seed, 0.0)),
-    snoise(q + vec3(seed, t, 3.7)),
-    snoise(q + vec3(7.1, seed, t))
+    snoise(q + vec3(t, 0.0, 0.0)),
+    snoise(q + vec3(0.0, t, 3.7)),
+    snoise(q + vec3(7.1, 0.0, t))
   ) * 0.14;
+  float phase = aRandom.z * 6.2831 + uTime * 0.8;
+  pos += vec3(sin(phase), cos(phase * 1.3), sin(phase * 0.7)) * 0.008;
 
   vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
   gl_Position = projectionMatrix * mvPosition;
