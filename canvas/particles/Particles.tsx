@@ -3,10 +3,11 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import {
-  AdditiveBlending,
   BufferAttribute,
   BufferGeometry,
-  Color,
+  CustomBlending,
+  OneFactor,
+  OneMinusSrcAlphaFactor,
   type Points,
   ShaderMaterial,
   Sphere,
@@ -18,6 +19,8 @@ import noise from "../shaders/noise.glsl";
 import fragmentShader from "../shaders/particles.frag.glsl";
 import vertex from "../shaders/particles.vert.glsl";
 import { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
+import { readCanvasColors, watchTheme } from "./colors";
+import { liveMood } from "./mood";
 import {
   RIPPLE_SLOTS,
   createPointerTracker,
@@ -29,13 +32,6 @@ import { getLenis } from "@/lib/motion/lenis";
 import { useStore } from "@/lib/store";
 
 export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
-
-function readColor(name: string): Color {
-  const value = getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-  return new Color(value || "white");
-}
 
 /** Overall page scroll, 0–1: Lenis's progress, or native scroll when Lenis is off. */
 function pageProgress(): number {
@@ -51,6 +47,8 @@ const SCROLL_TILT_X = 0.12;
 const PARALLAX_Y = 0.3;
 /** Smoothing time constant (s), so a fling eases instead of jerking the view. */
 const SCROLL_TAU = 0.35;
+/** Base point size (CSS px at depth 1); the mood scales it. */
+const BASE_SIZE = 16;
 
 /** The one Points mesh (CLAUDE.md §9.2): one draw call, a custom ShaderMaterial. */
 export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
@@ -78,6 +76,9 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
     return geo;
   }, []);
 
+  // The theme's colours, read once here; colors.ts keeps them in step with the theme (3.5).
+  const colors = useMemo(() => readCanvasColors(), []);
+
   const material = useMemo(
     () =>
       new ShaderMaterial({
@@ -85,8 +86,12 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
         fragmentShader,
         transparent: true,
         depthWrite: false,
-        blending: AdditiveBlending,
-        // Every uniform from CLAUDE.md §9.2, plus uPointerVelocity, uRipples, uPixelRatio and uSize.
+        // Premultiplied output: additive in dark, "over" in light (particles.frag.glsl).
+        blending: CustomBlending,
+        blendSrc: OneFactor,
+        blendDst: OneMinusSrcAlphaFactor,
+        // Every uniform from CLAUDE.md §9.2, plus uPointerVelocity, uRipples, uPixelRatio, uSize,
+        // uDriftTime, uSpread and uFade.
         uniforms: {
           uTime: { value: 0 },
           uMorph: { value: 0 },
@@ -102,14 +107,17 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
           uMid: { value: 0 },
           uHigh: { value: 0 },
           uPulse: { value: 0 },
-          uColorA: { value: readColor("--color-canvas-particle-a") },
-          uColorB: { value: readColor("--color-canvas-particle-b") },
-          uTheme: { value: 0 },
+          uColorA: { value: colors.a.clone() },
+          uColorB: { value: colors.b.clone() },
+          uTheme: { value: colors.theme },
+          uFade: { value: 0 },
           uPixelRatio: { value: 1 },
-          uSize: { value: 16 },
+          uSize: { value: BASE_SIZE },
+          uDriftTime: { value: 0 },
+          uSpread: { value: 1 },
         },
       }),
-    [],
+    [colors],
   );
 
   // Pointer (3.4): window listeners, read once per frame below.
@@ -143,6 +151,12 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
 
   // Uniforms are written through the mesh ref: refs are the place for per-frame mutation.
   const points = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
+  // Theme changes tween the particle colours and the clear colour (3.5).
+  useEffect(() => {
+    const mesh = points.current;
+    if (!mesh) return;
+    return watchTheme(mesh.material, colors.bg);
+  }, [colors]);
   // Smoothed scroll values, kept in a ref (fast values skip React, CLAUDE.md §5.3).
   const scroll = useRef({ page: 0, chapter: 0.5 });
   useFrame((state, delta) => {
@@ -151,6 +165,14 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
     const u = mesh.material.uniforms;
     if (u.uTime) u.uTime.value = state.clock.elapsedTime;
     if (u.uPixelRatio) u.uPixelRatio.value = state.viewport.dpr;
+
+    // Mood (3.5): tweened by mood.ts. The drift clock advances at the mood's speed, so a speed
+    // change never jumps the drift. delta is clamped like the pointer's (a long hidden tab).
+    if (u.uDriftTime)
+      u.uDriftTime.value += Math.min(Math.max(delta, 0), 0.1) * liveMood.drift;
+    if (u.uSize) u.uSize.value = BASE_SIZE * liveMood.size;
+    if (u.uSpread) u.uSpread.value = liveMood.spread;
+    if (u.uFade) u.uFade.value = liveMood.fade;
 
     // Rotation and parallax, scrubbed to scroll and separate from the morphs (3.3).
     const s = scroll.current;
@@ -174,12 +196,16 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
   });
 
   return (
-    <points
-      ref={points}
-      name="particles"
-      geometry={geometry}
-      material={material}
-      frustumCulled={false}
-    />
+    <>
+      {/* The canvas is opaque (alpha: false) and clears to bg/base every frame (3.5). */}
+      <primitive object={colors.bg} attach="background" />
+      <points
+        ref={points}
+        name="particles"
+        geometry={geometry}
+        material={material}
+        frustumCulled={false}
+      />
+    </>
   );
 }

@@ -12,7 +12,9 @@ export type ParticleMesh = Points<BufferGeometry, ShaderMaterial>;
 
 /** Must match particles.vert.glsl: delay = aRandom.x * DELAY_SPAN, progress over 1 - DELAY_SPAN. */
 const DELAY_SPAN = 0.4;
-const DURATION = 1.2;
+/** A chapter morph's length and easing; mood.ts tweens the chapter mood with the same. */
+export const MORPH_DURATION = 1.2;
+export const MORPH_EASE = "power3.inOut";
 
 let tween: gsap.core.Tween | null = null;
 let target: ShapePoints | null = null;
@@ -20,21 +22,26 @@ let pending: {
   mesh: ParticleMesh;
   shape: ShapePoints;
   instant: boolean;
+  duration: number;
 } | null = null;
 
 /**
  * Morph the particles into `shape` (CLAUDE.md §9.2). Safe at any scroll speed: calls in the same
  * task are coalesced (only the last one runs, on a microtask), and a morph that's already
  * running is frozen where it is, on the CPU, before the new one starts, so nothing pops.
- * `instant` (reduced motion) swaps without a morph and asks for one frame.
+ * `instant` (reduced motion) swaps without a morph and asks for one frame. `duration` (s) slows
+ * it down, e.g. the calm move to the scatter off the homepage.
  */
 export function morphTo(
   mesh: ParticleMesh,
   shape: ShapePoints,
-  { instant = false }: { instant?: boolean } = {},
+  {
+    instant = false,
+    duration = MORPH_DURATION,
+  }: { instant?: boolean; duration?: number } = {},
 ): void {
   const queued = pending !== null;
-  pending = { mesh, shape, instant };
+  pending = { mesh, shape, instant, duration };
   if (!queued) queueMicrotask(flush);
 }
 
@@ -50,7 +57,7 @@ function flush(): void {
   const job = pending;
   pending = null;
   if (!job || job.shape === target) return;
-  const { mesh, shape, instant } = job;
+  const { mesh, shape, instant, duration } = job;
   const morph = mesh.material.uniforms.uMorph;
   const fromAttr = mesh.geometry.getAttribute("aFrom") as BufferAttribute;
   const toAttr = mesh.geometry.getAttribute("aTo") as BufferAttribute;
@@ -91,8 +98,8 @@ function flush(): void {
     morph.value = 0;
     tween = gsap.to(morph, {
       value: 1,
-      duration: DURATION,
-      ease: "power3.inOut",
+      duration,
+      ease: MORPH_EASE,
       onComplete: () => {
         tween = null;
       },

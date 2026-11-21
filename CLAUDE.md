@@ -291,7 +291,10 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
   `fromModel` (MeshSurfaceSampler), and maths shapes. Morphing tweens `uMorph` 0→1, with a
   random delay per particle.
 - Uniforms: `uTime`, `uMorph`, `uScroll`, `uPointer`, `uPointerRadius`, `uPointerStrength`,
-  `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`.
+  `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`. Added since: `uPointerVelocity`,
+  `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), plus `uPixelRatio` and `uSize`.
+- The canvas is **opaque** (`alpha: false`) and clears to the theme's `bg/base` (3.5); `<body>` stays
+  on `bg/base` for the first paint and the no-WebGL case.
 - Fallbacks: reduced motion gets a still frame of the hero shape; no WebGL gets a CSS gradient.
 
 ### 9.3 Music
@@ -488,14 +491,15 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **3 — Living canvas** (3.1–3.4 built; 3.5, theme and moods, is next) (phases 0 and 2 are
+Current phase: **3 — Living canvas** (3.1–3.5 built; 3.6, quality tiers, is next) (phases 0 and 2 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
-3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction)
+3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
+3.5 (theme, colour and chapter moods)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -533,8 +537,11 @@ Carry-over into later chunks:
   - **Bundle:** three, R3F and the shaders are one lazy chunk of about 238 KB gzipped, loaded after
     hydration (first-load JS on `/` unchanged at 204.3 KB). Revisit in 10.5 (three's named imports
     don't tree-shake much). `@react-three/drei` is installed but not imported yet (0 KB).
-  - **Light theme:** additive blending is tuned for dark; on the light background the points read
-    as small dots. 3.5 (theme and moods) owns the light look via `uTheme`.
+  - **Theme / moods (3.5):** change the canvas look only through `colors.ts` (theme), `moodTo` /
+    `fadeTo` in `mood.ts` (chapter mood, route fade) and `morphTo`; never write those uniforms
+    elsewhere. The canvas is opaque, so **never fade the canvas layer with CSS opacity** (the page
+    would show through): use `uFade`. Anything drawn in the canvas later must use the same
+    premultiplied blend rule (rgb x a, alpha a x uTheme) or switch on `uTheme` itself.
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
@@ -632,9 +639,11 @@ Carry-over into later chunks:
 - **5.5 / 6.1 / 8.x wiring:** NowPlayingCard (`playing`, `progress`, title, artist, cover),
   TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`, `onToggle` flips
   `ar.enabled`) all take static props for now.
-- **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
-  theme change (watch `data-theme` on `<html>`). 3.1 reads them once, when the material is created
-  (`readColor` in `Particles.tsx`), so a theme switch doesn't recolour the particles yet.
+- **2.2 gate over the canvas:** the canvas is opaque now (3.5), so "make the gate's background
+  transparent over it at 35%" means the gate's own bg at 35% over the canvas; delete `GateScatter`
+  then (4.2).
+- **Next's default not-found page** has hard-coded black text, unreadable on the dark canvas.
+  A styled `app/not-found.tsx` belongs to 4.x / 10.x.
 Open TODO(content) items:
 - `content/preload.ts`: add the hero photo (4.2, `kind: "image"`) and the first track's first
   chunk (5.1, `kind: "url"` + `range`, `when: "sound"`) once those files exist (the three GLBs
@@ -1571,6 +1580,50 @@ Decisions so far (don't re-ask):
     ripple's speed 2.0, push 0.22 / lift 0.15 and fade 1.8 are constants in `pointer.ts` and the
     shader), touch on a real phone (it competes with scrolling: the browser
     cancels the pointer once a pan starts), and frame rate while moving on the low-end devices.
+- **Theme, colour and moods (3.5):** `canvas/particles/colors.ts`, `canvas/particles/mood.ts`, the
+  `Mood` type and per-chapter `mood` in `content/chapters.ts`, and changes to `morph.ts`,
+  `ScrollMorph.tsx`, `Particles.tsx`, `CanvasRoot.tsx` and both shaders.
+  - **Opaque canvas (Nasheet's change to the plan):** `alpha: false`; `scene.background` is a
+    `Color` (`<primitive object={colors.bg} attach="background" />`) cleared every frame to
+    `--color-bg-base`. A WebGL canvas is premultiplied, and the dark look writes colour with alpha 0,
+    which is undefined when composited over the page; opaque, it only matters in the framebuffer.
+  - **Blend:** `CustomBlending`, `ONE` / `ONE_MINUS_SRC_ALPHA`. The fragment shader converts to the
+    output colour space, then writes `rgb x a` and alpha `a x uTheme`: additive in dark (uTheme 0),
+    normal "over" in light (1), sliding between them with no switch.
+  - **Theme:** `watchTheme(material, bg)` (MutationObserver on `data-theme`) tweens `uColorA`,
+    `uColorB`, `uTheme` and the clear colour over 0.4 s (`power2.out`); reduced motion swaps and
+    calls `requestFrame()`. Light: colour x 0.7 (`LIGHT_SHADE`), `LIGHT_ALPHA` 1.0 (a knob).
+  - **Colour mix:** `vMix = smoothstep(0.8, 0.88, aRandom.z + 0.12 x noise)`, so about 1 in 6 is
+    amber, gathered in soft patches that drift. (One extra `snoise` per vertex.) Note: `patch` is a
+    reserved word in GLSL ES 3.00; using it as a name compiled to nothing (no particles, no console
+    error in headless).
+  - **Mood:** `{ size, drift, spread }` multipliers. `liveMood` (module object) is tweened by
+    `moodTo` with the morph's duration and `power3.inOut` (`MORPH_DURATION`, `MORPH_EASE` from
+    `morph.ts`); `Particles` copies it into `uSize` (16 x size), `uSpread` (drift amplitude) and
+    integrates `uDriftTime += delta x drift` (so speed changes never jump the drift). Moods: Home
+    0.9 / 0.6 / 0.5 (crisp name), About 1.1 / 1 / 1.2, Work 1 / 0.8 / 0.7, Skills 1 / 1.3 / 1, Arcade
+    1.1 / 1.6 / 1.1, Contact 0.95 / 0.7 / 0.8; `fallbackMood` 0.85 / 0.35 / 1.3.
+  - **Other routes:** `morphTo(scatter, { duration: 2.4 })`, the fallback mood over 2.4 s, and
+    `fadeTo(1)` over 1.2 s (back to `/`: 0 over 0.8 s). `uFade` scales alpha to 40% (`FADE_KEEP`),
+    which in both blends pulls the particles toward the background. The first route of a visit
+    starts faded with no tween (in dev, StrictMode's second effect run tweens it once).
+- **Verified 3.5 (headless Chromium on the Iris Xe, production build):**
+  - **Frames (1280 x 720), before -> after:** idle p50 6.1 / p95 6.2-6.3 -> 6.1 / 6.2 ms in both themes.
+    Morphing into each of the 6 chapters in both themes, the 0.4 s theme tween and the 2.5 s route
+    calm-down: p50 6.1 / p95 6.2 everywhere. Single-frame spikes (24-54 ms) appeared only right
+    after `scrollIntoView` jumps, in 3 of 12 chapter samples (3.3 saw the same); one 103 ms frame in
+    the first idle run didn't repeat (max 12.1 ms on the rerun).
+  - **Screenshots:** every chapter in both themes. Dark: teal glow with drifting amber patches; light:
+    darker teal ink with amber flecks, shapes clear (name, sphere, laptop, controller, envelope).
+    150 ms into dark -> light, the background is mid-grey with the particles in between (no pop).
+    After `router.push` to another route: fading at 0.4 s, a loose faint scatter at 3 s; a theme
+    switch there also tweens.
+  - **Reduced motion:** the theme swap and the route state each draw one correct frame.
+  - Console: only the known favicon 404 (and the 404 of the test route). First-load JS on `/`
+    205.5 KB (+0.5 KB: the moods in `content/chapters.ts`).
+  - **[manual]** Both themes on every chapter on your screens; the mood numbers and the 2.4 s calm
+    by feel; the theme tween in **Safari** (smooth, no flash); 60 fps on the mid-range Android and
+    the low-end laptop.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.

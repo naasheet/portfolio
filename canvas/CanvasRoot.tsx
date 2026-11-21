@@ -23,6 +23,8 @@ function hasWebGL(): boolean {
  * The living canvas (CLAUDE.md §2, §9.2): one fixed full-screen R3F canvas behind everything.
  * Loaded through components/layer/CanvasLoader with next/dynamic (ssr: false). Without WebGL
  * it stays an empty layer and the page background shows (the CSS gradient fallback is later).
+ * The canvas is opaque and clears to the theme's bg/base; <body> stays on bg/base too, for the
+ * first paint before WebGL starts and for the no-WebGL fallback.
  */
 export function CanvasRoot() {
   // Read outside <Canvas> and passed down, rather than relying on R3F's context bridge.
@@ -39,7 +41,9 @@ export function CanvasRoot() {
           dpr={[1, 1.75]}
           gl={{
             antialias: false,
-            alpha: true,
+            // Opaque: the canvas paints bg/base itself (3.5), so it never composites through
+            // the page (premultiplied-alpha edge cases differ between browsers).
+            alpha: false,
             powerPreference: "high-performance",
           }}
           camera={{ fov: 35, position: [0, 0, 6], near: 0.1, far: 50 }}

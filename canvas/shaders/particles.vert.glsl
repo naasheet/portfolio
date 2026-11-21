@@ -13,15 +13,17 @@ uniform float uBass;             // later (5.4)
 uniform float uMid;              // later (5.4)
 uniform float uHigh;             // later (5.4)
 uniform float uPulse;            // later (5.4 / 7.x)
-uniform float uTheme;            // later (3.5): 0 dark, 1 light
+uniform float uTheme;            // 0 dark, 1 light (read in the fragment shader)
 uniform float uPixelRatio;
-uniform float uSize;             // base point size in CSS px at depth 1
+uniform float uSize;             // point size in CSS px at depth 1 (base 16 x the mood's size)
+uniform float uDriftTime;        // drift clock: seconds x the mood's drift speed (3.5)
+uniform float uSpread;           // the mood's spread: how far points drift from their shape
 
 attribute vec3 aFrom;
 attribute vec3 aTo;
 attribute vec4 aRandom;          // x: morph delay, y: size, z: seed, w: spare
 
-varying float vSeed;
+varying float vMix;              // 0 = uColorA (teal), 1 = uColorB (amber)
 varying float vAlpha;
 
 void main() {
@@ -33,15 +35,22 @@ void main() {
 
   // Slow drift: one smooth noise field, so neighbours move together and outlines stay crisp
   // (3.2: per-particle seeds in the field smeared thin strokes), plus a tiny per-particle wobble.
-  float t = uTime * 0.06;
+  // The mood (3.5) sets the speed (uDriftTime runs at its drift rate) and the reach (uSpread).
+  float t = uDriftTime * 0.06;
   vec3 q = pos * 0.35;
+
+  // Colour (3.5): about one particle in six is amber, but the cut is shifted by a slow noise
+  // field, so amber gathers in soft patches that drift across the shape.
+  float cluster = snoise(q * 1.4 + vec3(0.0, 0.0, t * 0.5));
+  vMix = smoothstep(0.8, 0.88, aRandom.z + cluster * 0.12);
+
   pos += vec3(
     snoise(q + vec3(t, 0.0, 0.0)),
     snoise(q + vec3(0.0, t, 3.7)),
     snoise(q + vec3(7.1, 0.0, t))
-  ) * 0.14;
-  float phase = aRandom.z * 6.2831 + uTime * 0.8;
-  pos += vec3(sin(phase), cos(phase * 1.3), sin(phase * 0.7)) * 0.008;
+  ) * 0.14 * uSpread;
+  float phase = aRandom.z * 6.2831 + uDriftTime * 0.8;
+  pos += vec3(sin(phase), cos(phase * 1.3), sin(phase * 0.7)) * 0.008 * uSpread;
 
   // Pointer (3.4), in world space so the scroll rotation doesn't skew it. The pointer is a ray
   // from the camera; take its point at this particle's depth, so the parting sits under the
@@ -113,6 +122,5 @@ void main() {
   // Size by depth and pixel ratio (perspective: nearer is bigger).
   gl_PointSize = uSize * aRandom.y * uPixelRatio / -mvPosition.z * (1.0 + glow * 1.2);
 
-  vSeed = aRandom.z;
   vAlpha = min(1.0, 0.55 + 0.45 * aRandom.y / 1.5 + glow * 0.6);
 }
