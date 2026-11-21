@@ -140,6 +140,7 @@ lib/
   chat/                 # knowledge.ts, system.ts, rateLimit.ts, tools.ts
   commands/             # one file per terminal command + registry.ts + parser.ts + types.ts
   motion/               # gsap.ts, lenis.ts, tokens.ts, intro.ts, scrollMemory.ts
+  content/              # stats.ts: numbers derived from content/ (4.1)
   hooks/                # useReducedMotion, useMediaQuery, useFocusTrap, useCountUp …
   fs.ts                 # virtual filesystem built from content/
   island.ts             # the nav island's activity / alert store (2.4)
@@ -419,6 +420,7 @@ npm run lint       # ESLint
 npm run typecheck  # tsc --noEmit
 npm run format     # Prettier
 npm run analyze    # bundle analyzer: node scripts/analyze.mjs (sets ANALYZE=true, runs next build)
+npm run check-content  # content check (4.1); also runs as `prebuild`, so a broken content/ stops the build
 npm run test       # vitest (from chunk 6.2)
 ```
 
@@ -521,8 +523,8 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1–R.7 done; phase 4, 4.1 the
-content model, is next). Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
+Current phase: **R — Separate pages and the particle room** (R.1–R.7 done); now phase 4: 4.1 (the
+content model) done, 4.2 next. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
 Phase R checklist (the R.7 brief asked for R.1–R.6 unticked; they were built before R.7, so they
@@ -541,7 +543,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -594,7 +596,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -847,6 +849,34 @@ Carry-over into later chunks:
     0.9 s from scatter routes).
   - **Shader precompile:** `gl.compileAsync(scene, camera)` on mount compiles the hidden reflection
     program too; compiling it on its first draw cost a 300–400 ms frame mid-intro.
+- **Content model (4.1):** `content/profile.ts` (`Profile`: name, title, location `{ city, timeZone,
+  zoneLabel }`, availability, tagline, bio, offScreen, photos, resume `/resume.pdf`, email),
+  `content/projects.ts` (`Project`: slug, title, year, role, summary, domain, stack, links, cover,
+  preview, featured, hasCaseStudy, optional `placeholder`), `content/skills.ts` (`skillAreas`),
+  `content/socials.ts` (`socials`), `content/copy.ts` (+ `meta`, `errors`, `empty`),
+  `lib/content/stats.ts` (`getStats()`: projects shipped, technologies, case studies, featured,
+  years active; placeholders don't count).
+  - **Check:** `scripts/check-content.ts` runs as `prebuild` (and `npm run check-content`): unique
+    and URL-safe slugs, required fields, plausible years, https links, every `cover` / `preview` /
+    photo / the resume present in `public/`, a case study for each `hasCaseStudy`, unique social
+    platforms. Failures print `content/<file> › <entry> › <field>: …` and exit 1; placeholders
+    (`[…]` strings, `placeholder: true`, empty lists) print as warnings.
+  - **No extra package:** it runs on Node's built-in TypeScript support (`node
+    --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-content.ts`; needs Node 22.18+ /
+    24, and the warning is the "module type" notice). It imports the content files by their `.ts`
+    path, so `tsconfig.json` has `allowImportingTsExtensions` (fine with `noEmit`). **Rule: content
+    data files import only types, or other content files by a relative `.ts` path** (no `@/` alias),
+    or the check can't load them. `jiti` was tried first and declined (a new dependency).
+  - **Metadata:** `app/layout.tsx` takes the title from `profile` (`Nasheet Khan · Designer and
+    frontend developer`) and the description from `copy.meta`.
+  - `public/resume.pdf` is committed now (Nasheet's request); `profile.email` is
+    nxsheet@gmail.com (Nasheet's request).
+  - `content/now.ts` is updated per chunk by hand.
+- **Verified 4.1:** `npm run check-content` passes with 10 placeholder warnings. A duplicate slug plus
+  a missing cover makes `npm run build` stop at prebuild with two ✗ lines naming the file, entry
+  and field (exit 1); a `hasCaseStudy` without its MDX fails the same way. Typecheck, lint and
+  build pass; the page title reads from content. First-load JS on `/` 210.0 KB (+0.4: the larger
+  `profile` object, read by the clocks and the gate).
 - **Verified R.6 (headless Chromium on the Iris Xe, production build, first visits through the gate):**
   - **Timing:** counter 100% → room settled (code typed, lamp lit) **3.3 s** in every run (3 runs
     + 4 frame runs); intro done (text fading in) at 2.8 s.
@@ -982,7 +1012,14 @@ Open TODO(content) items:
 - `content/copy.ts` — the island alert lines for theme, sound and mode ("Light theme · T to switch
   back" is the board's; "Dark theme", "Sound on/off", "Hand/Mouse mode" follow its pattern) and
   the nav's accessible names ("Navigation", "Pointer", "Open the menu"): Nasheet to review.
-- `app/layout.tsx` — metadata title/description → `content/` (chunk 4.1 / 4.8)
+- `content/copy.ts` `meta.description` — one sentence for search results (4.1).
+- `content/profile.ts` — tagline, bio, offScreen, photos (files in `public/photos/`); confirm title
+  and the "Open to work" label.
+- `content/projects.ts` — three placeholder projects (`placeholder: true`, not counted in stats)
+  until the real ones; each real one needs a cover in `public/`, and a case study in
+  `content/case-studies/<slug>.mdx` if `hasCaseStudy`.
+- `content/skills.ts` — real areas and skills. `content/socials.ts` — your profiles (empty now).
+- `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 Known issues:
 - `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
   Add `app/icon.*` with the brand assets (11.2 at the latest).

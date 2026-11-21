@@ -1,13 +1,33 @@
 /*
- * Visitor-facing UI strings (CLAUDE.md §8: copy lives in content/, never in components).
- * Chunk 4.1 extends this into the full copy model.
+ * Visitor-facing UI strings (CLAUDE.md §8: copy lives in content/, never in components): buttons,
+ * labels, empty states, errors, toasts and the site's metadata. Facts about Nasheet live in
+ * profile.ts, projects.ts, skills.ts and socials.ts (4.1).
  */
 export const copy = {
+  /** The site's <title> and description (app/layout.tsx, 4.8 adds Open Graph). */
+  meta: {
+    title: (name: string, title: string) => `${name} · ${title}`,
+    /** TODO(content): a one-sentence description for search results. */
+    description: "[One sentence about you and this site]",
+  },
   ui: {
     /** Screen-reader text for a button that is busy. */
     loading: "Loading",
     /** Accessible name of a toast's close button. */
     dismiss: "Dismiss",
+  },
+  /** Shared errors (4.1): any feature that can fail uses these unless it has its own line. */
+  errors: {
+    generic: "Something broke on my side.",
+    retry: "Try again",
+    offline: "You look offline. I'll keep trying.",
+    notFound: "Nothing lives at this address.",
+    backHome: "Back to the desk",
+  },
+  /** Shared empty states (4.1). */
+  empty: {
+    nothing: "Nothing here yet.",
+    noResults: "No matches. Try fewer filters.",
   },
   /** The nav row, the island and the phone menu (2.4). */
   nav: {

@@ -22,7 +22,7 @@ export function LocalTime({ className }: { className?: string }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
     const tick = () => {
-      setTime(nowIn(profile.timeZone));
+      setTime(nowIn(profile.location.timeZone));
       timer = setTimeout(tick, 60_000 - (Date.now() % 60_000) + 50);
     };
     tick();
@@ -32,7 +32,7 @@ export function LocalTime({ className }: { className?: string }) {
   return (
     <span className={className}>
       <span className="inline-block min-w-[5ch]">{time ?? "--:--"}</span>{" "}
-      {profile.zoneLabel}
+      {profile.location.zoneLabel}
     </span>
   );
 }

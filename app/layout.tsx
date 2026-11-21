@@ -11,13 +11,15 @@ import { ShortcutsLoader } from "@/components/providers/ShortcutsLoader";
 import { SmoothScroll } from "@/components/providers/SmoothScroll";
 import { StoreHydrator } from "@/components/providers/StoreHydrator";
 import { ThemeScript } from "@/components/ui/ThemeScript";
+import { copy } from "@/content/copy";
+import { profile } from "@/content/profile";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
-// TODO(content): move title and description into content/ (chunk 4.1 / 4.8).
+// From content/ (4.1); 4.8 adds Open Graph and the rest.
 export const metadata: Metadata = {
-  title: "Nasheet",
-  description: "Nasheet's portfolio.",
+  title: copy.meta.title(profile.name, profile.title),
+  description: copy.meta.description,
 };
 
 // Let the page run under the notch and home indicator; fixed UI pads itself with

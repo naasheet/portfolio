@@ -5,7 +5,7 @@ import { profile } from "@/content/profile";
 export function GateClock() {
   return (
     <span className="text-footnote font-mono text-text-tertiary tabular-nums">
-      {profile.city} · <LocalTime />
+      {profile.location.city} · <LocalTime />
     </span>
   );
 }

@@ -56,7 +56,7 @@ export default function Home() {
             <span className="absolute inset-0 animate-status-pulse rounded-chip bg-status-success" />
             <span className="relative size-2 rounded-chip bg-status-success" />
           </span>
-          {t.status} · {profile.city}
+          {t.status} · {profile.location.city}
           <LocalTime className="font-mono text-footnote text-text-tertiary tabular-nums" />
         </p>
         <h1 className="text-stat-3 font-bold">
