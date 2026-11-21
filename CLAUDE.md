@@ -21,8 +21,12 @@ more than adding features. A feature that drops frames is not finished.
 The whole site sits on **one continuous WebGL particle scene** that every feature talks to.
 Content floats on top of it in clean, frosted-glass panels set in iOS-style typography.
 
-- **Pages** reshape the particles. Each of the six pages (its own URL since phase R) has a
-  target shape; Home is the particle room (a desk of objects, R.3), and each object opens its page.
+- **Pages** reshape the particles. The old homepage chapters are separate pages now (phase R),
+  each with its own URL and particle shape.
+- **Home is the particle room:** a desk of objects drawn in particles. Each object opens a page
+  (the frame → About, the laptop → Work, the pencils → Skills, the controller → Arcade, the
+  envelope → Contact) or does something in place: the **lamp** switches the theme, the **mug**
+  opens the Now card, the **headphones** open the music, and the **plant** is a secret.
 - **Music** makes the particles breathe and pulse with the track.
 - **Hand (AR)** pushes the particles away like water, and a pinch acts as a click.
 - **Terminal commands** change the scene live (`particles --explode`, `theme light`).
@@ -37,17 +41,17 @@ Non-goals: no OS/desktop metaphor, no whiteboard or kanban board, no iOS-looking
 | --- | --- | --- |
 | Smooth experience | Everywhere | Lenis + GSAP, one shared clock |
 | AR hand control | Global toggle in the nav; also drives the Slice game | AR button, or `ar on` |
-| Music | The nav's music island (2.4, 5.2); drives the canvas | "Enter with sound", or `play` |
+| Music | The nav's music island (2.4, 5.2); drives the canvas | The island, the sound button, `M`, `play`, or the headphones on the desk |
 | iOS-style fonts | All text | Self-hosted SF Pro Text, Display and Mono |
 | Chatbot | Floating "Ask" bubble, bottom-right | Click it, press `/`, or `ask …` |
 | Working terminal | Drop-down drawer; full page on mobile | Backtick key (`) or the nav icon |
-| Games (2) | `/arcade`: Slice (played by hand) and Stack (3D tower) | Arcade chapter, or `play slice` / `play stack` |
+| Games (2) | `/arcade`: Slice (played by hand) and Stack (3D tower) | The controller on the desk, the Arcade page, or `play slice` / `play stack` |
 
 ### Routes
 
-- `/` — Home: only the particle room (the intro and hint row until R.3 builds the room). Doesn't scroll.
-- `/about`, `/work`, `/skills`, `/contact` — one page per former homepage chapter (R.1); `/arcade` below.
-  Numbers and order (01 Home … 06 Contact) come from `content/chapters.ts`.
+- `/` — Home: the particle room (with its intro text and hint row). Doesn't scroll.
+- `/about`, `/work`, `/skills`, `/contact` — one page each (R.1); `/arcade` below. Numbers and
+  order (01 Home … 06 Contact) come from `content/chapters.ts`.
 - `/work/[slug]` — case studies (MDX)
 - `/arcade`, `/arcade/slice`, `/arcade/stack`
 - `/terminal` — full-page terminal for mobile
@@ -103,8 +107,11 @@ app/
   layout.tsx            # mounts Canvas, Gate, Nav, PersistentLayer, Cursor ONCE
   template.tsx          # page-transition enter
   page.tsx              # Home: the particle room (R.3)
-  about/ work/ skills/ contact/   # one page each (R.1); placeholders until Phase 4
+  about/page.tsx        # one page each (R.1); placeholders until Phase 4
+  work/page.tsx
   work/[slug]/page.tsx  # case studies
+  skills/page.tsx
+  contact/page.tsx
   arcade/               # layout.tsx, page.tsx, slice/, stack/
   terminal/page.tsx
   credits/page.tsx
@@ -112,7 +119,8 @@ app/
   api/chat/route.ts
   api/scores/route.ts
   api/contact/route.ts
-canvas/                 # CanvasRoot.tsx, Scene.tsx, particles/, shaders/*.glsl, shapes/
+canvas/                 # CanvasRoot.tsx, Scene.tsx, RouteMorph.tsx, particles/, shaders/*.glsl, shapes/
+  room/                 # the particle room's hit areas and hover highlight (R.4)
 features/ar/            # camera.ts, tracker.ts, hand.worker.ts, gestures.ts, oneEuro.ts, synthetic.ts
 games/                  # shared/, slice/, stack/ — each game self-contained
 components/
@@ -122,7 +130,9 @@ components/
   overlay/              # Sheet, Modal, Drawer, Toast
   media/                # Img, LoopVideo, Avatar
   providers/            # SmoothScroll and other app-wide client wiring (render nothing or wrap)
-  cursor/  nav/  gate/  layer/  chapters/  case-study/  contact/
+  home/                 # the particle room's DOM: overlay, hover card, links, phone sheet, cards (R.4–R.5)
+  chapters/             # PagePlaceholder (ChapterSection was removed in R.1)
+  cursor/  nav/  gate/  layer/  case-study/  contact/
   player/  chat/  terminal/  ar/  dev/
 lib/
   store.ts              # the Zustand store
@@ -230,7 +240,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 
 - **Quality bar:** the reference portfolio (chandreshhere.com): dense, personal, card-based
   modules with real personality. Match its polish; never copy its layout, copy or content.
-- **Layout:** every homepage chapter is a 12-column bento grid of cards floating over the
+- **Layout:** every page (the former homepage chapters) is a 12-column bento grid of cards floating over the
   canvas (6 columns on tablets, 1 on phones), with a 16 px gap. Every card says what it is
   at a glance.
 - **Surfaces:** three levels only: canvas → glass card (blur 24 px, 1 px hairline border,
@@ -292,7 +302,8 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 - Save the choice in localStorage (wrapped in try/catch) and skip the gate on repeat visits.
 
 ### 9.2 Particle canvas
-- One `Points` mesh, a custom `ShaderMaterial`, and attributes `aFrom` and `aTo`.
+- One `Points` mesh, a custom `ShaderMaterial`, and attributes `aFrom` and `aTo`. On Home only, a
+  second `Points` draws the same geometry as the desk's reflection (R.3).
 - Shapes are precomputed `Float32Array`s that all have the same point count: `fromText`,
   `fromModel` (MeshSurfaceSampler), and maths shapes. Morphing tweens `uMorph` 0→1, with a
   random delay per particle.
@@ -302,9 +313,18 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
   `uPool`, `uSteam` (R.3), `uHot[9]`, `uAnyHot`, `uFocus`, `uBurst` (R.4), `uLeaf`, `uLeafAxis`,
   `uPlant` (R.5), `uType`, `uBulb` (R.6), plus `uPixelRatio` and
   `uSize`. Attributes since: `aRoom` (R.3).
+- **Room attributes (R.7 naming vs. what's built):** the design names `aObject` and `aWarm`. As
+  built (approved in R.3): `aObject` is `aRoom.x` (object 0–8, −1 elsewhere, plus kind, tint and
+  extra in `aRoom.yzw`), and the warm light is computed in the shader from each point's distance to
+  `uPool` instead of a baked `aWarm`, because the phone layout moves the points. `uHot` is an array
+  of nine per-object highlights.
+- **One premultiplied blend for both themes:** `ONE` / `ONE_MINUS_SRC_ALPHA`; the fragment shader
+  writes `rgb × a` and alpha `a × uTheme`. `uFade` (0–1) pulls the particles toward the background.
+- **Quality tiers:** 60k / 36k / 20k points (R.3), by draw range only.
 - The canvas is **opaque** (`alpha: false`) and clears to the theme's `bg/base` (3.5); `<body>` stays
   on `bg/base` for the first paint and the no-WebGL case.
-- Fallbacks: reduced motion gets a still frame of the hero shape; no WebGL gets a CSS gradient.
+- Fallbacks: reduced motion gets a still frame (the settled room on Home); no WebGL or Save-Data
+  gets a CSS gradient, and Home shows the room's objects as glass link cards (R.5).
 
 ### 9.3 Music
 - Signal chain: `<audio>` → `MediaElementSource` → gain (for crossfades) → `AnalyserNode` → speakers.
@@ -484,7 +504,7 @@ NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
 | 1 | Design system and UI kit: primitives, cards and bento, text motion, card kit, overlays, media, cursor and sounds, design review (1.1–1.8) | 2–3 |
 | 2 | Entry gate, preloader, persistent layer, nav and shortcuts, page transitions (2.1–2.5) | 4 |
 | 3 | Living canvas: particles, shapes, scroll morph, pointer, theme and moods, quality tiers (3.1–3.6) | 5–6 |
-| R | Separate pages and the particle room: one URL per chapter (R.1), route morph (R.2), the room (R.3), … | — |
+| R | Separate pages and the particle room: pages (R.1), route-driven canvas (R.2), room shape (R.3), hover and open (R.4), extras and phone (R.5), Home intro (R.6), CLAUDE.md edits (R.7) | — |
 | 4 | Homepage chapters and content: content model, hero, about, work, case studies, skills, contact, SEO, MVP review (4.1–4.9) — **MVP** | 7–8 |
 | 5 | Music: engine, mini-player, expanded player, audio-reactive canvas, now-playing card (5.1–5.5) | 9 |
 | 6 | Terminal: UI, parser and registry, virtual filesystem, core and site commands, mobile (6.1–6.6) | 10 |
@@ -501,16 +521,27 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1–R.6 done; R.7 is next; phase 4 follows)
-(phases 0, 2 and 3 are
-complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
+Current phase: **R — Separate pages and the particle room** (R.1–R.7 done; phase 4, 4.1 the
+content model, is next). Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
+review, is still Nasheet's open [manual] checkpoint.
+
+Phase R checklist (the R.7 brief asked for R.1–R.6 unticked; they were built before R.7, so they
+are ticked):
+- [x] R.1 Separate pages
+- [x] R.2 Canvas retrofit: opaque, route-driven, one blend
+- [x] R.3 Room shape
+- [x] R.4 Room hover, focus and open
+- [x] R.5 Room extras and phone
+- [x] R.6 Home intro
+- [x] R.7 CLAUDE.md edits
+
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
