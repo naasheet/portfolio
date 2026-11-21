@@ -1534,8 +1534,9 @@ Decisions so far (don't re-ask):
     (about 5% after 600 ms) once still. dt is clamped to 0.1 s.
   - **Shader:** done in world space (after `modelMatrix`), so the scroll rotation doesn't skew it.
     The pointer ray is evaluated at each particle's depth (`cameraPosition` → `uPointer`), so the
-    effect sits under the cursor at any depth. **New uniform `uPointerVelocity`** (vec2, not in
-    §9.2's list). `uPointerRadius` is 0.8.
+    effect sits under the cursor at any depth. **New uniforms `uPointerVelocity`** (vec2) **and
+    `uRipples`** (vec4[4]), not in §9.2's list. `uPointerRadius` is **0.45** (0.8 first; Nasheet:
+    "it happens too much, it's very large").
   - **Look (revised after Nasheet's feedback, "it creates a circle"):** the first version pushed
     everything inside a smoothstep disc outward by 0.4, which left an empty hole with a bright rim:
     a hard circle. Now:
@@ -1544,18 +1545,31 @@ Decisions so far (don't re-ask):
       cross and a rim comes back.
     - **Gaussian falloff,** σ = 0.55 × radius, wobbled ±25% by slow noise (`snoise(xy × 1.6,
       t × 0.25)`), and a per-particle grain of 0.75–1.25 (`aRandom.w`), so the edge is organic.
-    - **Wake:** behind the motion the field stretches by up to 2.4× (1 + 0.35 × speed), like a
+    - **Wake:** behind the motion the field stretches by up to 2× (1 + 0.25 × speed), like a
       finger drawn through water.
     - **Swirl:** tangent × cross(dir, velocity) × 0.05, velocity clamped to 4 units/s.
     - **Depth:** a 0.15 bulge toward the camera.
     - `BASE_STRENGTH` (pointer.ts) went from 0.35 to 0.5 to suit the softer push.
+  - **Click ripple (Nasheet picked it from glow / ripple / hold-to-gather / sparkle trail):** a
+    primary-button `pointerdown` (mouse click or tap) queues a ripple; `update()` projects it onto
+    z = 0 and puts it in one of `RIPPLE_SLOTS` (4, oldest reused) as `(x, y, age s, amplitude)`;
+    a slot retires after 1.6 s. In the shader each ripple is a ring running out at 2 units/s
+    (Gaussian band, variance 0.05, its radius wobbled ±0.07 by the parting's noise), fading with
+    `exp(-age × 1.8)` and easing in over 0.12 s so a click never pops. It pushes particles out by
+    0.22 and toward the camera by 0.15, and lights them up by growing the points (×(1 + 1.2 × glow))
+    and their alpha (+0.6 × glow, capped at 1). Overlapping ripples are capped at one full ripple
+    in total.
   - **Reduced motion:** nothing renders continuously, so the pointer has no visible effect.
-- **Verified 3.4 (headless Chromium, dev server, About sphere), after the revision:** a slow move
-  (~250 px/s) thins the particles softly around the cursor with no hole or rim; a fast flick
-  (~3,000 px/s) leaves an elongated, irregular wake; 1.2 s after stopping, the sphere is closed again. No
+- **Verified 3.4 (headless Chromium, dev server, About sphere), after the revisions:** a slow move
+  (~250 px/s) thins the particles softly in a small area around the cursor with no hole or rim; a
+  fast flick (~3,000 px/s) leaves an elongated, irregular wake; 1.2 s after stopping, the sphere is
+  closed again. A click: at 0.3 s a soft, slightly uneven bright ring is halfway out; by 0.7 s it
+  has passed the edge; at 1.8 s the sphere is settled. Three clicks 120 ms apart pulse the sphere's
+  edge outward once, then settle. No
   console errors. Typecheck, lint and build pass; first-load JS on `/` unchanged at 205.0 KB.
-  - **[manual]** The feel (radius 0.8, lens 1.6, wake 0.35, swirl 0.05 and the 600 ms decay are
-    constants in `pointer.ts` and the shader), touch on a real phone (it competes with scrolling: the browser
+  - **[manual]** The feel (radius 0.45, lens 1.6, wake 0.25, swirl 0.05, the 600 ms decay, and the
+    ripple's speed 2.0, push 0.22 / lift 0.15 and fade 1.8 are constants in `pointer.ts` and the
+    shader), touch on a real phone (it competes with scrolling: the browser
     cancels the pointer once a pan starts), and frame rate while moving on the low-end devices.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …

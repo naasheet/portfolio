@@ -1,4 +1,4 @@
-import { type Camera, Vector3 } from "three";
+import { type Camera, Vector3, Vector4 } from "three";
 
 /*
  * The pointer as the particles see it (CLAUDE.md §9.2, chunk 3.4). The canvas ignores pointer
@@ -6,6 +6,9 @@ import { type Camera, Vector3 } from "three";
  * store: it changes every frame). Each frame, update() projects it onto the z = 0 plane, smooths
  * it, and derives a velocity and a strength that rises while the pointer moves and decays over
  * about 600 ms after it stops. AR (8.5) will feed the same uniforms.
+ *
+ * Clicks and taps also start a ripple: a soft ring that runs out from the click point. Up to
+ * RIPPLE_SLOTS overlap, so quick clicks never cut each other off (the oldest slot is reused).
  */
 
 /** Per-frame lerp toward the raw pointer, at 60 fps (made frame-rate independent below). */
@@ -20,6 +23,9 @@ const SPEED_GAIN = 0.15;
 const VELOCITY_TAU = 0.1;
 /** A move counts as "moving" for this long after the last event. */
 const MOVING_MS = 60;
+/** Ripples: how many can overlap, and how long one lives (its amplitude is ~2% by then). */
+export const RIPPLE_SLOTS = 4;
+const RIPPLE_LIFE_S = 1.6;
 
 export type PointerFrame = {
   /** Smoothed pointer on the z = 0 plane, world units. */
@@ -30,6 +36,8 @@ export type PointerFrame = {
   vy: number;
   /** 0–1. */
   strength: number;
+  /** One per slot: x, y (z = 0 plane), age in seconds, amplitude (0 = idle). */
+  ripples: Vector4[];
 };
 
 export type PointerTracker = {
@@ -43,8 +51,35 @@ export function createPointerTracker(): PointerTracker {
   let seen = false; // no pointer yet: nothing to push
   let snapped = false; // the smoothed point starts on the first real position
   let lastMove = -Infinity;
-  const frame: PointerFrame = { x: 0, y: 0, vx: 0, vy: 0, strength: 0 };
+  const frame: PointerFrame = {
+    x: 0,
+    y: 0,
+    vx: 0,
+    vy: 0,
+    strength: 0,
+    ripples: Array.from({ length: RIPPLE_SLOTS }, () => new Vector4()),
+  };
   const ray = new Vector3();
+  const hit = { x: 0, y: 0 };
+  // Clicks waiting to be projected (that needs the camera), and each slot's start time.
+  const clicks: { x: number; y: number; at: number }[] = [];
+  const rippleStart = new Array<number>(RIPPLE_SLOTS).fill(-Infinity);
+  let nextSlot = 0;
+
+  /** Where a client position meets the z = 0 plane (written into `hit`). */
+  const project = (camera: Camera, cx: number, cy: number) => {
+    ray
+      .set(
+        (cx / window.innerWidth) * 2 - 1,
+        -(cy / window.innerHeight) * 2 + 1,
+        0.5,
+      )
+      .unproject(camera)
+      .sub(camera.position);
+    const t = ray.z !== 0 ? -camera.position.z / ray.z : 0;
+    hit.x = camera.position.x + ray.x * t;
+    hit.y = camera.position.y + ray.y * t;
+  };
 
   const record = (e: PointerEvent) => {
     clientX = e.clientX;
@@ -58,6 +93,10 @@ export function createPointerTracker(): PointerTracker {
     record(e);
   };
   const onDown = (e: PointerEvent) => {
+    if (e.isPrimary && e.button === 0) {
+      clicks.push({ x: e.clientX, y: e.clientY, at: performance.now() });
+      if (clicks.length > RIPPLE_SLOTS) clicks.shift();
+    }
     if (e.pointerType === "touch") {
       record(e);
       snapped = false; // a new finger: start where it landed, not where the last one left
@@ -78,20 +117,29 @@ export function createPointerTracker(): PointerTracker {
   return {
     update(camera, rawDt) {
       const dt = Math.min(Math.max(rawDt, 0), 0.1); // after a hidden tab, don't leap
+      const now = performance.now();
+
+      // Ripples: start queued clicks, age the running ones, retire the finished ones.
+      for (const click of clicks) {
+        project(camera, click.x, click.y);
+        frame.ripples[nextSlot]!.set(hit.x, hit.y, 0, 1);
+        rippleStart[nextSlot] = click.at;
+        nextSlot = (nextSlot + 1) % RIPPLE_SLOTS;
+      }
+      clicks.length = 0;
+      for (let i = 0; i < RIPPLE_SLOTS; i++) {
+        const r = frame.ripples[i]!;
+        if (r.w === 0) continue;
+        r.z = (now - rippleStart[i]!) / 1000;
+        if (r.z > RIPPLE_LIFE_S) r.w = 0;
+      }
+
       if (!seen || dt === 0) return frame;
 
       // Project the pointer onto z = 0: a ray from the camera through it.
-      ray
-        .set(
-          (clientX / window.innerWidth) * 2 - 1,
-          -(clientY / window.innerHeight) * 2 + 1,
-          0.5,
-        )
-        .unproject(camera)
-        .sub(camera.position);
-      const t = ray.z !== 0 ? -camera.position.z / ray.z : 0;
-      const tx = camera.position.x + ray.x * t;
-      const ty = camera.position.y + ray.y * t;
+      project(camera, clientX, clientY);
+      const tx = hit.x;
+      const ty = hit.y;
 
       if (!snapped) {
         frame.x = tx;
@@ -111,7 +159,7 @@ export function createPointerTracker(): PointerTracker {
       frame.vx += ((frame.x - px) / dt - frame.vx) * kv;
       frame.vy += ((frame.y - py) / dt - frame.vy) * kv;
 
-      const moving = performance.now() - lastMove < MOVING_MS;
+      const moving = now - lastMove < MOVING_MS;
       if (moving) {
         const speed = Math.hypot(frame.vx, frame.vy);
         const target = Math.min(1, BASE_STRENGTH + speed * SPEED_GAIN);

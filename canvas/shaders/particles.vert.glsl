@@ -8,6 +8,7 @@ uniform vec2 uPointer;           // pointer on the z = 0 plane, world units (3.4
 uniform float uPointerRadius;    // world units at z = 0
 uniform float uPointerStrength;  // 0–1, rises while moving, decays when still
 uniform vec2 uPointerVelocity;   // world units / s, for the swirl
+uniform vec4 uRipples[4];        // click ripples: x, y (z = 0 plane), age s, amplitude (0 = off)
 uniform float uBass;             // later (5.4)
 uniform float uMid;              // later (5.4)
 uniform float uHigh;             // later (5.4)
@@ -60,10 +61,10 @@ void main() {
   }
   vec2 vdir = speed > 1e-3 ? vel / speed : vec2(0.0);
 
-  // Wake: behind the motion the field stretches (up to 2.4x), like a finger drawn through water,
+  // Wake: behind the motion the field stretches (up to 2x), like a finger drawn through water,
   // instead of staying a circle.
   float behind = max(-dot(d, vdir), 0.0);
-  float stretch = 1.0 + speed * 0.35;
+  float stretch = 1.0 + speed * 0.25;
   vec2 dWake = d + vdir * behind * (1.0 - 1.0 / stretch);
 
   // Soft, organic edge: a Gaussian whose width wobbles with slow noise.
@@ -84,12 +85,34 @@ void main() {
   world.xy += (d * LENS * grain + tangent * side * 0.05) * amount;
   world.z += 0.15 * amount; // a slight bulge toward the camera, for depth
 
+  // Click ripples: a soft ring runs out from each click (2.0 units/s), pushing the particles it
+  // passes outward and toward the camera and lighting them up (bigger points), then fades.
+  // It eases in over 0.12 s, so a click never pops.
+  float glow = 0.0;
+  vec3 rippleOffset = vec3(0.0);
+  for (int i = 0; i < 4; i++) {
+    vec4 r = uRipples[i];
+    if (r.w <= 0.0) continue;
+    vec2 c = cameraPosition.xy + (r.xy - cameraPosition.xy) * depth;
+    vec2 rd = world.xy - c;
+    float rdist = max(length(rd), 1e-4);
+    float ring = rdist - r.z * 2.0 * depth + wobble * 0.07; // a slightly uneven ring
+    float band = exp(-(ring * ring) / 0.05);
+    float amp = r.w * exp(-r.z * 1.8) * smoothstep(0.0, 0.12, r.z);
+    rippleOffset += vec3((rd / rdist) * 0.22, 0.15) * band * amp;
+    glow += band * amp;
+  }
+  // Overlapping ripples (quick clicks) add up to at most one full ripple.
+  float cap = 1.0 / max(glow, 1.0);
+  world.xyz += rippleOffset * cap;
+  glow *= cap;
+
   vec4 mvPosition = viewMatrix * world;
   gl_Position = projectionMatrix * mvPosition;
 
   // Size by depth and pixel ratio (perspective: nearer is bigger).
-  gl_PointSize = uSize * aRandom.y * uPixelRatio / -mvPosition.z;
+  gl_PointSize = uSize * aRandom.y * uPixelRatio / -mvPosition.z * (1.0 + glow * 1.2);
 
   vSeed = aRandom.z;
-  vAlpha = 0.55 + 0.45 * aRandom.y / 1.5;
+  vAlpha = min(1.0, 0.55 + 0.45 * aRandom.y / 1.5 + glow * 0.6);
 }

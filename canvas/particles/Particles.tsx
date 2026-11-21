@@ -12,12 +12,17 @@ import {
   Sphere,
   Vector2,
   Vector3,
+  Vector4,
 } from "three";
 import noise from "../shaders/noise.glsl";
 import fragmentShader from "../shaders/particles.frag.glsl";
 import vertex from "../shaders/particles.vert.glsl";
 import { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
-import { createPointerTracker, type PointerTracker } from "./pointer";
+import {
+  RIPPLE_SLOTS,
+  createPointerTracker,
+  type PointerTracker,
+} from "./pointer";
 import { mulberry32 } from "../shapes/random";
 import { loadShapes, scatterShape } from "../shapes/registry";
 import { getLenis } from "@/lib/motion/lenis";
@@ -81,15 +86,18 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
         transparent: true,
         depthWrite: false,
         blending: AdditiveBlending,
-        // Every uniform from CLAUDE.md §9.2, plus uPointerVelocity, uPixelRatio and uSize.
+        // Every uniform from CLAUDE.md §9.2, plus uPointerVelocity, uRipples, uPixelRatio and uSize.
         uniforms: {
           uTime: { value: 0 },
           uMorph: { value: 0 },
           uScroll: { value: 0 },
           uPointer: { value: new Vector2(0, 0) },
-          uPointerRadius: { value: 0.8 },
+          uPointerRadius: { value: 0.45 },
           uPointerStrength: { value: 0 },
           uPointerVelocity: { value: new Vector2(0, 0) },
+          uRipples: {
+            value: Array.from({ length: RIPPLE_SLOTS }, () => new Vector4()),
+          },
           uBass: { value: 0 },
           uMid: { value: 0 },
           uHigh: { value: 0 },
@@ -160,6 +168,8 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
       (u.uPointer?.value as Vector2 | undefined)?.set(p.x, p.y);
       (u.uPointerVelocity?.value as Vector2 | undefined)?.set(p.vx, p.vy);
       if (u.uPointerStrength) u.uPointerStrength.value = p.strength;
+      const ripples = u.uRipples?.value as Vector4[] | undefined;
+      ripples?.forEach((r, i) => r.copy(p.ripples[i]!));
     }
   });
 
