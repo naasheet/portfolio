@@ -821,6 +821,27 @@ html[data-gate="done"] .entry-gate {
 }
 
 /*
+ * The canvas without WebGL (3.6, components/ui/CanvasFallback): a still glow of the particle
+ * colours over bg/base, a teal centre and a smaller amber one, both fading to nothing.
+ */
+@layer components {
+  .canvas-fallback {
+    background:
+      radial-gradient(
+        40% 35% at 64% 62%,
+        color-mix(in srgb, var(--color-canvas-particle-b) 14%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        60% 55% at 46% 42%,
+        color-mix(in srgb, var(--color-canvas-particle-a) 22%, transparent),
+        transparent 70%
+      ),
+      var(--color-bg-base);
+  }
+}
+
+/*
  * The nav row (2.4). NavAutoHide toggles data-hidden on #site-nav; the row slides up out of
  * view (transform only) and fades under reduced motion. The sound circle's first-visit pulse
  * is one ring that grows and fades (not a loop).

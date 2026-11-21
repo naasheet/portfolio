@@ -51,7 +51,15 @@ const SCROLL_TAU = 0.35;
 const BASE_SIZE = 16;
 
 /** The one Points mesh (CLAUDE.md §9.2): one draw call, a custom ShaderMaterial. */
-export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
+export function Particles({
+  count = DEFAULT_PARTICLES,
+  pointScale = 1,
+}: {
+  /** Particles drawn (the quality tier's draw range, 3.6). */
+  count?: number;
+  /** Point size multiplier from the tier, so fewer particles still draw a solid shape. */
+  pointScale?: number;
+}) {
   const geometry = useMemo(() => {
     const rand = mulberry32(0x5eed);
     const from = new Float32Array(MAX_PARTICLES * 3);
@@ -140,6 +148,12 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
     geometry.setDrawRange(0, Math.min(count, MAX_PARTICLES));
   }, [geometry, count]);
 
+  // Read every frame, so it lives in a ref (a tier change re-renders once, then the frame reads it).
+  const scale = useRef(pointScale);
+  useEffect(() => {
+    scale.current = pointScale;
+  }, [pointScale]);
+
   // Free the GPU buffers and the program on unmount (CLAUDE.md §6).
   useEffect(
     () => () => {
@@ -170,7 +184,7 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
     // change never jumps the drift. delta is clamped like the pointer's (a long hidden tab).
     if (u.uDriftTime)
       u.uDriftTime.value += Math.min(Math.max(delta, 0), 0.1) * liveMood.drift;
-    if (u.uSize) u.uSize.value = BASE_SIZE * liveMood.size;
+    if (u.uSize) u.uSize.value = BASE_SIZE * liveMood.size * scale.current;
     if (u.uSpread) u.uSpread.value = liveMood.spread;
     if (u.uFade) u.uFade.value = liveMood.fade;
 

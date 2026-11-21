@@ -179,9 +179,10 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 - **First-load JS around 200 KB gzipped** or less on `/`. Check with `@next/bundle-analyzer`.
 - **Largest content visible in under 2.5 s** on a throttled connection.
 - Animate **only `transform` and `opacity`** on DOM elements. Never width, height, top, left or margin.
-- Cap `devicePixelRatio` at 1.5–2. Particle count is 20k–40k in **one draw call**.
-- **Quality tiers:** measure frame time over the first 2 s. If it's slow, halve the particles
-  and lower the DPR automatically.
+- Cap `devicePixelRatio` at 1–1.75 (by tier). Particle count is 12k–40k (by tier, 3.6) in **one draw call**.
+- **Quality tiers (3.6):** high 40k / DPR 1.75, medium 24k / 1.5, low 12k / 1.0, picked from the
+  hardware; drei's `PerformanceMonitor` steps down a tier when frames are slow (draw range and DPR
+  only, never up).
 - No main-thread task over 50 ms. Hand detection runs in a worker, capped at about 30 fps.
 - No component re-renders every frame (check with the React Profiler and `r3f-perf`).
 - Images: `next/image` (AVIF/WebP). Video: short compressed WebM loops. GLB: Draco or meshopt.
@@ -491,7 +492,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **3 — Living canvas** (3.1–3.5 built; 3.6, quality tiers, is next) (phases 0 and 2 are
+Current phase: **4 — Homepage chapters and content** (phase 3 complete; 4.1, the content model, is next) (phases 0 and 2 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
@@ -499,7 +500,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -532,8 +533,12 @@ Carry-over into later chunks:
     frame on mount and on resize. `FrameDriver` stays the **last** child of `Scene`: effects run in
     sibling order, and the scene must finish its setup before the first frame. A frame drawn before
     `setDrawRange` drew nothing.
-  - **Fallbacks:** without WebGL, `CanvasRoot` renders an empty layer. The CSS-gradient fallback
-    (§9.2) is still to build (3.6 or 10.6).
+  - **Fallbacks (3.6):** `CanvasLoader` checks WebGL (`hasWebGL()` in `lib/quality.ts`) before
+    loading the canvas chunk; without it, `CanvasFallback` (CSS gradient) shows and three is never
+    downloaded. Not handled yet: a WebGL context **lost** in use (GPU reset) should also switch to
+    the fallback (10.6).
+  - **Tier and the draw range:** `count` / `pointScale` come from the tier (`CanvasRoot` → `Scene` →
+    `Particles`). Never rebuild the geometry for quality; change the draw range.
   - **Bundle:** three, R3F and the shaders are one lazy chunk of about 238 KB gzipped, loaded after
     hydration (first-load JS on `/` unchanged at 204.3 KB). Revisit in 10.5 (three's named imports
     don't tree-shake much). `@react-three/drei` is installed but not imported yet (0 KB).
@@ -546,7 +551,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
   (198.5 before it, same method: the gzipped `<script src>` files in the HTML,
   nomodule skipped; `scratchpad fl.mjs`). The live nav, the shortcut map, the menu and the ? overlay
@@ -1624,6 +1629,38 @@ Decisions so far (don't re-ask):
   - **[manual]** Both themes on every chapter on your screens; the mood numbers and the 2.4 s calm
     by feel; the theme tween in **Safari** (smooth, no flash); 60 fps on the mid-range Android and
     the low-end laptop.
+- **Quality tiers and fallbacks (3.6):** `lib/quality.ts`, `canvas/CanvasRoot.tsx`,
+  `canvas/Scene.tsx`, `Particles.tsx` (`pointScale` prop), `components/ui/CanvasFallback.tsx`,
+  `components/layer/CanvasLoader.tsx`, `.canvas-fallback` in `globals.css`.
+  - **Tiers:** `TIERS` = high 40k / DPR 1.75 / points x1, medium 24k / 1.5 / x1.1, low 12k / 1.0 /
+    x1.2 (the size boost keeps thin tiers solid). Nasheet chose 12k for low, so §6 now says 12k–40k.
+    `pickTier()`: ≤2 cores or ≤2 GB → low; touch, ≤4 cores, ≤4 GB or a screen's short side < 500 px
+    → medium; else high (`deviceMemory` is Chromium only; missing = not counted). The tier lives in
+    `CanvasRoot`'s state and shows as `data-quality` on the canvas layer.
+  - **Step down:** `<PerformanceMonitor onDecline>` (drei defaults: 10 samples of 250 ms, 75% below
+    the bound; bounds 40 fps on ≤100 Hz screens, 60 fps above) → `stepDown`, never up, so no
+    flip-flopping. `dpr={[1, tier.dpr]}` is a range, so a DPR-1 screen never renders above 1.
+    The monitor samples in `useFrame`, so it works with FrameDriver's `advance()`.
+  - **Reduced motion (decision):** kept FrameDriver's on-request frames (`requestFrame()` →
+    `advance(0)`), which is what `frameloop="demand"` would do, and the per-chapter still frames
+    (the canvas keeps matching the page) instead of the hero shape only. The monitor sees no frames
+    there, so the tier never drops.
+  - **Fallback:** two static radial gradients (teal centre, smaller amber) mixed into `bg/base` with
+    `color-mix()`, from the theme tokens, so it follows the theme with no JS. `CanvasLoader` uses
+    `useSyncExternalStore` (server / hydration → nothing), so there's no hydration mismatch.
+- **Verified 3.6 (headless Chromium on the Iris Xe, production build):**
+  - **Start tier** on this laptop: high (40k). Idle p50 6.1 / p95 6.2 ms, the same as 30k in 3.5.
+  - **6x CPU throttle (CDP):** the tier stayed high at ~165 fps: per-frame JS is tiny and the GPU
+    isn't throttled, so it isn't slow and shouldn't drop. A morph under 6x: p50 6.1 / p95 12.1.
+  - **Forced slow frames** (a 22 ms busy rAF, ~38 fps): high → medium at ~4 s → low at ~6 s, then
+    stays low. At device scale 2 the canvas went 2240 → 1920 → 1280 px wide (DPR 1.75 → 1.5 → 1).
+  - **WebGL off** (`--disable-webgl --disable-3d-apis`): `data-canvas="fallback"`, the gradient in both
+    themes (screenshots), ~977 KB less raw JS fetched (no three / R3F), the island follows scroll
+    ("03 Work"), `T` switches the theme. Console: only the favicon 404.
+  - First-load JS on `/` 206.0 KB (+0.5 KB: the WebGL check and fallback in the loader).
+  - **[manual]** DevTools 6x CPU on your low-end laptop (60 Hz, so the bound is 40 fps): does the
+    tier drop if it stutters, and does it feel smooth after; the tier a real phone picks
+    (`data-quality` on the canvas layer); Firefox with `webgl.disabled` = true.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.
