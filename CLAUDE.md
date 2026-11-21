@@ -135,6 +135,7 @@ content/                # profile, socials, projects, skills, music, chapters, c
                         # knowledge.md, case-studies/*.mdx
 supabase/migrations/    # 001_contact.sql, 002_chat.sql, 003_scores.sql
 scripts/                # analyze, check-content, chat-eval, copy-mediapipe-wasm, compress-media
+types/                  # ambient declarations (glsl.d.ts: `*.glsl` imports as strings)
 docs/                   # motion-audit.md, deploy.md
 public/                 # fonts/, models/, audio/, sfx/, mediapipe/
 ```
@@ -484,15 +485,36 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **2 — Entry gate, preloader, persistent layer, nav** (2.1–2.5 built; phase 3, the
-living canvas, is next) (phase 0 is complete; phase 1 is
-built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
+Current phase: **3 — Living canvas** (3.1 built; 3.2, shapes, is next) (phases 0 and 2 are
+complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
-persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions)
+persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
+3.1 (particle scene)
 Carry-over into later chunks:
+- **3.x canvas (from 3.1):**
+  - **Shapes (3.2):** write into the `aFrom` / `aTo` attributes of the geometry in
+    `canvas/particles/Particles.tsx` (both are 40k × 3; today both hold the same seeded cloud) and
+    set `needsUpdate`. Shapes must be 40k points; the draw range picks 30k (or 15k for 3.6's low tier,
+    through the `count` prop).
+  - **Per-frame writes** go through the `points` ref (`mesh.material.uniforms.uX.value = …`), never
+    through the memoised `material`: the React Compiler lint (`react-hooks/immutability`) rejects
+    mutating a value that went through a hook.
+  - **Clock:** the canvas has `frameloop="never"` and `canvas/FrameDriver.tsx` calls R3F's
+    `advance(time)` from `gsap.ticker` (added last, after Lenis), so `state.clock.elapsedTime` is
+    gsap's time in seconds. It removes itself while the tab is hidden. Reduced motion draws one
+    frame on mount and on resize. `FrameDriver` stays the **last** child of `Scene`: effects run in
+    sibling order, and the scene must finish its setup before the first frame. A frame drawn before
+    `setDrawRange` drew nothing.
+  - **Fallbacks:** without WebGL, `CanvasRoot` renders an empty layer. The CSS-gradient fallback
+    (§9.2) is still to build (3.6 or 10.6).
+  - **Bundle:** three, R3F and the shaders are one lazy chunk of about 238 KB gzipped, loaded after
+    hydration (first-load JS on `/` unchanged at 204.3 KB). Revisit in 10.5 (three's named imports
+    don't tree-shake much). `@react-three/drei` is installed but not imported yet (0 KB).
+  - **Light theme:** additive blending is tuned for dark; on the light background the points read
+    as small dots. 3.5 (theme and moods) owns the light look via `uTheme`.
 - **Phase 1:** every new component gets a section on `/dev` (a `DevSection` with each state:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
@@ -591,7 +613,8 @@ Carry-over into later chunks:
   TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`, `onToggle` flips
   `ar.enabled`) all take static props for now.
 - **3.5:** the canvas reads `--color-canvas-particle-a/b` with `getComputedStyle` and re-reads on
-  theme change (watch `data-theme` on `<html>`).
+  theme change (watch `data-theme` on `<html>`). 3.1 reads them once, when the material is created
+  (`readColor` in `Particles.tsx`), so a theme switch doesn't recolour the particles yet.
 Open TODO(content) items:
 - `content/preload.ts`: add the hero photo (4.2, `kind: "image"`), the first particle shape's
   GLB (3.2, `kind: "url"`) and the first track's first chunk (5.1, `kind: "url"` + `range`,
@@ -1362,6 +1385,42 @@ Decisions so far (don't re-ask):
   - **Reduced motion:** every sampled frame is at opacity 1 with no offset (an instant swap).
   - **[manual]** The feel of the 300 ms exit + enter on real devices, and Back from a real case
     study once 4.5 exists.
+- **Particle scene (3.1):** `canvas/CanvasRoot.tsx` (fixed `inset-0 z-canvas`, `pointer-events-none`,
+  WebGL probe), `canvas/Scene.tsx`, `canvas/FrameDriver.tsx`, `canvas/particles/Particles.tsx`,
+  `canvas/shaders/{particles.vert,particles.frag,noise}.glsl` and `types/glsl.d.ts`.
+  - **Packages:** `three` 0.187, `@react-three/fiber` 9.8, `@react-three/drei` 10.7; dev
+    `@types/three`, `raw-loader` 4.
+  - **GLSL imports:** Turbopack rule `*.glsl` → `raw-loader`, `as: "*.js"`; webpack (`npm run
+    analyze`) gets `type: "asset/source"` in `next.config.ts`. `noise.glsl` (Ashima 3D simplex, MIT)
+    is prepended to the vertex shader as a string in `Particles.tsx` (no `#include` loader).
+  - **Canvas:** `dpr={[1, 1.75]}`, `antialias: false`, `alpha: true`, `powerPreference:
+    "high-performance"`, camera FOV 35 at z = 6 (near 0.1, far 50).
+  - **Geometry:** no `position` attribute; `aFrom`, `aTo` (vec3) and `aRandom` (vec4: delay, size
+    0.5–1.5, seed, spare), all sized for `MAX_PARTICLES` = 40k, drawing `DEFAULT_PARTICLES` = 30k.
+    A fixed bounding sphere (radius 5) and `frustumCulled={false}`, because three can't compute
+    bounds without `position`. The cloud is seeded (mulberry32), so it's the same every visit.
+  - **Shaders:** per-particle progress `clamp((uMorph - delay·0.4) / 0.6)` smoothstepped; drift is
+    three simplex lookups × 0.14 at `uTime · 0.06`; `gl_PointSize = uSize (16) · size · uPixelRatio /
+    -z`. The fragment is a soft disc (`smoothstep`, alpha²), seed > 0.83 is amber (about 1 in 6),
+    ending in `#include <colorspace_fragment>`. Additive blending, `depthWrite: false`.
+  - **Uniforms:** all 13 from §9.2 plus `uPixelRatio` and `uSize`; unused ones are commented with
+    their chunk in the vertex shader.
+- **Verified 3.1 (headless Chromium on the real GPU, Intel Iris Xe via ANGLE/D3D11, production build):**
+  - **One draw call:** a `drawArrays` probe saw exactly one call per frame, `POINTS` with 30,000.
+  - **Frames:** p50 6.1 ms, p95 6.2 ms over 3 s at 1280 × 720 (headless isn't vsync-capped, so
+    ~165 fps). Pixels change between samples 1 s apart (drifting).
+  - **Hidden tab** (faked `visibilitychange`): 0 draws; ~165 a second again when shown.
+  - **Reduced motion:** exactly 1 draw after load, none over the next 2 s, 1 more on resize.
+  - **Layer:** `position: fixed`, `z-index: 0`, `pointer-events: none`, canvas 1280 × 720 at DPR 1.
+  - **Console:** production and dev (`/` then `/dev`) show only the known favicon 404; no three or
+    R3F warnings.
+  - **JS heap:** 17.2 MB after load, 12.7 MB a minute later (nothing allocated per frame).
+  - **Bundle:** first-load JS on `/` 204.3 KB (204.4 before); the webpack analyze build also
+    inlines the shaders.
+  - Screenshots in both themes: the cloud fills the view behind the nav and text, about 1 in 6 amber.
+  - **[manual]** 60 fps with the Performance panel recording on a mid-range Android phone and the
+    low-end laptop; GPU memory flat over 5 minutes (Chrome Task Manager → "GPU memory" column, or
+    the Performance panel's memory track). Headless can't read GPU memory.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.

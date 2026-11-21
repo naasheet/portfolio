@@ -18,7 +18,17 @@ const nextConfig: NextConfig = {
         loaders: ["@tailwindcss/turbopack"],
         as: "*.css",
       },
+      // Shaders import as strings (types/glsl.d.ts).
+      "*.glsl": {
+        loaders: ["raw-loader"],
+        as: "*.js",
+      },
     },
+  },
+  // The same for webpack builds (npm run analyze uses --webpack).
+  webpack: (config: { module: { rules: unknown[] } }) => {
+    config.module.rules.push({ test: /\.glsl$/, type: "asset/source" });
+    return config;
   },
 };
 
