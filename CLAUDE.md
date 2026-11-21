@@ -149,6 +149,9 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 1. **One store.** Every input (scroll, music, hand, terminal, chatbot) writes to the Zustand
    store in `lib/store.ts`. The canvas and the UI only read from it. Features never import
    or call each other directly. Terminal `ar on` and the AR button flip the same store flag.
+   Example: homepage chapters (`ChapterSection`) only write `scroll.chapter`; the canvas watches
+   it and morphs (`canvas/ScrollMorph.tsx`). DOM code never imports `canvas/` (it would also pull
+   three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
    (chapter, progress), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
    chat open, chat streaming, sound enabled), `theme`.
@@ -485,26 +488,31 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **3 — Living canvas** (3.1–3.2 built; 3.3, scroll morph, is next) (phases 0 and 2 are
+Current phase: **3 — Living canvas** (3.1–3.3 built; 3.4, pointer, is next) (phases 0 and 2 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
 themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev specimen page),
 1.1 (primitives), 1.2 (card base and bento grid), 1.3 (text and number motion), 1.4 (bento card kit), 1.5 (overlays), 1.6 (media components), 1.7 (cursor, magnetic controls, UI sounds),
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
-3.1 (particle scene), 3.2 (shape library)
+3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
-  - **Switching shapes (3.3):** copy the current target into `aFrom`, write the next shape
-    (`getShape(id)` from `canvas/shapes/registry.ts`, keyed by chapter id, `"scatter"` for other
-    routes) into `aTo`, set both `needsUpdate`, and tween `uMorph` 0 → 1. `canvas/dev/ShapeCycler.tsx`
-    is a working example. Shapes are 40k points, shuffled, so the draw range's prefix (30k, or 15k
-    for 3.6's low tier through the `count` prop) always covers the whole shape. `getShape` returns
-    `undefined` until that shape is computed; fall back to scatter or wait for `loadShapes()`.
+  - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
+    `canvas/particles/morph.ts` (never write `aFrom` / `aTo` / `uMorph` directly). Shapes are 40k
+    points, shuffled, so the draw range's prefix (30k, or 15k for 3.6's low tier through the
+    `count` prop) always covers the whole shape.
+  - **`DELAY_SPAN` (0.4) in `morph.ts` must match `particles.vert.glsl`** (and the smoothstep), or
+    the CPU freeze of a running morph won't match what's on screen and particles will pop.
+  - **4.x homepage chapters:** every chapter section is a `ChapterSection` (`id`, `index`); it's
+    the only writer of `scroll.chapter` / `scroll.progress`.
   - **4.2 NameCard:** the name is fitted into `SHAPE_BOX` like every shape. 4.2 fits it into the
-    card's box (pass a box to `normalize`, or scale the mesh).
-  - **Phones:** `SHAPE_BOX` is 4 wide; a 390 px portrait view is only ~1.8 units wide at z = 0.
-    3.3 / 4.2 scale the mesh by aspect.
+    card's box (pass a box to `normalize`, or scale the mesh). The 2.2 board's "particles form the
+    name during the gate's exit" also belongs there: today the name morph runs under the gate.
+  - **Phones (not done in 3.3):** `SHAPE_BOX` is 4 wide; a 390 px portrait view is only ~1.8 units
+    wide at z = 0. Scale the mesh by aspect (3.6 or 4.2); Nasheet chose not to add it in 3.3.
+  - **Scroll response constants** (top of `Particles.tsx`): rotate up to 0.5 rad on Y and tilt 0.12
+    on X over the whole page, parallax ±0.15 per chapter, smoothed with τ 0.35 s. Tune by feel.
   - **Laptop:** the screen frame and deck read, but the keys are a brighter band rather than
     separate keys at 30k (the model's keys are shallow). A model with deeper key gaps would fix it.
   - **Per-frame writes** go through the `points` ref (`mesh.material.uniforms.uX.value = …`), never
@@ -1346,9 +1354,8 @@ Decisions so far (don't re-ask):
     "Tap for sound" shows; **the first pointerdown or keydown anywhere** calls `initSfx()` (the
     saved choice was "on") and removes it. (The plan said only the pill would turn sound on; any
     first gesture does, so the sound state and the circle never disagree.)
-  - **Chapter tracking:** `useChapterTracker()` (in NavBar, re-scans on route change) watches
-    `[data-chapter="n"]` with one IntersectionObserver (a 1 px line at mid-viewport) and writes
-    `scroll.chapter` only when it changes.
+  - **Chapter tracking:** 2.4 had `useChapterTracker()` (an IntersectionObserver in NavBar). 3.3
+    replaced it with `ChapterSection`'s ScrollTrigger, now the only writer of `scroll.chapter`.
   - **Store:** `ui.menuOpen` / `setMenuOpen` added (`shortcutsOpen` already existed).
   - **Framer:** `motionFeatures.ts` now loads `domMax` (layout + drag) for the whole app, still
     after hydration; `sheetFeatures.ts` and the Sheet's nested `LazyMotion` are gone.
@@ -1457,7 +1464,7 @@ Decisions so far (don't re-ask):
   - **Preload:** the three GLBs are `url` entries in `content/preload.ts` (13 / 52 / 4 KB), so the
     gate warms the cache; the registry's fetch is then a revalidation.
   - **Dev `]`:** `canvas/dev/ShapeCycler.tsx`, rendered only when `NODE_ENV === "development"`
-    (absent from the production build), cycles every ready shape with a 1.2 s `uMorph` tween and
+    (absent from the production build), cycles every ready shape (through `morphTo` since 3.3) and
     writes `html[data-shape]`. It ignores typing targets and modifier combos. Under reduced motion
     the morph isn't drawn (the frame driver renders only on resize).
   - **Drift change (vertex shader):** 3.1's drift fed each particle's seed into the noise, so
@@ -1477,6 +1484,40 @@ Decisions so far (don't re-ask):
   - **Bundle:** first-load JS on `/` 204.6 KB (+0.3 KB: the shape data in `content/chapters.ts`).
   - **[manual]** Judge each shape at real size on your screens (and how the name sits once 4.2's
     NameCard exists); the timing on the low-end laptop.
+- **Scroll morph (3.3):** `components/chapters/ChapterSection.tsx`, `canvas/ScrollMorph.tsx`,
+  `canvas/particles/morph.ts`, `canvas/frame.ts`; `app/page.tsx` uses ChapterSection;
+  `lib/hooks/useChapterTracker.ts` is deleted.
+  - **ChapterSection** (client): `<section id data-chapter={index}>` with a ScrollTrigger
+    `top center` → `bottom center`; `onEnter` / `onEnterBack` set `scroll.chapter` (only on change),
+    `onUpdate` writes `scroll.progress` while it's the current chapter. `useGSAP` reverts it. It
+    deliberately doesn't use `cn()` (tailwind-merge would join first-load JS).
+  - **ScrollMorph** (inside the canvas): `useStore.subscribe` on `scroll.chapter` → that chapter's
+    shape on `/`, scatter elsewhere. `pathname` comes from `CanvasRoot` (read outside `<Canvas>`).
+    A shape that isn't ready yet is applied when `loadShapes()` resolves.
+  - **morphTo:** calls in one task are coalesced to the last (a fling crossing every chapter in one
+    ScrollTrigger update does one morph), applied on a microtask. Retargeting the same shape is a
+    no-op. A running morph is frozen on the CPU (the shader's exact per-particle formula) into
+    `aFrom`; then `aTo` = shape, `uMorph` 0 → 1 over 1.2 s, `power3.inOut`.
+  - **Reduced motion:** `morphTo(…, { instant: true })` swaps both attributes and calls
+    `requestFrame()` (`canvas/frame.ts`), which FrameDriver wires to `advance(0)` only under
+    reduced motion.
+  - **Scroll response:** `Particles` smooths Lenis's `progress` (native scroll without Lenis) into
+    `uScroll` and the mesh's rotation, and `scroll.progress` into a vertical parallax.
+- **Verified 3.3 (headless Chromium on the Iris Xe):**
+  - **No pops (dev build, a temporary CPU probe, since removed, that recomputed 2,000 sample
+    particles' blended positions every frame):** largest single-frame move 0.195 world units on a
+    slow chapter-by-chapter scroll (a normal morph step), 0.195 over 15 wheel flings reversing
+    mid-morph, 0.218 over Home / End jumps crossing every chapter in one frame; 0 frames over 0.5.
+  - **Frames (production, 1280 × 720):** p50 6.1 / p95 6.3 ms during flings and idle. `/dev` without
+    morphs: 0 frames over 20 ms. `/`: 4 fresh runs, the first had two ~42 ms frames (one as the nav
+    auto-hid for the first time), the next three had none; no long tasks or long animation frames
+    were recorded in any run.
+  - **Reduced motion:** 2 draws at load, 0 while idle, exactly 1 per chapter change.
+  - **Island** follows the sections (02 About, 06 Contact, 01 Home after Home). Another route shows
+    the scatter.
+  - **Bundle:** first-load JS on `/` 205.0 KB (+0.4 KB: ChapterSection).
+  - **[manual]** The fling feel and 60 fps on the mid-range Android and the low-end laptop (any
+    hitch on the first chapter change?); the rotation / parallax amounts by feel.
 - **Verified 2.4 (headless Chromium, production build with the /dev flag):**
   - **Keyboard:** Tab goes wordmark → Mouse → Hand → (island opens) 01 Home [current] → About …
     Contact → Terminal → Theme → Sound; the island returns to idle when focus leaves.

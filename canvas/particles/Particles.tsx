@@ -19,6 +19,8 @@ import vertex from "../shaders/particles.vert.glsl";
 import { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
 import { mulberry32 } from "../shapes/random";
 import { loadShapes, scatterShape } from "../shapes/registry";
+import { getLenis } from "@/lib/motion/lenis";
+import { useStore } from "@/lib/store";
 
 export { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
 
@@ -28,6 +30,21 @@ function readColor(name: string): Color {
     .trim();
   return new Color(value || "white");
 }
+
+/** Overall page scroll, 0–1: Lenis's progress, or native scroll when Lenis is off. */
+function pageProgress(): number {
+  const lenis = getLenis();
+  if (lenis) return Number.isFinite(lenis.progress) ? lenis.progress : 0;
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  return max > 0 ? window.scrollY / max : 0;
+}
+
+/** Scroll response: rotation (rad) over the whole page, and parallax (world units) per chapter. */
+const SCROLL_ROTATE_Y = 0.5;
+const SCROLL_TILT_X = 0.12;
+const PARALLAX_Y = 0.3;
+/** Smoothing time constant (s), so a fling eases instead of jerking the view. */
+const SCROLL_TAU = 0.35;
 
 /** The one Points mesh (CLAUDE.md §9.2): one draw call, a custom ShaderMaterial. */
 export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
@@ -105,12 +122,24 @@ export function Particles({ count = DEFAULT_PARTICLES }: { count?: number }) {
 
   // Uniforms are written through the mesh ref: refs are the place for per-frame mutation.
   const points = useRef<Points<BufferGeometry, ShaderMaterial>>(null);
-  useFrame((state) => {
+  // Smoothed scroll values, kept in a ref (fast values skip React, CLAUDE.md §5.3).
+  const scroll = useRef({ page: 0, chapter: 0.5 });
+  useFrame((state, delta) => {
     const mesh = points.current;
     if (!mesh) return;
     const u = mesh.material.uniforms;
     if (u.uTime) u.uTime.value = state.clock.elapsedTime;
     if (u.uPixelRatio) u.uPixelRatio.value = state.viewport.dpr;
+
+    // Rotation and parallax, scrubbed to scroll and separate from the morphs (3.3).
+    const s = scroll.current;
+    const k = 1 - Math.exp(-Math.max(delta, 0) / SCROLL_TAU);
+    s.page += (pageProgress() - s.page) * k;
+    s.chapter += (useStore.getState().scroll.progress - s.chapter) * k;
+    if (u.uScroll) u.uScroll.value = s.page;
+    mesh.rotation.y = s.page * SCROLL_ROTATE_Y;
+    mesh.rotation.x = Math.sin(s.page * Math.PI) * SCROLL_TILT_X;
+    mesh.position.y = (s.chapter - 0.5) * PARALLAX_Y;
   });
 
   return (

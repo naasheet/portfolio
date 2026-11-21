@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import { usePathname } from "next/navigation";
 import { Scene } from "./Scene";
 
 /** True when the browser can make a WebGL context. Checked once per page load. */
@@ -24,6 +25,8 @@ function hasWebGL(): boolean {
  * it stays an empty layer and the page background shows (the CSS gradient fallback is later).
  */
 export function CanvasRoot() {
+  // Read outside <Canvas> and passed down, rather than relying on R3F's context bridge.
+  const pathname = usePathname();
   return (
     <div
       aria-hidden
@@ -41,7 +44,7 @@ export function CanvasRoot() {
           }}
           camera={{ fov: 35, position: [0, 0, 6], near: 0.1, far: 50 }}
         >
-          <Scene />
+          <Scene pathname={pathname} />
         </Canvas>
       ) : null}
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useLayoutEffect } from "react";
-import { useChapterTracker } from "@/lib/hooks/useChapterTracker";
 import { Island } from "./Island";
 import { ModeSwitch } from "./ModeSwitch";
 import { NavAutoHide } from "./NavAutoHide";
@@ -19,8 +18,6 @@ import { Wordmark } from "./Wordmark";
  * circle, the compact island (tap opens the menu) and the sound circle.
  */
 export default function NavBar() {
-  useChapterTracker();
-
   // Before the first paint: hide the server-rendered shell (globals.css, .nav-shell).
   useLayoutEffect(() => {
     const header = document.getElementById("site-nav");

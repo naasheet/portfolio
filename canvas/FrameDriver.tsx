@@ -3,13 +3,15 @@
 import { useThree } from "@react-three/fiber";
 import { useEffect } from "react";
 import { gsap } from "@/lib/motion/gsap";
+import { setFrameRequester } from "./frame";
 import { usePageVisible } from "@/lib/hooks/usePageVisible";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 /**
  * One clock (CLAUDE.md §5.4): the canvas runs with frameloop "never" and renders from
  * gsap.ticker, after Lenis and ScrollTrigger have updated on the same frame. No frames while
- * the tab is hidden. Reduced motion draws one still frame, again on resize (CLAUDE.md §9.2).
+ * the tab is hidden. Reduced motion draws one still frame, again on resize and when the shape
+ * changes (CLAUDE.md §9.2).
  */
 export function FrameDriver() {
   const advance = useThree((s) => s.advance);
@@ -21,7 +23,9 @@ export function FrameDriver() {
   useEffect(() => {
     if (reduced) {
       advance(0);
-      return;
+      // Instant shape swaps (ScrollMorph) ask for a frame through canvas/frame.ts.
+      setFrameRequester(() => advance(0));
+      return () => setFrameRequester(null);
     }
     if (!visible) return;
     // gsap's time is in seconds, which is what R3F uses as elapsed time with frameloop "never".
