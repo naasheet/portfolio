@@ -300,7 +300,7 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
   `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`. Added since: `uPointerVelocity`,
   `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), `uRoom`, `uPhone`, `uLamp`, `uDeskY`,
   `uPool`, `uSteam` (R.3), `uHot[9]`, `uAnyHot`, `uFocus`, `uBurst` (R.4), `uLeaf`, `uLeafAxis`,
-  `uPlant` (R.5), plus `uPixelRatio` and
+  `uPlant` (R.5), `uType`, `uBulb` (R.6), plus `uPixelRatio` and
   `uSize`. Attributes since: `aRoom` (R.3).
 - The canvas is **opaque** (`alpha: false`) and clears to the theme's `bg/base` (3.5); `<body>` stays
   on `bg/base` for the first paint and the no-WebGL case.
@@ -501,7 +501,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **R — Separate pages and the particle room** (R.1–R.5 done; R.6 is next; phase 4 follows)
+Current phase: **R — Separate pages and the particle room** (R.1–R.6 done; R.7 is next; phase 4 follows)
 (phases 0, 2 and 3 are
 complete; phase 1 is built, but 1.8, the design review, is still Nasheet's open [manual] checkpoint)
 Completed chunks: 0.1 (scaffold and tooling), 0.2 (SF Pro typography), 0.3 (design tokens and
@@ -510,7 +510,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 2.1 (asset manifest and preloader), 2.2 (entry gate, loading screen only), 2.3 (root layout and
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
-3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone)
+3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -522,9 +522,8 @@ Carry-over into later chunks:
   - **Pages (R.1):** `ChapterSection` and every per-chapter ScrollTrigger are gone. `page.id` comes
     from the URL (`RouteWatcher`), which (R.2) also writes `scroll.progress`: the current page's
     own scroll, 0–1.
-  - **4.2 NameCard:** the name is fitted into `SHAPE_BOX` like every shape. 4.2 fits it into the
-    card's box (pass a box to `normalize`, or scale the mesh). The 2.2 board's "particles form the
-    name during the gate's exit" also belongs there: today the name morph runs under the gate.
+  - **The name shape** ("name", `SHAPE_BOX`) is now only used by Home's intro (R.6); the old
+    NameCard / hero is gone from Home (4.3's About holds the hero cards).
   - **Phones:** the room has its own phone layout (R.3), but the other shapes still use `SHAPE_BOX`
     (4 wide) while a 390 px portrait view is only ~1.8 units wide at z = 0: the sphere, laptop etc.
     overflow on phones. Scale the mesh by aspect when the pages are built (4.x / 10.2).
@@ -564,7 +563,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -607,9 +606,9 @@ Carry-over into later chunks:
   strings need `blurDataURL`) and `LoopVideo` for loops. `public/dev/` and `components/dev/media/`
   hold generated dev placeholders only; never use them on real pages. `public/dev/` is served in
   production too (small and harmless); delete it if it ever matters.
-- **3.x / 4.2 hero (from the 2.2 board):** during the gate's exit the particles start forming the
-  name underneath; the hero intro listens for `ui.entered`. When the WebGL canvas exists, make the
-  gate's background transparent over it at 35% and delete `GateScatter`.
+- **Gate over the canvas (from the 2.2 board, still open):** the name now forms under the gate's
+  exit (R.6). Making the gate's background transparent over the canvas at 35% and deleting
+  `GateScatter` is still to do (10.x).
 - **Sound start (2.2 decision: the site always opens silent; there is no "Enter with sound"):**
   turn sound on through `toggleSound()` in `lib/shortcuts.ts` (the nav circle and `M` use it), or
   call `ui.setSoundEnabled(true)` and `initSfx()` **inside the handler** (that creates the
@@ -794,6 +793,44 @@ Carry-over into later chunks:
     in over 200 ms (opacity only, unlayered rule after the `.page` block).
   - Copy for review in `copy.home.room` / `.now` / `.secrets` and the action lines in
     `content/room.ts`.
+- **Home intro (R.6):** `lib/motion/intro.ts` (`startIntro`, `finishIntro`), `ui.intro`
+  (`pending | play | done`), the intro effect in `canvas/RouteMorph.tsx`, `getIntroShapes()` in
+  `canvas/shapes/registry.ts`, `morphTo(..., { ease })`, `roomTo(..., { duration })`.
+  - **Start:** the gate calls `startIntro()` when its exit **starts** (or on hydration when it's
+    skipped), so the name forms under the wipe. Skipped to "done" off Home, under reduced motion,
+    without WebGL or with Save-Data; a 5 s safety timer always finishes it.
+  - **Steps** (`INTRO` in RouteMorph, from the start): scatter → name 0.9 s; hold; burst
+    (`name x 1.12 + noise`, 0.4 s, power2.out) at 1.5; room 1.0 s with the room state at 1.9;
+    `finishIntro()` at 2.5 with the code typing in by line (`liveRoom.type`, `steps(11)`, 0.5 s) and
+    the bulb flickering on (`liveRoom.bulb` keyframes, 0.5 s). While `ui.intro` isn't "done" the main
+    route effect leaves Home alone; leaving Home mid-intro kills it and finishes.
+  - **Pairing:** `getIntroShapes(layout)` gives particle i the name point with the same
+    left-to-right rank as its room point (two 60k sorts, warmed in idle after `loadShapes`); the
+    phone name is scaled 0.32.
+  - **Code typing:** screen-code points carry their line (1/n … 1) in `aRoom.w` (cursor 1);
+    `uType` hides lines above it. The phone-dust rule now applies only to kinds 0 / 5 / 6.
+  - **Text:** the head script sets `html[data-intro="pending"]` on page loads that land on `/`
+    (not under reduced motion); `[data-intro-fade]` (intro text, hints, phone chips, room tags) is at
+    opacity 0 until "done", then fades in over 300 ms. Accepted risk: without JS that text stays hidden.
+  - **Returning to Home** in the same visit: no name; R.4's reverse focus morph (or scatter → room
+    0.9 s from scatter routes).
+  - **Shader precompile:** `gl.compileAsync(scene, camera)` on mount compiles the hidden reflection
+    program too; compiling it on its first draw cost a 300–400 ms frame mid-intro.
+- **Verified R.6 (headless Chromium on the Iris Xe, production build, first visits through the gate):**
+  - **Timing:** counter 100% → room settled (code typed, lamp lit) **3.3 s** in every run (3 runs
+    + 4 frame runs); intro done (text fading in) at 2.8 s.
+  - **Frames from 100% on:** p50 6.1 / p95 6.2–6.3 ms. One 30–60 ms frame ~1 s after 100% in most
+    runs is the gate finishing and unmounting (also there with reduced motion, no intro: a 2.2 cost,
+    10.4 follow-up); one 103 ms frame in 1 of 7 runs didn't repeat. Phone emulation: one ~100–120 ms
+    frame ~0.45 s after the room settles (10.4 / device check).
+  - **Layout shift:** 0.0003–0.0005, all from the gate's own line swaps before 100% (2.2); none
+    during the intro.
+  - **Screencast** (desktop and phone): 100% → name formed by 0.9 s → hold → burst at 2.0 s →
+    room by 2.9 s with the text → code and lamp by 3.4 s. Phone name fits the width.
+  - **Repeat visit** (gate skipped): the intro plays once the shapes are ready. **Landing on
+    /about** then going Home: no intro, text visible. Reduced motion: no intro, the settled room.
+  - **[manual]** The feel of the hold / burst / assemble timings; 60 fps on the low-end laptop and
+    a mid-range phone during the intro.
 - **Verified R.5 (headless Chromium on the Iris Xe, production build):**
   - **Mouse:** headphones → "Music's warming up"; mug → the Now card ("chunk R.5 · 28 / 79 ·
     Coffee today 3 · Last commit 2 h ago"), Esc removes it; plant → "You watered the plant ·
