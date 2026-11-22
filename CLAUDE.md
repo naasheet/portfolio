@@ -132,7 +132,7 @@ components/
   providers/            # SmoothScroll and other app-wide client wiring (render nothing or wrap)
   home/                 # the particle room's DOM: overlay, hover card, links, phone sheet, cards (R.4–R.5)
   chapters/             # PagePlaceholder (ChapterSection was removed in R.1)
-  about/  work/         # About.tsx (4.3), Work.tsx (4.4): one client component per content page
+  about/  work/  skills/  # About.tsx (4.3), Work.tsx (4.4), Skills.tsx (4.6): one client component per content page
   case-study/           # header, hero, contents, reading progress, prev / next (4.5); mdx/ = the MDX components
   cursor/  nav/  gate/  layer/  contact/
   player/  chat/  terminal/  ar/  dev/
@@ -250,7 +250,8 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 - **Surfaces:** three levels only: canvas → glass card (blur 24 px, 1 px hairline border,
   faint top inner highlight) → solid overlay. Radius: 24 px cards, 12 px controls, round chips.
 - **Card kit** (build pages from these; don't invent one-off cards): ProfileCard, StatCard,
-  SocialCard, PhotoCard, SkillsCard, CTACard, NowPlayingCard, TextCard, ProjectCard, GameCard.
+  SocialCard, PhotoCard, SkillsCard, CTACard, NowPlayingCard, TextCard, ProjectCard, GameCard,
+  plus (approved in 4.3–4.6) TaglineCard, ProgressCard, LegendCard, LinkListCard.
 - **Micro-interactions:** hover lift 2 px + shadow + pointer spotlight (CSS variables, no React
   state); press scale 0.97 with a spring; 2 px accent focus ring; staggered entry (40–60 ms);
   numbers count up once; skeletons in the card's shape instead of spinners; every action gives
@@ -526,7 +527,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1, 4.3, 4.4 and 4.5 done; 4.2 replaced by phase R; 4.6, Skills, is next).
+Current phase: **4 — Pages and content** (4.1, 4.3–4.6 done; 4.2 replaced by phase R; 4.7, Contact, is next).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -547,7 +548,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -600,7 +601,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -893,6 +894,49 @@ Carry-over into later chunks:
   the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
   - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
     the phone photo row, and copy review.
+- **Skills page (4.6):** `app/skills/page.tsx` → `components/skills/Skills.tsx` (client), from the
+  Skills frames (`stuff/reference/Skills — desktop 1440 (4.6)`, `— phone 390`). The chunk named
+  `components/chapters/Skills.tsx`; it lives in `components/skills/` like About and Work (approved).
+  - **Content model (`content/skills.ts`, reshaped, approved):** `skillAreas` (`name`, `summary`,
+    `skills: { name, level?: 1–5, years? }[]`), `learning` (`{ name, progress?: 0–100 }`), `tools`
+    (strings), `usedIn` (`{ title, items: { label, project?: slug }[] }`). **No level = empty dots,
+    no progress = an empty bar with no number:** placeholders never show a made-up rating.
+    `getStats().skills` counts skill names. `check-content`: levels 1–5, plausible years,
+    progress 0–100, `usedIn` slugs must exist; unrated skills and placeholders are warnings.
+  - **Layout (lg 12):** SkillsCard (8, rows 2) | ProgressCard "Learning now" (4) and LegendCard
+    "How to read the dots" (4, md up) | three LinkListCards "Where I used it" (4 each) | then,
+    **outside the bento** (its rows are at least 160 px), the "Open every day" strip: a Marquee of
+    `tools` (approved), repeated to at least 12 items so the loop has no gap (repeats aria-hidden).
+  - **Phones, as drawn:** no legend, no tools strip, only the first "Where I used it", as one line
+    (`LinkListCard compact`).
+  - **SkillsCard `variant="rated"`** (the 1.4 `pills` layout stays the default): area name
+    `title-1` / `large-title`, `summary`, "n / N" in mono, arrows from md; rows `h-14` with
+    `LevelDots` and "[4 yrs]" (md up), two columns from md; the body reserves the tallest area's
+    rows (`--rows-sm` / `--rows-md` × 3.5 rem) so paging never changes the height; area chips
+    (`Chip tone="solid"`, `goTo`) and "← → or swipe" (md up); page dots and "Swipe for the next area"
+    (phones). Keys, swipe (≥ 40 px, touch / pen) and the counter are 1.4's, unchanged. `eyebrow` is
+    optional now; labels gained `swipeHint`, `level()`, `years()`, `areas`.
+  - **New kit pieces (approved):** `components/ui/LevelDots.tsx` (5 dots, teal + glow / 10%,
+    `role="img"` "4 of 5" or `decorative`), `ProgressCard` (amber bars grow once in view through a
+    data attribute + CSS scale transition; the amber eyebrow turns `text-secondary` in light, where
+    amber text fails AA: `[:root[data-theme=light]_&]:` is the light-theme variant until a token
+    exists), `LegendCard` (a `dl`, decorative dots), `LinkListCard` (bordered rows with ↗; site paths
+    through TransitionLink, https in a new tab, none = plain; `compact` = one line). All on `/dev`
+    ("Skills cards").
+  - **Rows link** to the project's case study, else its live site / repo, else plain text.
+  - **Rings placement:** desktop (1.55, 0.55) × 0.6, phone (0, 1.05) × 0.32.
+- **Verified 4.6 (headless Chromium on the Iris Xe, production build):**
+  - **Keyboard:** Tab reaches the carousel body; → → → gives 2/3, 3/3, 3/3 (stops at the end), ← 2/3;
+    the area chip "[Area 1]" → 1/3; Next → 2/3. The heading (`aria-live`) and the counter update.
+  - **Swipe (390 × 844, touch pointer events):** left, left, right → 2/3, 3/3, 2/3; a 20 px move
+    doesn't page.
+  - **Screenshots** match both frames (desktop: the rings top right, the card with chips and the
+    hint, Learning / legend, three "Where I used it", the one-line tools strip; phone: one column,
+    page dots and the swipe hint, Learning, one compact "Where I used it"). Console: favicon only.
+  - First-load JS on `/` 211.2 KB.
+  - **[manual]** Swiping on a real phone; the rings on phones read almost white (60k points drawn
+    small, additive): judge them, and the mood / scale if needed (a canvas tweak, not done here);
+    the level dots and years once your skills are in; copy in `copy.skills`.
 - **Case-study template (4.5):** `app/work/[slug]/page.tsx`, `components/case-study/*` (+ `mdx/`),
   `mdx-components.tsx`, `lib/content/caseStudies.ts`, `lib/content/slug.ts`, from the Case study
   frames (`stuff/reference/Case study — desktop 1440 (4.5)`, `— phone 390`).
@@ -1192,7 +1236,9 @@ Open TODO(content) items:
 - `content/projects.ts` — three placeholder projects (`placeholder: true`, not counted in stats)
   until the real ones; each real one needs a cover in `public/`, and a case study in
   `content/case-studies/<slug>.mdx` if `hasCaseStudy`.
-- `content/skills.ts` — real areas and skills. `content/socials.ts` — your profiles (empty now).
+- `content/skills.ts` — real areas (name, summary), skills with level 1–5 and years, what you're
+  learning (with progress if you want), tools, and "Where I used it" (project slugs). Review
+  `copy.skills` (lede, legend lines). `content/socials.ts` — your profiles (empty now).
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo

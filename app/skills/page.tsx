@@ -1,6 +1,6 @@
-import { PagePlaceholder } from "@/components/chapters/PagePlaceholder";
+import { Skills } from "@/components/skills/Skills";
 
-// TODO(4.x): the real Skills page replaces the placeholder.
+/** The Skills page (4.6). */
 export default function SkillsPage() {
-  return <PagePlaceholder id="skills" />;
+  return <Skills />;
 }

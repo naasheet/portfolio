@@ -93,6 +93,32 @@ export const copy = {
       newTab: "opens in a new tab",
     },
   },
+  /** The Skills page (4.6; Skills frames). Skills come from skills.ts; these are the labels. */
+  skills: {
+    lede: "What I use, and how much. Honest dots, no logo wall.",
+    ledeShort: "What I use, and how much.",
+    region: "Skills by area",
+    areas: "Areas",
+    prev: "Previous area",
+    next: "Next area",
+    orSwipe: "or swipe",
+    swipeHint: "Swipe for the next area",
+    /** The dots' accessible text. */
+    level: (level: number | undefined) => (level === undefined ? "Not rated yet" : `${level} of 5`),
+    years: (n: number) => `${n} ${n === 1 ? "yr" : "yrs"}`,
+    learning: "Learning now",
+    legend: "How to read the dots",
+    /** The legend, as drawn: label and number of dots. */
+    legendRows: [
+      { label: "I could teach it", level: 5 },
+      { label: "I ship with it daily", level: 4 },
+      { label: "Comfortable", level: 3 },
+      { label: "Just started", level: 1 },
+    ],
+    usedIn: "Where I used it",
+    tools: "Open every day",
+    newTab: "opens in a new tab",
+  },
   /** Case studies (4.5; Case study frames). Facts come from projects.ts and the MDX body. */
   caseStudy: {
     allWork: "All work",

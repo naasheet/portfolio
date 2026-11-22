@@ -19,6 +19,7 @@ import { PreloadSpecimen } from "@/components/dev/PreloadSpecimen";
 import { ProjectCardSpecimen } from "@/components/dev/ProjectCardSpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
 import { ShadowSpecimen } from "@/components/dev/ShadowSpecimen";
+import { SkillsSpecimen } from "@/components/dev/SkillsSpecimen";
 import { StatusChipSpecimen } from "@/components/dev/StatusChipSpecimen";
 import { TextMotionSpecimen } from "@/components/dev/TextMotionSpecimen";
 import { ThemeToggle } from "@/components/dev/ThemeToggle";
@@ -52,6 +53,7 @@ const SECTIONS = [
   { id: "card-kit", label: "Card kit" },
   { id: "project-card", label: "ProjectCard" },
   { id: "case-study", label: "Case study" },
+  { id: "skills-cards", label: "Skills cards" },
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
@@ -210,6 +212,14 @@ export default function DevPage() {
         note="The MDX components (4.5) outside a case study. The whole template, with every component in place, is /work/project-1 (the sample)."
       >
         <CaseStudySpecimen />
+      </DevSection>
+
+      <DevSection
+        id="skills-cards"
+        title="Skills cards"
+        note="4.6: LevelDots, the rated SkillsCard (←/→ when the body is focused, swipe on touch, area chips from md), ProgressCard (bars grow once in view), LegendCard and LinkListCard (rows, or one line on phones). Dev values, not content."
+      >
+        <SkillsSpecimen />
       </DevSection>
 
       <DevSection

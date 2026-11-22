@@ -33,10 +33,12 @@ export function getStats(): Stats {
   const list = real();
   return {
     projectsShipped: list.length,
-    technologies: new Set(list.flatMap((p) => p.stack.map((s) => s.toLowerCase()))).size,
+    technologies: new Set(
+      list.flatMap((p) => p.stack.map((s) => s.toLowerCase())),
+    ).size,
     skills: new Set(
       skillAreas
-        .flatMap((a) => a.skills)
+        .flatMap((a) => a.skills.map((s) => s.name))
         .filter((s) => !/^\[.*\]$/.test(s.trim()))
         .map((s) => s.toLowerCase()),
     ).size,

@@ -6,16 +6,16 @@
 export const now = {
   headline: "Building this site, one chunk at a time.",
   /** The chunk in progress. */
-  chunk: "4.6",
-  /** Finished chunks: 0.1–0.6, 1.1–1.7, 2.1–2.5, 3.1–3.6, R.1–R.7, 4.1, 4.2 (replaced), 4.3, 4.4, 4.5. */
-  chunksDone: 36,
+  chunk: "4.7",
+  /** Finished chunks: 0.1–0.6, 1.1–1.7, 2.1–2.5, 3.1–3.6, R.1–R.7, 4.1, 4.2 (replaced), 4.3, 4.4, 4.5, 4.6. */
+  chunksDone: 37,
   /** The build plan's 72 chunks plus phase R's 7. */
   chunksTotal: 79,
   coffeeToday: 3,
   lastCommit: {
-    hash: "82a2f5c",
+    hash: "15a893b",
     /** ISO time; the card shows it as "2 h ago". */
-    at: "2026-11-22T13:57:19+05:30",
-    message: "feat(4.4): Work page with URL filters and animated project grid",
+    at: "2026-11-22T15:37:42+05:30",
+    message: "feat(4.5): case-study template with MDX and a shared-element cover",
   },
 } as const;

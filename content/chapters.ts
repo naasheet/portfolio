@@ -87,6 +87,11 @@ export const chapters = [
     subtitle: "What I use, and how much",
     shape: { kind: "model", url: "/models/rings.glb" },
     mood: { size: 1, drift: 1.3, spread: 1 },
+    // Skills frames (4.6): top right beside the title on desktop, above it on phones.
+    place: {
+      desktop: { x: 1.55, y: 0.55, scale: 0.6 },
+      phone: { x: 0, y: 1.05, scale: 0.32 },
+    },
   },
   {
     id: "arcade",
