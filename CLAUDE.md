@@ -1238,7 +1238,8 @@ Open TODO(content) items:
   `content/case-studies/<slug>.mdx` if `hasCaseStudy`.
 - `content/skills.ts` — real areas (name, summary), skills with level 1–5 and years, what you're
   learning (with progress if you want), tools, and "Where I used it" (project slugs). Review
-  `copy.skills` (lede, legend lines). `content/socials.ts` — your profiles (empty now).
+  `copy.skills` (lede, legend lines). `content/socials.ts` — done (GitHub, LinkedIn, Instagram;
+  the Instagram icon comes with 4.7).
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo
