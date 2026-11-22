@@ -1,6 +1,6 @@
-import { PagePlaceholder } from "@/components/chapters/PagePlaceholder";
+import { Work } from "@/components/work/Work";
 
-// TODO(4.x): the real Work page replaces the placeholder.
+/** The Work page (4.4). The filter lives in the URL (?stack=react) and is read on the client. */
 export default function WorkPage() {
-  return <PagePlaceholder id="work" />;
+  return <Work />;
 }

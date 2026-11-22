@@ -39,6 +39,11 @@ export function ChipSpecimen() {
         <DevState label="Disabled">
           <Chip disabled>Web</Chip>
         </DevState>
+        <DevState label='Selected · tone="solid"'>
+          <Chip tabIndex={-1} selected tone="solid">
+            All
+          </Chip>
+        </DevState>
         <DevState label="With count">
           <Chip tabIndex={-1} selected count={9}>
             All

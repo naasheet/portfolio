@@ -74,6 +74,11 @@ export const chapters = [
     subtitle: "Case studies and side projects",
     shape: { kind: "model", url: "/models/laptop.glb" },
     mood: { size: 1, drift: 0.8, spread: 0.7 }, // steady, so the laptop reads
+    // Work frames (4.4): top right beside the title on desktop, above it on phones.
+    place: {
+      desktop: { x: 1.45, y: 0.55, scale: 0.58 },
+      phone: { x: 0, y: 1.05, scale: 0.32 },
+    },
   },
   {
     id: "skills",

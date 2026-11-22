@@ -132,6 +132,7 @@ components/
   providers/            # SmoothScroll and other app-wide client wiring (render nothing or wrap)
   home/                 # the particle room's DOM: overlay, hover card, links, phone sheet, cards (R.4–R.5)
   chapters/             # PagePlaceholder (ChapterSection was removed in R.1)
+  about/  work/         # About.tsx (4.3), Work.tsx (4.4): one client component per content page
   cursor/  nav/  gate/  layer/  case-study/  contact/
   player/  chat/  terminal/  ar/  dev/
 lib/
@@ -523,7 +524,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1 and 4.3 done; 4.2 replaced by phase R; 4.4, Work, is next).
+Current phase: **4 — Pages and content** (4.1, 4.3 and 4.4 done; 4.2 replaced by phase R; 4.5, case studies, is next).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -544,7 +545,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page)
+R.3–R.6), 4.3 (About page), 4.4 (Work page)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -597,7 +598,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -890,6 +891,70 @@ Carry-over into later chunks:
   the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
   - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
     the phone photo row, and copy review.
+- **Work page (4.4):** `app/work/page.tsx` → `components/work/Work.tsx` (client),
+  `components/cards/ProjectCard.tsx`, `lib/content/projectFilters.ts`, from the Work frames
+  (`stuff/reference/Work — desktop 1440 (4.4)`, `— phone 390`). The chunk named
+  `components/chapters/Work.tsx`; it lives in `components/work/` like About (approved).
+  - **Filters:** All, then every domain (first-seen order), a vertical Divider, then the
+    `TOP_STACK` (6) most used stack items (ties by first appearance), all from
+    `content/projects.ts`. One filter at a time, in the URL as `?domain=<slug>` or `?stack=<slug>`
+    (`slugify`: "Next.js" → `next-js`, "AI / ML" → `ai-ml`). An unknown value filters to nothing
+    and shows the empty state (`copy.work.empty` + "Show all projects"). The mono hint at the right
+    (lg) shows the live path.
+  - **URL without Suspense:** Work reads `location.search` through `useSyncExternalStore`
+    (server and hydration snapshot `""`), so `/work` stays fully static (no `useSearchParams`,
+    no Suspense bail-out). Clicks call `history.replaceState(history.state, …)`: no reload, no
+    history entry per click; passing Next's own state means Next doesn't re-render its router.
+    A reload on `?stack=…` settles to the filter **without motion** (`animate` turns true only on
+    the first click), and the chip selection flips at hydration.
+  - **Motion:** `AnimatePresence mode="popLayout" initial={false} custom={animate}` around `m.div
+    layout` bento items (spans written as `--col-md/--col-lg`: 3/6 and 4/8 for featured). Enter /
+    exit are variants that read `custom`: **leaving children keep their last props, so a
+    transition chosen from state must go through `custom`** (the first build's exits were
+    instant). Layout uses `spring.soft`, exits 200 ms ease-out. Reduced motion: MotionConfig
+    drops the transforms, only opacity fades. The cards' scroll-in Stagger is on an inner
+    `[data-stagger]` div (GSAP and Framer never share an element's transform); a filter click
+    clears any card still waiting to stagger in, or it could move into view invisible.
+  - **Counts line:** "3 projects · 0 case studies" counts the projects the grid shows (placeholders
+    included, since they're on screen), not `getStats()` (which skips placeholders).
+  - **ProjectCard:** a `Card href` with `p-2`; the cover is inset 8 px with radius
+    `calc(var(--radius-card) - 8px)`, `aspect-video` (featured `lg:aspect-[37/10]`, so both covers
+    in a row are the same height). The "● Case study" badge and the preview pill use the island
+    tokens (the same in both themes). Title `title-2` featured / `title-3`, role + year (mono;
+    one line "Role · 2026" on phones), up to 4 stack tags (static `li`s). The click goes through
+    `navigate()` (page transition). It passes extra HTML attributes to the Card (for /dev states).
+  - **Preview:** `LoopVideo trigger="hover"` (new prop): with a fine pointer it plays only while the
+    closest `[data-loop-host]` is hovered or has focus inside; on touch it plays in view. `poster`
+    is optional now (the Img underneath shows the still). The card writes `data-playing` from the
+    video's `play` / `pause` events in the capture phase (`onPlayCapture`; no state), which shows the
+    pill ("▶ Preview · 0:06", the length from `loadedmetadata`; "Playing in view" on
+    `pointer-coarse`) and a teal border (`border-accent-primary/50!`, important because the
+    unlayered card hover rule beats utilities).
+  - **Chip `tone="solid"`:** the selected state as a solid `text-primary` pill with `bg-base` text and
+    no check (Work frames and the Skills frame's area chips). The default `tint` is unchanged. On `/dev`.
+  - **Laptop placement:** desktop (1.45, 0.55) × 0.58, phone (0, 1.05) × 0.32.
+  - **Case-study links** prefetch `/work/<slug>` and 404 until 4.5 (the console shows them).
+- **Verified 4.4 (headless Chromium on the Iris Xe, production build):**
+  - **Real content** (three placeholders): All · [Domain] | [Tech]; clicking [Tech] → `/work?stack=tech`
+    with no reload; reload keeps it ([Tech] pressed, 3 cards); `?stack=nope` → 0 cards and the empty
+    line; "Show all projects" → `/work`. Keyboard: Tab goes nav → All → [Domain] → [Tech] → each
+    card link; Space on a chip filters; Enter on a card opens `/work/project-1`.
+  - **Throwaway QA build** (9 varied placeholder projects, reverted before commit): All → Python,
+    Python → All, All → Systems and rapid switching (6 filters 200 ms apart): p50 6.1 / p95 6.2 ms,
+    later switches max 18–24 ms, cards glide with no per-frame skip (largest step 54–79 px during the
+    spring's fast part). Filmstrip: leaving cards fade, the rest move into place.
+  - **Preview** (dev loop): hover plays it (pill "Preview · 0:02", teal border), leaving pauses it,
+    keyboard focus plays it; phone (touch) plays in view with "Playing in view"; reduced motion
+    never plays it and filtering only fades. The live region says "Showing 3 projects" after a click
+    (silent on load).
+  - First-load JS on `/` 210.9 KB (+0.2).
+  - **Follow-up (10.4):** the **first** filter switch after a load has one 50–120 ms frame (cold
+    React and Framer paths, ~30 ms of script, plus GPU raster); a card can skip ~300 px in it.
+    Not the blur, the SVG cover or layer creation (each tested). Same family as the first theme
+    toggle / first Now card.
+  - **[manual]** The filter animation's feel and frame rate on the low-end laptop and a mid-range
+    phone (especially the first switch); hover-to-play with real previews; the phone chip row's
+    sideways scroll.
 - **Content model (4.1):** `content/profile.ts` (`Profile`: name, title, location `{ city, timeZone,
   zoneLabel }`, availability, tagline, bio, offScreen, photos, resume `/resume.pdf`, email),
   `content/projects.ts` (`Project`: slug, title, year, role, summary, domain, stack, links, cover,
@@ -1065,6 +1130,8 @@ Open TODO(content) items:
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo
   captions come with `profile.photos` (`copy.about.photoCaptions` are placeholders); the About
   copy in `copy.about` (lede, AR lines, terminal peek) for review.
+- Work (4.4): real projects with covers and short WebM previews (`public/projects/`); the Work copy
+  in `copy.work` (lede, empty line) for review. The frame's mock covers are placeholders only.
 Known issues:
 - `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
   Add `app/icon.*` with the brand assets (11.2 at the latest).

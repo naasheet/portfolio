@@ -15,6 +15,7 @@ import { MediaSpecimen } from "@/components/dev/MediaSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
 import { OverlaySpecimen } from "@/components/dev/OverlaySpecimen";
 import { PreloadSpecimen } from "@/components/dev/PreloadSpecimen";
+import { ProjectCardSpecimen } from "@/components/dev/ProjectCardSpecimen";
 import { RadiusSpecimen } from "@/components/dev/RadiusSpecimen";
 import { ShadowSpecimen } from "@/components/dev/ShadowSpecimen";
 import { StatusChipSpecimen } from "@/components/dev/StatusChipSpecimen";
@@ -48,6 +49,7 @@ const SECTIONS = [
   { id: "bento", label: "Bento" },
   { id: "text-motion", label: "Text motion" },
   { id: "card-kit", label: "Card kit" },
+  { id: "project-card", label: "ProjectCard" },
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
@@ -190,6 +192,14 @@ export default function DevPage() {
         note="Every card from the kit in one bento, fed by components/dev/fixtures.ts (placeholders, TODO(content)). Toggle the theme in the header to check both. The CTA button form and the terminal row log their clicks above; the CTA also toggles the now-playing bars."
       >
         <CardKitSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="project-card"
+        title="ProjectCard"
+        note="Work's card (4.4): cover, Case study badge, title and arrow, role and year, up to four stack tags. With a preview, the dev loop plays while the card is hovered or focused (mouse) or on screen (touch), with a pill and the clip's length."
+      >
+        <ProjectCardSpecimen />
       </DevSection>
 
       <DevSection

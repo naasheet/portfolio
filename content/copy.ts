@@ -73,6 +73,25 @@ export const copy = {
       email: "Email",
     },
   },
+  /** The Work page (4.4; Work frames). Projects come from projects.ts; these are the labels. */
+  work: {
+    lede: "Case studies and side projects. Hover a card to play its preview.",
+    ledeShort: "Case studies and side projects.",
+    /** "3 projects · 1 case study", counted from content/projects.ts. */
+    counts: (projects: number, caseStudies: number) =>
+      `${projects} ${projects === 1 ? "project" : "projects"} · ${caseStudies} ${caseStudies === 1 ? "case study" : "case studies"}`,
+    filters: "Filter projects",
+    all: "All",
+    /** Announced after a filter change. */
+    showing: (n: number) => `Showing ${n} ${n === 1 ? "project" : "projects"}`,
+    empty: "Nothing matches that filter. Yet.",
+    showAll: "Show all projects",
+    card: {
+      caseStudy: "Case study",
+      preview: "Preview",
+      playingInView: "Playing in view",
+    },
+  },
   /** The footer on content pages (4.3; About frames). */
   footer: {
     psst: "Psst. Press ` for the terminal.",

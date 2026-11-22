@@ -9,8 +9,11 @@ export type VideoSource = { src: string; type: string };
 export type LoopVideoProps = {
   /** Best format first, e.g. WebM then MP4. */
   sources: VideoSource[];
-  /** Shown until the video plays, and instead of it when it won't autoplay. */
-  poster: string;
+  /**
+   * Shown until the video plays, and instead of it when it won't autoplay. Optional when
+   * something else (an Img underneath) already shows the still.
+   */
+  poster?: string;
   /** Intrinsic size, for the aspect ratio: nothing shifts when it loads. */
   width: number;
   height: number;
@@ -18,6 +21,12 @@ export type LoopVideoProps = {
   label?: string;
   /** Share of the video that must be visible before it plays (0–1). */
   threshold?: number;
+  /**
+   * "view" (default): plays while on screen. "hover" (4.4): with a mouse, plays only while the
+   * closest `[data-loop-host]` (else the parent) is hovered or has focus inside; on touch it
+   * falls back to "view".
+   */
+  trigger?: "view" | "hover";
   className?: string;
 };
 
@@ -38,6 +47,7 @@ export function LoopVideo({
   height,
   label,
   threshold = 0.25,
+  trigger = "view",
   className,
 }: LoopVideoProps) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -55,8 +65,16 @@ export function LoopVideo({
     }
 
     let inView = false;
+    const host = video.closest<HTMLElement>("[data-loop-host]") ?? video.parentElement;
+    const byHover =
+      trigger === "hover" &&
+      host !== null &&
+      window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    let hovered = false;
+    let focused = false;
     const sync = () => {
-      if (inView && document.visibilityState === "visible") {
+      const wanted = byHover ? hovered || focused : true;
+      if (wanted && inView && document.visibilityState === "visible") {
         // Autoplay can still be refused; the poster stays, which is fine.
         video.play().catch(() => {});
       } else if (!video.paused) {
@@ -74,12 +92,43 @@ export function LoopVideo({
     observer.observe(video);
     document.addEventListener("visibilitychange", sync);
 
+    const onEnter = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      hovered = true;
+      sync();
+    };
+    const onLeave = () => {
+      hovered = false;
+      sync();
+    };
+    const onFocusIn = () => {
+      focused = true;
+      sync();
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (host?.contains(e.relatedTarget as Node | null)) return;
+      focused = false;
+      sync();
+    };
+    if (byHover && host) {
+      host.addEventListener("pointerenter", onEnter);
+      host.addEventListener("pointerleave", onLeave);
+      host.addEventListener("focusin", onFocusIn);
+      host.addEventListener("focusout", onFocusOut);
+    }
+
     return () => {
       observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
+      if (byHover && host) {
+        host.removeEventListener("pointerenter", onEnter);
+        host.removeEventListener("pointerleave", onLeave);
+        host.removeEventListener("focusin", onFocusIn);
+        host.removeEventListener("focusout", onFocusOut);
+      }
       video.pause();
     };
-  }, [reduced, threshold]);
+  }, [reduced, threshold, trigger]);
 
   return (
     <video
