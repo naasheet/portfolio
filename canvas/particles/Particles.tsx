@@ -49,11 +49,16 @@ const PARALLAX_Y = 0.3;
 const SCROLL_TAU = 0.35;
 /** Base point size (CSS px at depth 1); the mood scales it. */
 const BASE_SIZE = 16;
+/** The beat pulse's decay (5.4). */
+const PULSE_S = 0.3;
 /**
  * The room (R.3): seen from about 25° above the desk (40° on phones, so the three rows separate
  * on a tall screen); the pointer tilts it up to 3°.
  */
-const ROOM_TILT = { desktop: (25 * Math.PI) / 180, phone: (40 * Math.PI) / 180 };
+const ROOM_TILT = {
+  desktop: (25 * Math.PI) / 180,
+  phone: (40 * Math.PI) / 180,
+};
 const POINTER_TILT = (3 * Math.PI) / 180;
 /** The plant (R.5): its index, whose box anchors the leaf that grows when it's watered. */
 const PLANT = roomObjects.findIndex((o) => o.id === "plant");
@@ -250,7 +255,11 @@ export function Particles({
       (grown) => {
         if (!grown) return;
         tween?.kill();
-        tween = gsap.to(leaf.current, { v: 1, duration: 1.4, ease: "elastic.out(1, 0.6)" });
+        tween = gsap.to(leaf.current, {
+          v: 1,
+          duration: 1.4,
+          ease: "elastic.out(1, 0.6)",
+        });
       },
     );
     return () => {
@@ -261,7 +270,9 @@ export function Particles({
   // No pointer lean on touch screens (R.5): there's no hover to follow.
   const finePointer = useRef(true);
   useEffect(() => {
-    finePointer.current = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    finePointer.current = window.matchMedia(
+      "(hover: hover) and (pointer: fine)",
+    ).matches;
   }, []);
   // Theme changes tween the particle colours and the clear colour (3.5).
   useEffect(() => {
@@ -271,6 +282,8 @@ export function Particles({
   }, [colors]);
   // Smoothed scroll progress, kept in a ref (fast values skip React, CLAUDE.md §5.3).
   const scroll = useRef(0);
+  // The beat pulse (5.4): 1 on a beat, back to 0 over PULSE_S.
+  const pulse = useRef(0);
   useFrame((state, delta) => {
     const mesh = points.current;
     if (!mesh) return;
@@ -293,14 +306,37 @@ export function Particles({
     if (u.uDeskY) u.uDeskY.value = r.deskY;
     if (u.uType) u.uType.value = r.type;
     if (u.uBulb) u.uBulb.value = r.bulb;
-    (u.uPool?.value as Vector4 | undefined)?.set(r.poolX, r.poolY, r.poolZ, r.poolR);
-    (u.uSteam?.value as Vector4 | undefined)?.set(r.steamX, r.steamY, r.steamZ, r.steamH);
+    (u.uPool?.value as Vector4 | undefined)?.set(
+      r.poolX,
+      r.poolY,
+      r.poolZ,
+      r.poolR,
+    );
+    (u.uSteam?.value as Vector4 | undefined)?.set(
+      r.steamX,
+      r.steamY,
+      r.steamZ,
+      r.steamH,
+    );
     if (reflection.current) reflection.current.visible = r.room > 0.001;
     if (u.uAnyHot) u.uAnyHot.value = Math.max(...liveHot);
 
+    // Music (5.4): lib/audio/levels.ts writes smoothed bands and a beat flag every tick, before
+    // this frame (ticker priority). Read, never subscribed.
+    const audio = useStore.getState().audio;
+    if (u.uBass) u.uBass.value = audio.levels.bass;
+    if (u.uMid) u.uMid.value = audio.levels.mid;
+    if (u.uHigh) u.uHigh.value = audio.levels.high;
+    pulse.current = audio.beat
+      ? 1
+      : Math.max(0, pulse.current - Math.max(delta, 0) / PULSE_S);
+    // Squared: a quick kick that eases out.
+    if (u.uPulse) u.uPulse.value = pulse.current * pulse.current;
+
     // Rotation and parallax, scrubbed to the page's scroll and separate from the morphs.
     const k = 1 - Math.exp(-Math.max(delta, 0) / SCROLL_TAU);
-    scroll.current += (useStore.getState().scroll.progress - scroll.current) * k;
+    scroll.current +=
+      (useStore.getState().scroll.progress - scroll.current) * k;
     const s = scroll.current;
     if (u.uScroll) u.uScroll.value = s;
 
@@ -315,14 +351,16 @@ export function Particles({
     const tk = 1 - Math.exp(-Math.max(delta, 0) / 0.4);
     tilt.current.x += (-py * POINTER_TILT - tilt.current.x) * tk;
     tilt.current.y += (px * POINTER_TILT - tilt.current.y) * tk;
-    const lift = ROOM_LIFT.desktop + (ROOM_LIFT.phone - ROOM_LIFT.desktop) * r.phone;
+    const lift =
+      ROOM_LIFT.desktop + (ROOM_LIFT.phone - ROOM_LIFT.desktop) * r.phone;
     const roomTilt =
       ROOM_TILT.desktop + (ROOM_TILT.phone - ROOM_TILT.desktop) * r.phone;
     for (const obj of [mesh, reflection.current]) {
       if (!obj) continue;
       obj.rotation.y = s * SCROLL_ROTATE_Y + tilt.current.y * r.room;
       obj.rotation.x =
-        Math.sin(s * Math.PI) * SCROLL_TILT_X + (roomTilt + tilt.current.x) * r.room;
+        Math.sin(s * Math.PI) * SCROLL_TILT_X +
+        (roomTilt + tilt.current.x) * r.room;
       obj.position.y = s * PARALLAX_Y + lift * r.room + liveMood.placeY;
       obj.position.x = liveMood.placeX;
       obj.scale.setScalar(liveMood.placeScale);

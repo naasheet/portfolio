@@ -85,6 +85,10 @@ class AudioEngine {
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 1024;
     this.analyser.smoothingTimeConstant = 0.8;
+    // 5.4: the default ceiling (-30 dB) clips mastered bass (every bass bin sat at 255), which
+    // left nothing for the canvas's beat detection to see. -10 dB keeps the peaks.
+    this.analyser.maxDecibels = -10;
+    this.analyser.minDecibels = -90;
     this.master.connect(this.analyser).connect(ctx.destination);
 
     this.decks = [this.makeDeck(), this.makeDeck()];

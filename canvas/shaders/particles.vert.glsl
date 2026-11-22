@@ -9,10 +9,10 @@ uniform float uPointerRadius;    // world units at z = 0
 uniform float uPointerStrength;  // 0–1, rises while moving, decays when still
 uniform vec2 uPointerVelocity;   // world units / s, for the swirl
 uniform vec4 uRipples[4];        // click ripples: x, y (z = 0 plane), age s, amplitude (0 = off)
-uniform float uBass;             // later (5.4)
-uniform float uMid;              // later (5.4)
-uniform float uHigh;             // later (5.4)
-uniform float uPulse;            // later (5.4 / 7.x)
+uniform float uBass;             // music (5.4): smoothed bass, 0–1 → point size
+uniform float uMid;              // music (5.4): smoothed mid → stronger drift
+uniform float uHigh;             // music (5.4): smoothed high → colour toward the accent
+uniform float uPulse;            // music (5.4): 1 on a beat, decays to 0 in 300 ms → push out
 uniform float uTheme;            // 0 dark, 1 light
 uniform vec3 uColorA;            // canvas/particle-a (teal)
 uniform vec3 uColorB;            // canvas/particle-b (amber)
@@ -149,11 +149,22 @@ void main() {
   float alphaScale = mix(1.0, roomAlpha, isRoom);
   float sizeScale = mix(1.0, roomSize, isRoom);
 
+  // Music (5.4): visible but restrained (Nasheet: "not way too much"), and half as strong in the
+  // room, so the desk stays readable. Bass grows the points, mid stirs the drift, high tints
+  // toward the accent; the beat pulse is a short push outward (after the model transform).
+  const float AUDIO_SIZE = 0.2;   // bass: up to +20 % point size (the chunk's ceiling is 40 %)
+  const float AUDIO_DRIFT = 0.6;  // mid: up to +60 % drift reach
+  const float AUDIO_TINT = 0.3;   // high: up to 30 % of the way to the accent
+  const float AUDIO_PUSH = 0.05;  // pulse: world units outward (~12 px at the default view)
+  float react = mix(1.0, 0.5, isRoom);
+  sizeScale *= 1.0 + AUDIO_SIZE * uBass * react;
+  vColor = mix(vColor, uColorA, AUDIO_TINT * uHigh * react);
+
   pos += vec3(
     snoise(q + vec3(t, 0.0, 0.0)),
     snoise(q + vec3(0.0, t, 3.7)),
     snoise(q + vec3(7.1, 0.0, t))
-  ) * 0.14 * uSpread;
+  ) * 0.14 * uSpread * (1.0 + AUDIO_DRIFT * uMid * react);
   float phase = aRandom.z * 6.2831 + uDriftTime * 0.8;
   pos += vec3(sin(phase), cos(phase * 1.3), sin(phase * 0.7)) * 0.008 * uSpread;
 
@@ -176,6 +187,12 @@ void main() {
     float len = max(length(world.xy), 0.3);
     world.xy += world.xy / len * uBurst * 1.6 * (0.6 + 0.4 * aRandom.w);
     world.z += uBurst * 0.5 * (aRandom.z - 0.5);
+  }
+  // The beat pulse (5.4): out from the shape's centre, a little uneven per particle.
+  if (uPulse > 0.0) {
+    vec3 fromCentre = world.xyz - modelMatrix[3].xyz;
+    float reach = max(length(fromCentre), 0.3);
+    world.xyz += fromCentre / reach * uPulse * AUDIO_PUSH * react * (0.6 + 0.4 * aRandom.w);
   }
   float depth = (world.z - cameraPosition.z) / (0.0 - cameraPosition.z);
   vec2 pointerAt = cameraPosition.xy + (uPointer - cameraPosition.xy) * depth;

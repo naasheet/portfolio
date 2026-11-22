@@ -531,7 +531,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **5 — Music** (5.1–5.3 done; 5.4, the audio-reactive canvas, is next). Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **5 — Music** (5.1–5.4 done; 5.5, the now-playing card, is next). Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -553,7 +553,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -606,7 +606,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -936,7 +936,8 @@ Carry-over into later chunks:
     `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_…\ffmpeg-9.1-full_build\bin` (new
     shells have it on PATH; else set `FFMPEG_PATH` / `FFPROBE_PATH`). `world's_end_rhapsody.*` was
     renamed `worlds_end_rhapsody.*` (an apostrophe in a URL).
-  - **5.4:** the canvas reads `getMusic()?.analyser` into `audio.levels` / `beat`.
+  - **Analyser range (5.4):** `maxDecibels` -10 / `minDecibels` -90 (was the default -30 / -100,
+    which clipped: every bass bin sat at 255, so nothing could breathe or beat).
 - **Music in the island (5.2):** `components/player/` (IslandMusic, IslandMusicLoader, PlayerCard,
   Cover, Bars, Scrubber), `lib/audio/time.ts`, `copy.player`, `getQueuePosition()` on the engine,
   `MUSIC_ACTIVITY` (`"music"`) in `lib/music.ts`, focus handling in `components/nav/Island.tsx`.
@@ -1010,6 +1011,43 @@ Carry-over into later chunks:
     deck's loadedmetadata / seeked / play / pause; the browser extrapolates between). Handlers:
     play (turns sound on if it was off), pause, nexttrack, previoustrack, seekto, seekbackward /
     seekforward (±10 s). Each `setActionHandler` is in try/catch.
+- **Audio-reactive canvas (5.4):** `lib/audio/levels.ts`, the music block in
+  `canvas/particles/Particles.tsx`'s `useFrame`, and the "Music (5.4)" block in
+  `particles.vert.glsl`.
+  - **Levels:** `startLevels(engine)` (imported by `startMusic()` with the engine): one
+    `gsap.ticker` callback added with **priority** (`add(fn, false, true)`), so it runs before
+    FrameDriver's canvas frame in the same tick. `getByteFrequencyData` into one reused
+    `Uint8Array`; bands bass 20–150, mid 150–2,000, high 2,000–8,000 Hz. Each byte goes back to
+    **linear amplitude** against the analyser's ceiling (a 256-entry table), the band average is
+    **divided by the volume** (the analyser is after the volume control: quieter music doesn't
+    calm the canvas; mute does), times `GAIN` (bass 3.5, mid 25, high 80, tuned on the six tracks),
+    clamped to 1. Smoothing per 60 fps frame: attack 0.5, release 0.1 (frame-rate independent).
+    `audio.setLevels(levels, beat)` every tick while live; paused, silent or muted, every level
+    eases to 0, then the callback stops writing.
+  - **Beat:** the unsmoothed bass above 1.35× its own average (τ 0.7 s) and above 0.3, at most
+    every 250 ms: 1–3 a second on the local tracks. Particles sets a ref pulse to 1 on `beat` and
+    decays it linearly over 0.3 s (`PULSE_S`); `uPulse` = pulse² (a quick kick, eased out).
+  - **Shader (Nasheet: "visible but not way too much"):** `AUDIO_SIZE` 0.2 (bass: up to +20 %
+    point size, half the chunk's 40 %), `AUDIO_DRIFT` 0.6 (mid: up to +60 % drift reach),
+    `AUDIO_TINT` 0.3 (high: up to 30 % toward `uColorA`), `AUDIO_PUSH` 0.05 world units (the pulse:
+    out from the mesh's centre, `modelMatrix[3]`, uneven per particle). Everything × `react` =
+    0.5 in the room (`isRoom`), so the desk stays readable. Tune by eye with these four constants.
+  - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
+  - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
+    don't read `audio.levels`.
+- **Verified 5.4 (headless Chromium on the Iris Xe, production build, World's End Rhapsody at
+  80 %; a main-world WebGL probe recorded the uniforms as uploaded):**
+  - **/about playing (6 s):** uBass 0.25–0.90 (p50 0.56), uMid 0.28–0.62, uHigh 0.02–0.11, 17
+    pulses; **0 React commits**; frames p50 6.1 / p95 6.3 ms, max 12.3, 0 over 20 ms (silent
+    before: 6.1 / 6.2).
+  - **Paused** (M): 2.5 s later every audio uniform is exactly 0 and none is uploaded any more.
+  - **Home playing:** the same ranges, 18 pulses, 0 commits, p50 6.1 / p95 6.3 ms; the room stays
+    readable (screenshot).
+  - **Six-track simulation** of the same maths: bass p50 0.21–0.68, mid 0.23–0.62, high
+    0.10–0.72, 8–23 beats per 8 s.
+  - **[manual]** The feel against the music on your screen (the four `AUDIO_*` constants, and
+    whether 2–3 pulses a second is too busy: raise `BEAT_GAP_S` if so); 60 fps on the mid-range
+    phone with music on; both themes (headless shows light).
 - **Verified 5.3 (headless Chromium, production build with the /dev flag, real local tracks):**
   - **Keyboard:** Enter on the island's Queue → the sheet with focus on "Now playing: World's End
     Rhapsody" (`aria-current`); ↓ → "Play Smells Like Teen Spirit by Nirvana, 4:38"; ↓ ↑ back;
