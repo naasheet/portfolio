@@ -73,6 +73,24 @@ export const copy = {
     },
     valueText: (now: string, total: string) => `${now} of ${total}`,
   },
+  /** The terminal (6.1). Command output is the commands' own (6.2+). */
+  terminal: {
+    title: "Terminal",
+    close: "Close the terminal",
+    /** Before the Esc key cap in the drawer's header. */
+    escHint: "close",
+    user: "nasheet",
+    host: "portfolio",
+    path: "~",
+    banner: "Type help to start",
+    /** Three clickable commands under the banner on the first open. */
+    suggestionsLabel: "Try",
+    suggestions: ["help", "whoami", "projects"],
+    inputLabel: "Command. Type one and press Enter.",
+    outputLabel: "Terminal output",
+    notFound: (command: string) =>
+      `${command}: command not found. Type help for the list.`,
+  },
   /** The 404 page (4.8). */
   notFound: {
     code: "404",

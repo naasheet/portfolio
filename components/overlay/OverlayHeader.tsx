@@ -22,6 +22,9 @@ export type OverlayHeaderProps = {
   /** Extra content before the close button (Drawer's "close Esc" hint). */
   trailing?: ReactNode;
   titleClassName?: string;
+  /** Restyle the leading icon and the close button (the Drawer's island surface, 6.1). */
+  leadingClassName?: string;
+  closeClassName?: string;
   className?: string;
 };
 
@@ -38,6 +41,8 @@ export function OverlayHeader({
   leading,
   trailing,
   titleClassName,
+  leadingClassName,
+  closeClassName,
   className,
 }: OverlayHeaderProps) {
   return (
@@ -46,7 +51,10 @@ export function OverlayHeader({
         {leading ? (
           <span
             aria-hidden
-            className="inline-flex text-text-secondary [&_svg]:size-4"
+            className={cn(
+              "inline-flex text-text-secondary [&_svg]:size-4",
+              leadingClassName,
+            )}
           >
             {leading}
           </span>
@@ -77,7 +85,12 @@ export function OverlayHeader({
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {trailing}
-        <IconButton aria-label={closeLabel} icon={<X />} onClick={onClose} />
+        <IconButton
+          aria-label={closeLabel}
+          icon={<X />}
+          onClick={onClose}
+          className={closeClassName}
+        />
       </div>
     </div>
   );

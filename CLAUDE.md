@@ -148,6 +148,7 @@ lib/
   fs.ts                 # virtual filesystem built from content/
   island.ts             # the nav island's activity / alert store (2.4)
   music.ts              # 5.1: startMusic() / getMusic(); loads lib/audio/engine.ts on demand
+  terminal/             # 6.1: types.ts (output lines, runner), session.ts (scrollback), history.ts, stub.ts
 mdx-components.tsx      # MDX element styles + the case-study components (required by @next/mdx)
   sfx.ts  shortcuts.ts  quality.ts  preload.ts  theme.ts  browser.ts  supabase.ts  utils.ts
 content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
@@ -293,6 +294,7 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 | `island/bg` · `island/border` | `#090B0B` · `#2F3A38` | same (the island is near-black in both themes) |
 | `island/text` · `island/text-secondary` | `#F4F7F6` · `#A3B2AF` | same |
 | `island/accent` | `#2EC0A0` | same (light `accent/primary` is too dark on near-black) |
+| `island/danger` (6.1, the terminal's errors) | `#FF7A6B` | same (light `status/danger` is 2.6:1 on near-black) |
 
 - Glass cards in dark mode: `rgba(30, 37, 36, 0.55)` + `backdrop-filter: blur(24px)` + 1 px
   `border/default` + `inset 0 1px 0 rgba(244, 247, 246, 0.06)`.
@@ -531,7 +533,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal** (6.1 is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal** (6.1 done; 6.2, the parser and registry, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -553,7 +555,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -606,7 +608,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -635,8 +637,7 @@ Carry-over into later chunks:
   animation, that's how a new page knows it was pushed: a page that mounts without the push mark
   is treated as Back / Forward and restored to its saved scroll position. (Page links:
   `ChapterLink`, a TransitionLink to the page's route.)
-- **6.1 terminal:** open it in `Drawer` (`components/overlay/Drawer.tsx`; `icon`, `escHint`), driven by
-  `ui.terminalOpen`. The drawer is 300 tall; "resizable" is a later addition.
+- **Terminal (6.1, built):** see "Terminal UI (6.1)" below. "Resizable" is still a later addition.
 - **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
   sized for the 40 px placeholder pill plus a 16 px gap. Change the 56 px to the real bubble's
   height + 16.
@@ -1035,6 +1036,56 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Terminal UI (6.1):** `components/terminal/` (TerminalDrawerSlot, TerminalDrawer, Terminal, Line,
+  Prompt, Welcome), `lib/terminal/` (types, session, history, stub), from the Overlays board's
+  Drawer frame ("Holds the terminal").
+  - **Decisions (Nasheet, 6.1):** **SF Mono at Footnote 13** (the chunk's 14 px isn't a scale
+    token); **55 % of the screen tall from md** (`md:h-[55dvh]`; phones keep 300 px until /terminal,
+    6.6); the panel uses the **island tokens** in both themes (Drawer `surface="island"`: panel,
+    header border, the close button, the Esc hint, the handle), plus the new `island/danger`.
+  - **Loading:** the slot (client, in PersistentLayer) loads the drawer with `next/dynamic` on the
+    first `ui.terminalOpen` and keeps it mounted. ` and the nav circle already flip the flag; Esc
+    is the Drawer's (OverlayRoot); the trap focuses the input (`data-autofocus`) and returns
+    focus to the opener.
+  - **Session** (`lib/terminal/session.ts`, outside React, `useSyncExternalStore`): entries
+    `{ id, line }` capped at **500**, `running`, `banner`; `print`, `clear` (also hides the
+    banner), `begin()` → an AbortSignal, `end()`, `cancel()`. It survives closing the drawer.
+    **6.2: commands print through `ctx.print` (= `session.print`) and get `ctx.signal`.**
+  - **Output types** (`lib/terminal/types.ts`): input, text (`tone` muted / accent), error, link
+    (site paths through TransitionLink, others a new tab), table (`head?`, first column teal),
+    ascii (`pre`, scrolls sideways), node. `Line` is memoised, so a new line renders only itself.
+    The log is `role="log"` `aria-live="polite"`; the Prompt is aria-hidden, so a command is read
+    as its text.
+  - **Input:** a real uncontrolled `<input>` (paste, IME, phone keyboards; `enterKeyHint="go"`, no
+    autocorrect) with `caret-transparent`; the amber block caret (`.terminal-caret`) is moved by
+    `transform` to `selectionStart × 1ch − scrollLeft` (one character measured once), so typing
+    renders nothing. Solid and blinking while focused (still under reduced motion), hollow
+    otherwise. A click in the terminal focuses the input unless it ends a text selection or hits a
+    link / button.
+  - **Keys:** Enter runs (ignored while running or composing); ↑ / ↓ history (keeps the draft);
+    **Tab** calls the `complete` prop (6.2), **Shift+Tab** still leaves; Ctrl+L clears; Ctrl+C
+    cancels a running command ("^C"), or abandons the line ("draft^C"), but copies when text is
+    selected; the typing sound is the 1.7 `onTypingSound` (unchanged gain; silent when sound is
+    off). While a command runs the prompt row is at opacity 0 and keeps focus.
+  - **History** (`lib/terminal/history.ts`): last 50 under `terminal-history` (storage helpers),
+    blank lines and immediate repeats skipped.
+  - **Welcome:** the ScrambleText "Type help to start" (mount trigger) and three chips (`help`,
+    `whoami`, `projects`, from `copy.terminal.suggestions`) that run on click.
+  - **Stub** (`lib/terminal/stub.ts`): `echo`, `sleep <s>` (cancellable, for Ctrl+C), otherwise
+    "<cmd>: command not found. Type help for the list." **6.2 replaces it** (pass `runner` /
+    `complete` to `<Terminal>`).
+- **Verified 6.1 (headless Chromium, production build with the /dev flag):** ` opens it with focus in
+  the input; 396 px tall at 720 (55 %), `rgb(9, 11, 11)` in light theme, SF Mono 13 px; the banner
+  and chips; the `help` chip runs ("help: command not found …"); **0 React commits while typing 20
+  characters**, the caret moving 0 → 160.75 px; `echo hello world 123` and an inserted (paste-path)
+  `echo pasted ✓ text` echo; ↑ ↑ ↓ ↓ → pasted, hello, pasted, "draft"; Ctrl+C idle → "draft^C";
+  `sleep 10` + Ctrl+C → "^C" in 246 ms, prompt hidden while running, focus kept; 270 more commands
+  → exactly 500 lines, last "269", scrolled to the bottom; Ctrl+L → 0 lines, no banner; Esc
+  closes; opened from the nav's Terminal button → focus back on it; history after a reload ("echo
+  269"). Screenshots match the board's drawer; console clean.
+  - **[manual]** The feel of typing and pasting (Ctrl+V for real), a screen reader announcing
+    output (NVDA / VoiceOver), the drawer on a phone (300 px with the keyboard up; 6.6 makes
+    /terminal), the key sound with sound on.
 - **Now-playing card (5.5):** `components/cards/NowPlayingCard.tsx` (now a live client card, no
   props but `className`), `components/player/openMusic.ts` (moved out of `roomActions.ts`, shared
   with the headphones), from the updated About frames (row 3 on desktop, after "The short version"

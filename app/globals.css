@@ -39,6 +39,8 @@
   --color-island-text: #f4f7f6;
   --color-island-text-secondary: #a3b2af;
   --color-island-accent: #2ec0a0;
+  /* The terminal's errors (6.1): the dark danger red, kept in both themes (light's fails on near-black). */
+  --color-island-danger: #ff7a6b;
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -682,10 +684,12 @@ html[data-gate="done"] .entry-gate {
   [data-playing] .np-bar:nth-child(4) {
     animation-delay: -150ms;
   }
-  .terminal-cursor {
+  .terminal-cursor,
+  .terminal-caret[data-focused] {
     animation: cursor-blink 1s steps(1, end) infinite;
   }
   @media (prefers-reduced-motion: reduce) {
+    .terminal-caret[data-focused],
     [data-playing] .np-bar,
     .terminal-cursor {
       animation: none;
