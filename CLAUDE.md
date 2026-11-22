@@ -1102,6 +1102,15 @@ Carry-over into later chunks:
   - **[manual]** **The lock screen on your phone** (cover, title, controls, the seek bar) and
     media keys on the laptop: the chunk's Done-when; the frame's look in dark theme; the sheet's
     drag-to-close on a real phone; VoiceOver / NVDA reading the rows and the slider.
+- **Island hover fix (after 5.5, Nasheet's bug report):** with an activity live, hovering anywhere
+  on the island opened the page links (nav hover outranks live), so the album art and the bars
+  vanished under the pointer and the player couldn't be opened by mouse on desktop. Now, while an
+  activity is live, only resting on the **centre** (the page name) opens the links, after a
+  200 ms dwell (`CENTRE_DWELL_MS`); the art and bars stay clickable. Without an activity, the
+  whole island still opens them at once. Verified with real mouse paths: onto the art → live,
+  click → expanded; art → across the centre → bars → live, click → expanded; resting on the
+  centre → links, leaving → live; idle hover → links. **Testing note:** drive island hovers with
+  `page.mouse.move(..., { steps })`; `page.focus` / a direct click skips the hover path.
 - **Verified 5.2 (headless Chromium, production build with the /dev flag, real local tracks):**
   - **Keyboard on /about:** M → the activity (art, "02 About", bars; slot name "Now playing: World's
     End Rhapsody by Nujabes. Open the player"); focus the art + Enter → the card with focus on

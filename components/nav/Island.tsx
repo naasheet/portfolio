@@ -33,6 +33,11 @@ import { IslandAlertView } from "./IslandAlert";
 
 /** Retract the links this long after the pointer leaves (Navigation board). */
 const RETRACT_MS = 400;
+/**
+ * With an activity live, hovering the centre (the page name) opens the links only after this
+ * dwell, so passing over it on the way to the art or the bars doesn't swap them away (5.5 fix).
+ */
+const CENTRE_DWELL_MS = 200;
 
 type Shape = "idle" | "live" | "nav" | "alert" | "expanded";
 
@@ -104,7 +109,14 @@ export function Island() {
       ? chapters.find((c) => c.id === hotOpens.page)
       : undefined;
 
-  useEffect(() => () => window.clearTimeout(retract.current), []);
+  const dwell = useRef<number | undefined>(undefined);
+  useEffect(
+    () => () => {
+      window.clearTimeout(retract.current);
+      window.clearTimeout(dwell.current);
+    },
+    [],
+  );
 
   // Opened from the keyboard: move focus onto the current link once the links exist.
   useEffect(() => {
@@ -176,11 +188,27 @@ export function Island() {
     setNavOpen(true);
   };
 
+  // Island board: hovering the centre opens the links. With an activity live, the art and the
+  // bars are click targets, so only the centre opens them (after a short dwell); without one, the
+  // whole island does, at once.
   const onPointerEnter = (e: PointerEvent) => {
-    if (e.pointerType === "mouse" && desktopHover()) open();
+    if (e.pointerType !== "mouse" || !desktopHover()) return;
+    if (primary && !navOpen) {
+      window.clearTimeout(retract.current);
+      return;
+    }
+    open();
   };
 
+  const onCentreEnter = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse" || !desktopHover() || !primary) return;
+    window.clearTimeout(dwell.current);
+    dwell.current = window.setTimeout(open, CENTRE_DWELL_MS);
+  };
+  const onCentreLeave = () => window.clearTimeout(dwell.current);
+
   const onPointerLeave = () => {
+    window.clearTimeout(dwell.current);
     window.clearTimeout(retract.current);
     retract.current = window.setTimeout(() => {
       // Never retract while the links hold keyboard focus.
@@ -228,6 +256,8 @@ export function Island() {
       aria-label={`${copy.nav.island}: ${number ? `${number} ` : ""}${label}`}
       aria-expanded={navOpen || menuOpen}
       onClick={onCentreClick}
+      onPointerEnter={onCentreEnter}
+      onPointerLeave={onCentreLeave}
       className={cn(
         "flex h-full cursor-pointer items-center gap-2 rounded-chip px-4",
         focusRing,
