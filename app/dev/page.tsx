@@ -15,6 +15,7 @@ import { IslandSpecimen } from "@/components/dev/IslandSpecimen";
 import { KbdTooltipDividerSpecimen } from "@/components/dev/KbdTooltipDividerSpecimen";
 import { MediaSpecimen } from "@/components/dev/MediaSpecimen";
 import { MotionSpecimen } from "@/components/dev/MotionSpecimen";
+import { MusicSpecimen } from "@/components/dev/MusicSpecimen";
 import { OverlaySpecimen } from "@/components/dev/OverlaySpecimen";
 import { PreloadSpecimen } from "@/components/dev/PreloadSpecimen";
 import { ProjectCardSpecimen } from "@/components/dev/ProjectCardSpecimen";
@@ -56,6 +57,7 @@ const SECTIONS = [
   { id: "case-study", label: "Case study" },
   { id: "skills-cards", label: "Skills cards" },
   { id: "contact", label: "Contact" },
+  { id: "music", label: "Music" },
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
@@ -230,6 +232,14 @@ export default function DevPage() {
         note="4.7: TextField states, the hero CTACard, EmailCard (Copy → Copied + island alert), TimeCard, SocialCard's Follow hover and resume forms, and ContactSheet. The sheet posts to the real /api/contact."
       >
         <ContactSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="music"
+        title="Music"
+        note="5.1: the audio engine without a player (5.2). Tracks crossfade over 1.2 s; the first start fades in over 2 s; the level bar is the analyser (5.4 feeds the canvas from it)."
+      >
+        <MusicSpecimen />
       </DevSection>
 
       <DevSection

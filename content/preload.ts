@@ -4,6 +4,7 @@
  * bytes the way DevTools' Network tab does.
  */
 import type { StaticImageData } from "next/image";
+import { tracks } from "./music.ts";
 
 type Base = {
   /** Shown in progress reports and errors. */
@@ -64,7 +65,18 @@ export const preloadManifest: PreloadEntry[] = [
   },
   { id: "model-envelope", kind: "url", url: "/models/envelope.glb", weight: 4 },
 
-  // TODO(content): the first track's first chunk (chunk 5.1), only if sound was chosen before, e.g.
-  // { id: "track-1", kind: "url", url: "/audio/[track].mp3", range: [0, 262143], weight: 256,
-  //   when: "sound" },
+  // Track 1's first 256 KB (5.1), only for visitors who turned sound on last time, so music can
+  // start the moment they tap. (Missing on deploys until the tracks are licensed: counted as failed.)
+  ...(tracks[0]
+    ? [
+        {
+          id: "track-1",
+          kind: "url",
+          url: tracks[0].src,
+          range: [0, 262143],
+          when: "sound",
+          weight: 256,
+        } satisfies PreloadEntry,
+      ]
+    : []),
 ];

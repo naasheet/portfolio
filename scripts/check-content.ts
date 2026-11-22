@@ -12,6 +12,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { profile as profileData, type Profile } from "../content/profile.ts";
 import { projects } from "../content/projects.ts";
+import { tracks } from "../content/music.ts";
 import { learning, skillAreas, tools, usedIn } from "../content/skills.ts";
 import { socials } from "../content/socials.ts";
 
@@ -159,6 +160,41 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
   });
   if (projects.length === 0)
     warnings.push("content/projects.ts › no projects yet");
+}
+
+// --- Music (5.1) ----------------------------------------------------------------------------
+// Tracks without a licence warn locally and FAIL on CI / Vercel (CLAUDE.md §9.3): only music
+// Nasheet has the rights to stream may be deployed. public/audio/ is gitignored, so the files are
+// also missing there until licensed tracks are committed on purpose.
+{
+  const deploying = Boolean(process.env.CI || process.env.VERCEL);
+  const ids = new Set<string>();
+  tracks.forEach((t, i) => {
+    const at = `content/music.ts › ${t.id || `tracks[${i}]`}`;
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(t.id))
+      fail(at, `id "${t.id}" must be lowercase and URL-safe`);
+    if (ids.has(t.id)) fail(at, `duplicate id "${t.id}"`);
+    ids.add(t.id);
+    for (const field of ["title", "artist"] as const)
+      if (!filled(t[field])) fail(at, `${field} is required`);
+    inPublic(`${at} › src`, t.src);
+    inPublic(`${at} › cover`, t.cover);
+    if (t.license === null) {
+      if (deploying)
+        fail(
+          at,
+          "has no licence: only tracks you have the rights to stream can be deployed",
+        );
+      else
+        warnings.push(
+          `${at} has no licence yet (local only; a deploy build fails)`,
+        );
+    } else {
+      if (!filled(t.license.source))
+        fail(`${at} › license`, "source is required");
+      url(`${at} › license.url`, t.license.url);
+    }
+  });
 }
 
 // --- Skills and socials ------------------------------------------------------------------

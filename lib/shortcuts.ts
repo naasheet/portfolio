@@ -9,6 +9,7 @@ import { chapters } from "@/content/chapters";
 import { copy } from "@/content/copy";
 import { island } from "./island";
 import { navigate, type PushRouter } from "./motion/pageTransition";
+import { startMusic } from "./music";
 import { initSfx } from "./sfx";
 import { useStore } from "./store";
 import { revealTheme, type RevealOrigin } from "./theme";
@@ -19,7 +20,12 @@ import { revealTheme, type RevealOrigin } from "./theme";
 export function toggleSound(): void {
   const on = !useStore.getState().ui.soundEnabled;
   useStore.getState().ui.setSoundEnabled(on);
-  if (on) void initSfx();
+  if (on) {
+    void initSfx();
+    // Music (5.1): the first time, track 1 fades in; afterwards it resumes. Turning sound off
+    // pauses it through lib/music.ts's store subscription.
+    void startMusic();
+  }
   island.alert({
     icon: on ? "volume" : "mute",
     tone: "neutral",

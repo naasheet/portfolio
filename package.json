@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prebuild": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-content.ts",
     "build": "next build",
+    "compress-media": "node scripts/compress-media.mjs",
     "check-content": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-content.ts",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",

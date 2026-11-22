@@ -18,6 +18,11 @@ stuff/
 *.dmg
 *.otf.tmp
 
+# music (5.1): local only until the tracks are licensed. Commercial releases must never be
+# committed or deployed (CLAUDE.md §9.3); content/music.ts records each track's licence.
+public/audio/*.mp3
+public/audio/*.jpg
+
 # misc
 .DS_Store
 Thumbs.db

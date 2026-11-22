@@ -147,6 +147,7 @@ lib/
   hooks/                # useReducedMotion, useMediaQuery, useFocusTrap, useCountUp …
   fs.ts                 # virtual filesystem built from content/
   island.ts             # the nav island's activity / alert store (2.4)
+  music.ts              # 5.1: startMusic() / getMusic(); loads lib/audio/engine.ts on demand
 mdx-components.tsx      # MDX element styles + the case-study components (required by @next/mdx)
   sfx.ts  shortcuts.ts  quality.ts  preload.ts  theme.ts  browser.ts  supabase.ts  utils.ts
 content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
@@ -426,6 +427,7 @@ npm run typecheck  # tsc --noEmit
 npm run format     # Prettier
 npm run analyze    # bundle analyzer: node scripts/analyze.mjs (sets ANALYZE=true, runs next build)
 npm run check-content  # content check (4.1); also runs as `prebuild`, so a broken content/ stops the build
+npm run compress-media # 5.1: MP3s in public/audio/ above 192 kbps → 160 kbps (ffmpeg; originals kept in stuff/audio-src/)
 npm run test       # vitest (from chunk 6.2)
 ```
 
@@ -529,7 +531,8 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1, 4.3–4.8 done; 4.2 replaced by phase R; 4.9, the MVP review, is next: [manual]).
+Current phase: **5 — Music** (5.1 done; 5.2, the mini-player, is next). Phase 4 is built (4.1, 4.3–4.8;
+4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -550,7 +553,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -603,7 +606,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -671,8 +674,8 @@ Carry-over into later chunks:
   - **Palm hold:** 16 specks form a ring around the action icon and light up one by one over 1 s.
   - **Hand lost:** fades after 500 ms; a hint after 3 s.
   - The specks still ring whatever the hand points at.
-- **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus when
-  ffmpeg is installed.
+- **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus (ffmpeg is
+  installed since 5.1; extend `scripts/compress-media.mjs`).
 - **10.x:** Tooltip has no automatic collision handling. 2.4 added `align="end"` (bubble lined up
   with the trigger's right edge) for the nav's right-hand circles; use it, or add real flip / shift,
   for any other tooltip near an edge.
@@ -896,6 +899,62 @@ Carry-over into later chunks:
   the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
   - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
     the phone photo row, and copy review.
+- **Audio engine (5.1):** `lib/audio/engine.ts`, `lib/music.ts`, `content/music.ts`,
+  `scripts/compress-media.mjs`, `components/dev/MusicSpecimen.tsx` (/dev "Music").
+  - **MUSIC LICENSING (decided with Nasheet):** the six tracks in `public/audio/` (Nujabes, DARZI,
+    Don Toliver, Metro Boomin et al., Nirvana, Kendrick Lamar) are commercial releases, **local
+    development only**: `public/audio/*.mp3` and `*.jpg` are gitignored, every `license` is `null`,
+    and `check-content` warns locally but **fails on CI / Vercel** (`process.env.CI || VERCEL`), so
+    they can't be deployed. Before 11.1, replace them with tracks Nasheet can stream (his own,
+    Pixabay Music, YouTube Audio Library, FMA CC-BY…) and fill `license: { source, url }`, then
+    un-ignore deliberately. Never commit or deploy unlicensed audio.
+  - **Chain:** two `<audio>` decks (A / B) → MediaElementSource → own GainNode → master gain
+    (volume) → AnalyserNode (fftSize 1024, smoothing 0.8, `engine.analyser` for 5.4) → speakers, on
+    the shared context (`lib/audio/context.ts`). Decks and nodes are created once and reused (an
+    element can only have one MediaElementSource); an idle deck is paused and emptied
+    (`removeAttribute("src")` + `load()`).
+  - **Crossfade:** 1.2 s, equal-power (sin / cos) `setValueCurveAtTime` on the two deck gains; a
+    deck still audible when reused is ramped to 0 in 30 ms first. **Gain ramps read the current
+    value, `cancelScheduledValues(0)`, then start the new curve from it:** `cancelScheduledValues(now)`
+    leaves an in-progress curve in place and a new curve over it throws (`cancelAndHoldAtTime`
+    would do it, but Firefox lacks it). A `switchId` lets stale async steps bail out.
+  - **API:** `load(i)` (index into `tracks`), `play()` (first time: track 1 over 2 s; else resume
+    with a 0.4 s fade), `pause()` (0.25 s fade, both decks), `next()`, `prev()` (restarts the
+    track past 3 s), `seek(t)` (15 ms dip), `setVolume(v)`, `getTime()`, `getDuration()`,
+    `isPlaying()`. The store gets only `playing`, `trackIndex`, `volume` (+ `enabled`); volume is
+    saved under `"volume"`. Playlist order: track 1, then the rest shuffled once per visit.
+    `ended` → next; an `error` (or a rejected play that isn't Abort/NotAllowed) → an error toast
+    ("Couldn't load … Skipping it.") and next; after 3 failures in a row it pauses with
+    `copy.music.gaveUp`.
+  - **Wiring (`lib/music.ts`):** `startMusic()` creates the AudioContext synchronously (call it in
+    the gesture), imports the engine on demand and subscribes once to `ui.soundEnabled` (off →
+    pause, on → resume), so every sound switch (M, the nav circle, the terminal later) controls the
+    music. Called from `toggleSound()` and `TapForSound` (repeat visitors with sound saved on: the
+    first gesture anywhere starts music too). `getMusic()` returns the engine or null.
+  - **Preload:** track 1's first 256 KB (`when: "sound"`) in `content/preload.ts`.
+  - **Files:** 320 kbps originals in `stuff/audio-src/`; `npm run compress-media` re-encodes to
+    160 kbps (67 → 31.5 MB for the six). ffmpeg 9.1 was installed with winget (Gyan.FFmpeg) at
+    `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_…\ffmpeg-9.1-full_build\bin` (new
+    shells have it on PATH; else set `FFMPEG_PATH` / `FFPROBE_PATH`). `world's_end_rhapsody.*` was
+    renamed `worlds_end_rhapsody.*` (an apostrophe in a URL).
+  - **5.2 / 5.3 / 5.4:** the player reads `getMusic()?.getTime()` per frame (no state), pushes the
+    island music activity, and replaces the headphones' "Music's warming up" alert in
+    `components/home/roomActions.ts`; Media Session is still to do (§9.3); the canvas reads
+    `getMusic()?.analyser` into `audio.levels` / `beat`.
+- **Verified 5.1 (headless Chromium, production build with the /dev flag):**
+  - **Fade-in:** output level 0 at 0.1–0.5 s, rising to full by ~1.5–2 s.
+  - **Crossfade:** A² + B² stayed 1.000–1.002 over all 194 frames of the 1.2 s fade (equal power,
+    no dip); gains 0/1 → 0.49/0.87 → 0.79/0.62 → 0.96/0.27 → 1/0; the largest sample-to-sample
+    step during the fade was below the one before it (no click).
+  - **Routes:** 7 client navigations (/, /about, /work, a case study, /skills, /contact, /arcade):
+    the time ran 2.9 → 11.4 s over ~8.4 s, still playing. (An unknown URL is a full page load in
+    Next, which ends the music: expected, no in-site link goes there.)
+  - **Memory:** JS heap 14.76 MB → 14.80 after 20 switches (350 ms apart, mostly mid-fade) → 14.80
+    after 40 (after GC).
+  - **M** off → paused, level 0; M on → playing again. Volume saved. A 404 track → the toast and
+    the next track. No console errors.
+  - **[manual]** Listen on real speakers / headphones for clicks at the crossfade and at pause;
+    the fade lengths by ear; the tracks on a phone (iOS Safari needs the gesture: tap sound on).
 - **Footer, 404 and SEO (4.8):** `app/not-found.tsx` → `components/layer/NotFound.tsx`,
   `app/opengraph-image.tsx`, `app/sitemap.ts`, `app/robots.ts`, `app/icon.svg`, `lib/site.ts`,
   `lib/seo.ts`, metadata in `app/layout.tsx` and every page.
@@ -1316,9 +1375,11 @@ Carry-over into later chunks:
   then (4.2).
   A styled `app/not-found.tsx` belongs to 4.x / 10.x.
 Open TODO(content) items:
-- `content/preload.ts`: add the hero photo (4.2, `kind: "image"`) and the first track's first
-  chunk (5.1, `kind: "url"` + `range`, `when: "sound"`) once those files exist (the three GLBs
-  are in since 3.2).
+- **Music (5.1): licensed tracks.** Replace the six local-only tracks in `content/music.ts` with music
+  you can stream, fill each `license`, and commit the files on purpose (they're gitignored now).
+  A deploy build fails until then.
+- `content/preload.ts`: add the hero photo (`kind: "image"`) once it exists (track 1's first chunk
+  is in since 5.1).
 - `public/models/*.glb`: record each model's source and licence for `/credits` (11.2). Weights = their size in KB as the Network tab shows it.
 - `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
   name for `/credits` (11.2).

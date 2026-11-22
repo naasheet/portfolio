@@ -27,6 +27,11 @@ export const copy = {
     dismiss: "Dismiss",
   },
   /** Shared errors (4.1): any feature that can fail uses these unless it has its own line. */
+  /** The music engine's messages (5.1). */
+  music: {
+    loadError: (title: string) => `Couldn't load "${title}". Skipping it.`,
+    gaveUp: "The music won't load right now. Sound effects still work.",
+  },
   /** The 404 page (4.8). */
   notFound: {
     code: "404",

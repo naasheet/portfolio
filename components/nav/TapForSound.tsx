@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { copy } from "@/content/copy";
 import { colorTransition, focusRing } from "@/components/ui/controlStyles";
 import { getAudioContext } from "@/lib/audio/context";
+import { startMusic } from "@/lib/music";
 import { initSfx } from "@/lib/sfx";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,10 @@ export function TapForSound({ className }: { className?: string }) {
     const start = (e: Event) => {
       if (e instanceof KeyboardEvent && e.key === "Escape") return;
       setWaiting(false);
-      if (useStore.getState().ui.soundEnabled) void initSfx();
+      if (useStore.getState().ui.soundEnabled) {
+        void initSfx();
+        void startMusic();
+      }
     };
     const ready = window.setTimeout(() => setWaiting(true), 0);
     const opts = { capture: true, once: true } as const;
@@ -43,7 +47,10 @@ export function TapForSound({ className }: { className?: string }) {
     <button
       type="button"
       data-cursor="orbit"
-      onClick={() => void initSfx()}
+      onClick={() => {
+        void initSfx();
+        void startMusic();
+      }}
       className={cn(
         "flex cursor-pointer items-center gap-2 rounded-chip border-accent-primary/60 glass px-4 text-subhead text-accent-primary hover:border-accent-primary [&_svg]:size-4",
         navHeight,
