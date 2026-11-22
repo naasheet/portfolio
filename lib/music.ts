@@ -12,6 +12,9 @@
 import { ensureAudioContext } from "@/lib/audio/context";
 import { useStore } from "@/lib/store";
 
+/** The music's island activity id (5.2): IslandMusic pushes it, the headphones expand it. */
+export const MUSIC_ACTIVITY = "music";
+
 type EngineModule = typeof import("./audio/engine");
 let mod: EngineModule | null = null;
 let unsubscribe: (() => void) | null = null;

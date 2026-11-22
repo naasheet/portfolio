@@ -30,7 +30,7 @@ export function NavRow({
           {leftDesktop}
         </span>
       </div>
-      <div className="pointer-events-auto absolute top-(--nav-inset-top) left-1/2 flex max-w-[calc(100vw-128px)] -translate-x-1/2 justify-center">
+      <div className="pointer-events-auto absolute top-(--nav-inset-top) left-1/2 z-10 flex max-w-[calc(100vw-128px)] -translate-x-1/2 justify-center">
         {centre}
       </div>
       <div className="pointer-events-auto flex items-center gap-2">

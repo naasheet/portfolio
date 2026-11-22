@@ -139,7 +139,7 @@ components/
   player/  chat/  terminal/  ar/  dev/
 lib/
   store.ts              # the Zustand store
-  audio/                # context.ts, engine.ts, levels.ts, mediaSession.ts
+  audio/                # context.ts, engine.ts, time.ts, levels.ts, mediaSession.ts
   chat/                 # knowledge.ts, system.ts, rateLimit.ts, tools.ts
   commands/             # one file per terminal command + registry.ts + parser.ts + types.ts
   motion/               # gsap.ts, lenis.ts, tokens.ts, intro.ts, scrollMemory.ts
@@ -531,7 +531,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **5 — Music** (5.1 done; 5.2, the mini-player, is next). Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **5 — Music** (5.1–5.2 done; 5.3, the track list and volume, is next). Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -553,7 +553,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -606,7 +606,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -622,11 +622,9 @@ Carry-over into later chunks:
   position in `PersistentLayer`: `components/chat/ChatBubbleSlot.tsx` (the bottom-right "Ask" pill),
   `components/terminal/TerminalDrawerSlot.tsx` and `components/ar/ARLayerSlot.tsx` (camera preview
   and hand cursor; both render `null` now).
-- **5.x music in the island:** push one activity from the engine:
-  `island.push({ id: "music", kind: "music", label, lead: <art>, trail: <EqBars />, expanded: <Player /> })`
-  and `island.remove("music")` when the playlist stops. The expanded card is the only music player
-  on the site (Island board). The sound circle and the idle island already show `EqBars` while
-  `audio.playing`. The phone menu has a commented slot for the now-playing strip (5.2).
+- **Music in the island:** built in 5.2 (see "Music in the island (5.2)" below). The sound circle
+  and the idle island still show the CSS `EqBars` loop while `audio.playing`; the island's music
+  activity uses the analyser-driven `components/player/Bars.tsx`.
 - **6.1 / 7.x / 8.x / 9.x flags:** `` ` `` and the terminal circle flip `ui.terminalOpen`; `/` flips
   `ui.chatOpen`; Hand (and `A`) sets `ar.enabled`; Esc (when no overlay is open) closes chat, then
   the terminal, then an expanded island card. Each feature pushes its own island activity
@@ -937,10 +935,61 @@ Carry-over into later chunks:
     `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_…\ffmpeg-9.1-full_build\bin` (new
     shells have it on PATH; else set `FFMPEG_PATH` / `FFPROBE_PATH`). `world's_end_rhapsody.*` was
     renamed `worlds_end_rhapsody.*` (an apostrophe in a URL).
-  - **5.2 / 5.3 / 5.4:** the player reads `getMusic()?.getTime()` per frame (no state), pushes the
-    island music activity, and replaces the headphones' "Music's warming up" alert in
-    `components/home/roomActions.ts`; Media Session is still to do (§9.3); the canvas reads
-    `getMusic()?.analyser` into `audio.levels` / `beat`.
+  - **5.3 / 5.4:** Media Session is still to do (§9.3, 5.3); the canvas reads
+    `getMusic()?.analyser` into `audio.levels` / `beat` (5.4).
+- **Music in the island (5.2):** `components/player/` (IslandMusic, IslandMusicLoader, PlayerCard,
+  Cover, Bars, Scrubber), `lib/audio/time.ts`, `copy.player`, `getQueuePosition()` on the engine,
+  `MUSIC_ACTIVITY` (`"music"`) in `lib/music.ts`, focus handling in `components/nav/Island.tsx`.
+  - **Loading:** `IslandMusicLoader` (in NavBar) mounts `IslandMusic` with `next/dynamic` only once
+    `audio.enabled` is true: silent visitors download none of the player.
+  - **Activity:** `IslandMusic` renders nothing; it pushes `{ id: "music", lead: <Cover 28 />,
+    trail: <Bars />, expanded: <PlayerCard /> }` when `audio.playing` turns true, re-pushes on a
+    track change (the slot name says what's playing), and removes it **30 s after a pause**
+    (`LINGER_MS`; resuming cancels). The pushed elements read the store themselves, so a track
+    change re-renders only Cover and PlayerCard.
+  - **PlayerCard** (Island board, "Music · expanded"): art 56, title, "artist · track n of N"
+    (`getQueuePosition()`: the visit's play order), Bars, Scrubber, prev / play-pause / next
+    (44 px, Framer press 0.97), and the queue button, **disabled until 5.3** wires the track list to
+    it. Play with sound off (M paused it) calls `toggleSound()`, so the sound state and the music
+    never disagree.
+  - **Bars:** one shared `gsap.ticker` callback for every mounted set: reads the analyser once a
+    frame (four bin ranges: 1–4, 4–13, 13–47, 47–186) and writes `scaleY` to the bar refs. The
+    byte levels are decibels (they sit high and vary little: bass 0.86–0.99 within a track), so each
+    band is shown **against its own slow average and spread** (τ 1.5 s, ±2 spreads = full / empty),
+    not a fixed floor. Paused: they ease flat (0.2), then the callback stops writing. Reduced
+    motion: a still shape. 5.4 can move the reduction into `lib/audio/levels.ts` and share it.
+  - **Scrubber:** a native `<input type="range">` (uncontrolled, `data-lenis-prevent`) over a drawn
+    line (`.scrubber` thumb rules in globals.css: the thumb shows on hover / focus / drag). The
+    fill (`scaleX`), the value, both labels and `aria-valuetext` ("1 minute 20 of 3 minutes 41",
+    `copy.player.spokenTime`) are written from its own ticker through refs. Native `input` =
+    preview while dragging, `change` = seek; ←/→ are ±5 s (repeated presses step from the pending
+    target, since a seek lands ~20 ms later).
+  - **Island focus:** opening a card while focus is in the island (or lost to `<body>`) focuses its
+    `[data-island-autofocus]` control (play / pause); closing it hands focus back to the first
+    `[data-island-slot]`; Tab out of an open card collapses it. NavRow's centre wrapper is `z-10`,
+    so the card covers the phone row's sound circle (Island board phone frame).
+  - **Headphones:** `openMusic()` in `roomActions.ts` turns sound on (or resumes), then expands the
+    player once the activity exists (5 s give-up). The "Sound on" alert shows first (alert ›
+    expanded), so the card opens ~2.5 s later.
+  - **Phone menu:** its "now-playing strip (5.2)" comment is gone: no mini-player anywhere.
+- **Verified 5.2 (headless Chromium, production build with the /dev flag, real local tracks):**
+  - **Keyboard on /about:** M → the activity (art, "02 About", bars; slot name "Now playing: World's
+    End Rhapsody by Nujabes. Open the player"); focus the art + Enter → the card with focus on
+    Pause; Space → paused (bars flat at 0.2, label Play); Space → playing; Tab → Next track, Enter →
+    "tv off · Kendrick Lamar · track 2 of 6"; scrubber → → from 1 s → 11 s; Esc → focus back on the slot.
+  - **Mouse:** the bars slot opens the card; Pause works; a click outside collapses it.
+  - **Re-renders:** 0 React commits over 3 s of playback with the card open (devtools-hook counter),
+    while the scrubber went 8 → 11 s and its valuetext "8 seconds of 5 minutes 41" → "11 seconds …".
+  - **Bars:** over 2 s each bar ranged ~0.33–1.0 (pinned at 1.0 with fixed floors at first).
+  - **Linger:** paused, the activity was still there at 25 s and gone (island idle) at 31 s.
+  - **Headphones on Home** (room link, sound off): sound on, the card opened ~3 s later. Phone (390):
+    the card spans the width above the sound circle. Screenshots match the board. Console clean.
+  - **[manual]** The bars' feel against the music (τ 1.5 s, ±2 spreads, attack 30 / release 160 ms
+    in `Bars.tsx`); the scrubber drag on a real phone; VoiceOver / NVDA reading the slider and the
+    slot names; the 30 s linger by feel.
+  - **Follow-ups:** activating the headphones from the keyboard leaves focus on the room link (focus
+    was outside the island, so the card isn't focused): consider focusing the card there. The two
+    slot buttons share one name (art and bars); revisit in 10.6.
 - **Verified 5.1 (headless Chromium, production build with the /dev flag):**
   - **Fade-in:** output level 0 at 0.1–0.5 s, rising to full by ~1.5–2 s.
   - **Crossfade:** A² + B² stayed 1.000–1.002 over all 194 frames of the 1.2 s fade (equal power,

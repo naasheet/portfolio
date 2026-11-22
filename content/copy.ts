@@ -32,6 +32,29 @@ export const copy = {
     loadError: (title: string) => `Couldn't load "${title}". Skipping it.`,
     gaveUp: "The music won't load right now. Sound effects still work.",
   },
+  /** The music player in the island (5.2). */
+  player: {
+    /** Accessible name of the island's art and equalizer buttons. */
+    open: (title: string, artist: string) =>
+      `Now playing: ${title} by ${artist}. Open the player`,
+    /** Under the title: "[Artist] · track 3 of 8". */
+    trackOf: (n: number, total: number) => `track ${n} of ${total}`,
+    previous: "Previous track",
+    next: "Next track",
+    play: "Play",
+    pause: "Pause",
+    /** The queue button; 5.3 opens the track list from it. */
+    queue: "Track list",
+    seek: "Position in the track",
+    /** Scrubber's aria-valuetext: "1 minute 20 of 3 minutes 05". */
+    spokenTime: (s: number) => {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      if (m === 0) return `${sec} second${sec === 1 ? "" : "s"}`;
+      return `${m} minute${m === 1 ? "" : "s"} ${String(sec).padStart(2, "0")}`;
+    },
+    valueText: (now: string, total: string) => `${now} of ${total}`,
+  },
   /** The 404 page (4.8). */
   notFound: {
     code: "404",
@@ -350,9 +373,6 @@ Reply to this email to answer them.`,
       projectTile: (n: number) => `Project ${n}`,
       /** Hover card footer for objects without a key. */
       click: "Click",
-      /** The headphones until Phase 5 brings the player. */
-      musicSoon: "Music's warming up",
-      musicSoonDetail: "The player lands soon",
       /** Phone sheet (R.5, Home — phone 390). */
       openPage: (name: string) => `Open ${name}`,
       tapAgain: (noun: string) => `Or tap ${noun} again`,

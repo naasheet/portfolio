@@ -116,6 +116,31 @@ export function Island() {
     )?.focus();
   }, [shape]);
 
+  // Keyboard flow for an activity's card (5.2): opening it moves focus into the card (its
+  // autofocus control, else its first button), and closing it while focus was in the card hands
+  // focus back to the activity's slot, so Enter → Space → Esc never drops focus to <body>.
+  const prevShape = useRef<Shape>(shape);
+  useEffect(() => {
+    const was = prevShape.current;
+    prevShape.current = shape;
+    if (was === shape) return;
+    const el = root.current;
+    const active = document.activeElement;
+    const focusLost = !active || active === document.body;
+    if (!el || !(focusLost || el.contains(active))) return;
+    if (shape === "expanded") {
+      (
+        el.querySelector<HTMLElement>("[data-island-autofocus]") ??
+        el.querySelector<HTMLElement>("[data-island-card] button")
+      )?.focus({ preventScroll: true });
+    } else if (was === "expanded") {
+      (
+        el.querySelector<HTMLElement>("[data-island-slot]") ??
+        el.querySelector<HTMLElement>("[data-island-centre]")
+      )?.focus({ preventScroll: true });
+    }
+  }, [shape]);
+
   // An expanded card closes on Esc or a click outside the island.
   useEffect(() => {
     if (!expanded) return;
@@ -168,6 +193,8 @@ export function Island() {
   const onBlur = (e: FocusEvent) => {
     const next = e.relatedTarget;
     if (next instanceof Node && root.current?.contains(next)) return;
+    // Tabbing out of an open card closes it (a removed element's blur has no relatedTarget).
+    if (expanded && next instanceof Node) island.collapse();
     if (root.current?.matches(":hover")) return;
     setNavOpen(false);
   };
@@ -246,6 +273,7 @@ export function Island() {
       key={key}
       type="button"
       data-cursor="orbit"
+      data-island-slot
       aria-label={activity.label}
       onClick={() => island.expand(activity.id)}
       className={cn(
@@ -262,7 +290,7 @@ export function Island() {
     content = <IslandAlertView alert={state.alert} />;
   } else if (shape === "expanded" && expanded) {
     content = (
-      <div className="w-90 max-w-[calc(100vw-32px)] p-4">
+      <div data-island-card className="w-90 max-w-[calc(100vw-32px)] p-4">
         {expanded.expanded}
       </div>
     );

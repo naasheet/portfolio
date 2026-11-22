@@ -132,7 +132,6 @@ export function MobileMenu() {
           </ol>
         </nav>
 
-        {/* 5.2: the now-playing strip goes here, above the controls. */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <ModeSwitch compact />

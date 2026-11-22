@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect } from "react";
+import { IslandMusicLoader } from "@/components/player/IslandMusicLoader";
 import { Island } from "./Island";
 import { ModeSwitch } from "./ModeSwitch";
 import { NavAutoHide } from "./NavAutoHide";
@@ -46,6 +47,7 @@ export default function NavBar() {
       />
       <NavAutoHide />
       <NavOverlays />
+      <IslandMusicLoader />
     </>
   );
 }

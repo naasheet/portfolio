@@ -1058,7 +1058,8 @@ html[data-intro="play"] [data-intro-fade] {
   }
   .dot-digit[data-on] {
     background: var(--color-accent-primary);
-    box-shadow: 0 0 8px color-mix(in srgb, var(--color-accent-primary) 55%, transparent);
+    box-shadow: 0 0 8px
+      color-mix(in srgb, var(--color-accent-primary) 55%, transparent);
   }
 }
 
@@ -1069,5 +1070,46 @@ html[data-intro="play"] [data-intro-fade] {
 @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
   [data-stagger-group]:not([data-stagger-ready]) [data-stagger] {
     opacity: 0;
+  }
+}
+
+/* The player's scrubber (5.2): a native range input over the drawn line; only the thumb shows,
+   and only on hover, focus or drag. */
+@layer components {
+  .scrubber::-webkit-slider-runnable-track {
+    height: 100%;
+    background: transparent;
+  }
+  .scrubber::-webkit-slider-thumb {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    margin-top: 4px;
+    border-radius: 9999px;
+    background: var(--color-island-text);
+    transform: scale(0);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .scrubber::-moz-range-track {
+    background: transparent;
+  }
+  .scrubber::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--color-island-text);
+    transform: scale(0);
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+  .scrubber:hover::-webkit-slider-thumb,
+  .scrubber:focus-visible::-webkit-slider-thumb,
+  .scrubber:active::-webkit-slider-thumb {
+    transform: scale(1);
+  }
+  .scrubber:hover::-moz-range-thumb,
+  .scrubber:focus-visible::-moz-range-thumb,
+  .scrubber:active::-moz-range-thumb {
+    transform: scale(1);
   }
 }

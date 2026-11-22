@@ -215,6 +215,11 @@ class AudioEngine {
     return Number.isFinite(d) ? d : 0;
   }
 
+  /** Where the current track sits in this visit's play order: "track 3 of 8" (1-based). */
+  getQueuePosition(): { index: number; total: number } {
+    return { index: this.pos + 1, total: this.order.length };
+  }
+
   isPlaying(): boolean {
     return useStore.getState().audio.playing;
   }
