@@ -2,6 +2,7 @@
  * The command contract (CLAUDE.md §9.4, 6.2). One file per command in lib/commands/, each
  * exporting a Command, registered by hand in registry.ts. Every command must appear in `help`.
  */
+import type { VirtualFs } from "@/lib/fs";
 import type { PushRouter } from "@/lib/motion/pageTransition";
 import type { useStore } from "@/lib/store";
 import type { OutputLine } from "@/lib/terminal/types";
@@ -16,8 +17,8 @@ export type Args = {
   raw: string[];
 };
 
-/** The virtual filesystem (6.3). Null until then. */
-export type FileSystem = null;
+/** The virtual filesystem (6.3, lib/fs.ts), generated from content/. */
+export type FileSystem = VirtualFs;
 
 export type CommandContext = {
   print: (line: string | OutputLine | OutputLine[]) => void;

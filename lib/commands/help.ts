@@ -3,10 +3,10 @@
  * one. 6.4 adds the `man` alias and per-command help. It reads the registry lazily (the registry
  * imports this file, so a static import would be a cycle).
  */
-import { copy } from "@/content/copy";
+import { terminalCopy } from "@/content/terminal";
 import type { Command } from "./types";
 
-const t = copy.commands.help;
+const t = terminalCopy.commands.help;
 
 export const help: Command = {
   name: "help",

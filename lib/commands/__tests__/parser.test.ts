@@ -1,17 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { PARSE_ERRORS, parse, parseArgs, tokenize } from "../parser";
 
-/** The token values of a single-stage line. */
+/** The token values of a line's first group (a pipeline), stage by stage. */
 const words = (line: string) => {
   const r = tokenize(line);
   if (!r.ok) throw new Error(r.error);
-  return r.pipeline.map((stage) => stage.map((t) => t.value));
+  return (r.groups[0]?.pipeline ?? []).map((stage) =>
+    stage.map((t) => t.value),
+  );
 };
 
 const stages = (line: string) => {
   const r = parse(line);
   if (!r.ok) throw new Error(r.error);
-  return r.stages;
+  return r.groups[0]?.stages ?? [];
+};
+
+/** Each group's operator and its stages' command names. */
+const groups = (line: string) => {
+  const r = parse(line);
+  if (!r.ok) throw new Error(r.error);
+  return r.groups.map((g) => [g.op, g.stages.map((s) => s.name).join("|")]);
 };
 
 const error = (line: string) => {
@@ -129,6 +138,36 @@ describe("parse: stages", () => {
   });
 });
 
+describe("parse: && and ;", () => {
+  it("splits groups and records the operator", () => {
+    expect(groups("cd projects && ls")).toEqual([
+      [null, "cd"],
+      ["&&", "ls"],
+    ]);
+    expect(groups("pwd; ls -a ;help|grep x")).toEqual([
+      [null, "pwd"],
+      [";", "ls"],
+      [";", "help|grep"],
+    ]);
+  });
+  it("works without spaces and keeps each group's arguments", () => {
+    expect(groups("cd ~&&ls")).toEqual([
+      [null, "cd"],
+      ["&&", "ls"],
+    ]);
+    const r = parse("cd projects && ls -l");
+    expect(r.ok && r.groups[1]!.stages[0]!.args.flags).toEqual({ l: true });
+  });
+  it("allows a trailing ;", () => {
+    expect(groups("ls;")).toEqual([[null, "ls"]]);
+  });
+  it("keeps quoted or escaped operators, and a lone &, as text", () => {
+    expect(words('echo "a && b" \\; c&d')).toEqual([
+      ["echo", "a && b", ";", "c&d"],
+    ]);
+  });
+});
+
 describe("parse: bad input", () => {
   it("rejects unclosed quotes", () => {
     expect(error('echo "hi')).toBe(PARSE_ERRORS.unclosedDouble);
@@ -136,6 +175,13 @@ describe("parse: bad input", () => {
   });
   it("rejects a trailing backslash", () => {
     expect(error("echo hi\\")).toBe(PARSE_ERRORS.trailingEscape);
+  });
+  it("rejects && or ; with nothing before, and && with nothing after", () => {
+    expect(error("&& ls")).toBe(PARSE_ERRORS.emptyAnd);
+    expect(error("ls &&")).toBe(PARSE_ERRORS.emptyAnd);
+    expect(error("; ls")).toBe(PARSE_ERRORS.emptySemicolon);
+    expect(error("ls && && pwd")).toBe(PARSE_ERRORS.emptyAnd);
+    expect(error("help | && ls")).toBe(PARSE_ERRORS.emptyStage);
   });
   it("rejects empty pipe stages", () => {
     expect(error("| grep x")).toBe(PARSE_ERRORS.emptyStage);

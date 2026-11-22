@@ -3,12 +3,28 @@
  * command means one file in lib/commands/ and one line below. Every command shows in `help`.
  * Also: lookup by name or alias, "did you mean" suggestions, and Tab completion.
  */
+import { cat } from "./cat";
+import { cd } from "./cd";
 import { echo } from "./echo";
 import { grep } from "./grep";
 import { help } from "./help";
+import { ls } from "./ls";
+import { open } from "./open";
+import { pwd } from "./pwd";
+import { tree } from "./tree";
 import type { Command, CommandContext } from "./types";
 
-export const commands: readonly Command[] = [help, echo, grep];
+export const commands: readonly Command[] = [
+  help,
+  echo,
+  grep,
+  ls,
+  cd,
+  pwd,
+  cat,
+  tree,
+  open,
+];
 
 const byName = new Map<string, Command>();
 for (const command of commands) {
@@ -115,7 +131,11 @@ export function complete(
       caret: head.length,
     };
   };
-  if (candidates.length === 1) return fill(`${candidates[0]} `);
+  // A directory ends in "/" and takes no space, so Tab can go on into it (6.3).
+  if (candidates.length === 1) {
+    const only = candidates[0]!;
+    return fill(only.endsWith("/") ? only : `${only} `);
+  }
   const prefix = commonPrefix(candidates);
   if (prefix.length > word.length) return fill(prefix);
   return { kind: "list", candidates: candidates.sort() };

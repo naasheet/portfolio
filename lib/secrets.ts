@@ -7,15 +7,23 @@ import { storage } from "./browser";
 
 const KEY = "secrets";
 
-export type SecretId = "plant";
+/** The plant (R.5) and the terminal's ~/.secrets (6.3); copy.home.secrets.total says 5 in all. */
+export type SecretId = "plant" | "dotfile";
 
 function read(): string[] {
   try {
     const parsed: unknown = JSON.parse(storage.get(KEY) ?? "[]");
-    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((v): v is string => typeof v === "string")
+      : [];
   } catch {
     return [];
   }
+}
+
+/** The ids found so far, in the order they were found. */
+export function foundSecrets(): string[] {
+  return read();
 }
 
 export function hasSecret(id: SecretId): boolean {

@@ -151,7 +151,7 @@ lib/
   terminal/             # 6.1: types.ts (output lines), session.ts (scrollback, prompt, cwd), history.ts
 mdx-components.tsx      # MDX element styles + the case-study components (required by @next/mdx)
   sfx.ts  shortcuts.ts  quality.ts  preload.ts  theme.ts  browser.ts  supabase.ts  utils.ts
-content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
+content/                # profile, socials, projects, skills, music, chapters, copy, terminal, preload (.ts),
                         # knowledge.md, case-studies/*.mdx
 supabase/migrations/    # 001_contact.sql, 002_chat.sql, 003_scores.sql
 scripts/                # analyze, check-content, chat-eval, copy-mediapipe-wasm, compress-media
@@ -533,7 +533,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal** (6.1–6.2 done; 6.3, the virtual filesystem, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal** (6.1–6.3 done; 6.4, the core commands, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -555,7 +555,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -608,7 +608,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1036,6 +1036,56 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Virtual filesystem (6.3):** `lib/fs.ts`, `lib/commands/{ls,cd,pwd,cat,tree,open}.ts`,
+  `lib/terminal/markdown.ts`, `content/terminal.ts`, `&&` / `;` in the parser.
+  - **Tree** (generated from `content/`, built lazily by `getFs()`): `~/about.md` (name, title,
+    city, availability, bio, off screen, a link to /about), `~/projects/<slug>.md` (title, role ·
+    year · domain · team, summary, stack, links: case study / live / repo), `~/skills.txt` (areas
+    with level dots, empty when unrated, and years; learning; tools), `~/resume.pdf`,
+    `~/music/<id>.mp3` (note: title — artist), `~/contact.txt` (email, socials, resume, city),
+    and hidden `~/.secrets`. Each node can carry an `open` (route / url / track), a `note` (ls -l)
+    and an `onRead` hook. The placeholders in content/ show as they are; real content flows in.
+  - **Paths:** `~` is home and root (`/` = `~`); `.`, `..` (stops at `~`), absolute and relative;
+    kept as `~/a/b`. `pwd` prints `/home/nasheet/...`. The prompt shows the directory, and each
+    printed command keeps the directory it ran in (`input` lines carry `cwd`).
+  - **Commands:** `ls` (one per line so it pipes; dirs teal with "/"; `-l`: mode, real byte size of
+    text files or "–", name, note; `-a`: hidden, `.`, `..`), `cd` (no arg → `~`), `pwd`, `cat`
+    (Markdown styled; a directory or binary is an error pointing at `ls` / `open`; with a pipe and
+    no file it passes stdin on), `tree` (`-a`; box lines, then "2 directories, 13 files"), `open`
+    (a route closes the terminal and navigates with the page transition; a url / the PDF →
+    `window.open`; a track → sound on if needed and `startMusic({ track })`, new option, so it
+    starts that track instead of track 1).
+  - **Tab:** `fs.completePath(word, cwd, { dirsOnly })` completes at any depth (`cat ../ab` →
+    `cat ../about.md`, `cd ~/mu` → `cd ~/music/`); a directory gets "/" and no space so Tab can
+    go on; hidden names only once the word starts with "."; `cd` and `tree` offer directories
+    only. Several matches fill their common prefix first, then list (bash).
+  - **Markdown** (`renderMarkdown`): headings teal, `- ` bullets "•", `>` muted with "│", a line
+    (or bullet) that is only a link → a link line; inline `**`, `*`, backticks dropped, inline
+    links "label (url)". Plain data, so `cat x | grep` works.
+  - **`&&` / `;`** (approved): `parse()` now returns `groups` (`{ op, stages }`); `&&` runs the next
+    pipeline only if the last succeeded (not found, `printError`, or a throw = failure), `;`
+    always; a lone `&` is text, a trailing `;` is fine, `&&` needs both sides. `ctx.cwd` is read
+    when each command starts, so `cd projects && ls` lists projects/.
+  - **~/.secrets = secret 2 of 5** (approved; `SecretId` "dotfile", `foundSecrets()`): it lists the
+    found secrets by name and the rest as hints (`terminalCopy.fs.secrets.hints`, TODO(content))
+    or "???" for the three not built yet. The first `cat` records it **before** printing (the file
+    shows itself found) and raises the amber island alert, like the plant.
+  - **Strings** for the terminal live in `content/terminal.ts` (`terminalCopy.terminal / fs /
+    commands`), not `content/copy.ts`.
+  - **`.prettierignore`** now lists `content/case-studies/` and `content/knowledge.md`: Prettier
+    rewrites MDX comments (`{/* … */}`) into something MDX can't parse, which broke the build once
+    in 6.3 (restored). Never run Prettier over `content/` by path either.
+- **Verified 6.3:** `npm run test`: **62 tests** (29 parser incl. `&&` / `;`, 14 exec / registry, 19
+  filesystem: paths, the generated tree, `cd projects && ls`, `&&` vs `;` after a failure, `cat
+  ~/about.md` = profile, errors, `ls -a` / `-l`, `pwd`, `tree`'s count, a pipe from a file, Tab at
+  depth, Markdown). In the terminal (production build): `cd projects && ls` → project-1–3.md and the
+  prompt `~/projects`; `cat ~/about.md` styled with a working link; Tab `cat ../ab` → `cat
+  ../about.md `, `cd ~/mu` → `cd ~/music/`; `ls -la` with sizes; `tree` → 2 directories, 13 files;
+  `cat .secrets` → "1 of 5 found", "✓ You read the dotfile", the alert, saved; `open resume.pdf` →
+  a new tab; `open music/gehra.mp3` with sound off → sound on, Gehra playing in the island; `open
+  projects/project-1.md` → terminal closed, `/work/project-1`. Console clean.
+  - **[manual]** The Markdown look and the tree on your screen; `open` of a track on a phone; the
+    `.secrets` hint copy.
 - **Parser and command registry (6.2):** `lib/commands/` (types, parser, registry, exec, grep,
   help, echo, `__tests__/`), `vitest.config.mts`.
   - **vitest 4.1.12**, not 5.x: vitest 5 wants `@types/node` 22+, the project pins 20 (Node itself
@@ -1685,6 +1735,9 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
+- Terminal (6.1–6.3): `content/terminal.ts` — the banner and chips, command descriptions and
+  messages, and the `~/.secrets` hints ("Something on the desk looks thirsty.", "Some files hide
+  behind a dot.") and footer: review the wording.
 - About (5.5): `copy.about.nowPlaying` for review ("Paused" isn't from the frame).
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo

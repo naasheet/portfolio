@@ -3,10 +3,10 @@
  * pattern (plain text, not a regex), highlighting each match.
  *   -i  ignore case    -v  keep the lines that don't match    -n  number the lines
  */
-import { copy } from "@/content/copy";
+import { terminalCopy } from "@/content/terminal";
 import type { Command } from "./types";
 
-const t = copy.commands.grep;
+const t = terminalCopy.commands.grep;
 
 /** Every [start, end) occurrence of `needle` in `hay` (already case-folded when -i). */
 function find(hay: string, needle: string): [number, number][] {

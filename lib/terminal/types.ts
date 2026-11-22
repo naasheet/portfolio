@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 export type OutputLine =
   /** A command as it was typed, after the prompt. */
-  | { kind: "input"; text: string }
+  | { kind: "input"; text: string; cwd?: string }
   | {
       kind: "text";
       text: string;

@@ -6,6 +6,8 @@
  *   "double quotes"    \" and \\ escape; other backslashes stay as typed
  *   \x                 outside quotes: the next character, literally (so \| and \  work)
  *   |                  outside quotes: a pipe between commands
+ *   &&  ;              outside quotes: run the next pipeline only if this one succeeded / anyway
+ *                      (6.3); a lone & is an ordinary character
  *   --name=value, --flag, -f, -abc (= -a -b -c), and -- ends the flags
  */
 import type { Args } from "./types";
@@ -18,22 +20,33 @@ export type Token = {
 
 export type Stage = { name: string; args: Args };
 
+/** How a group joins the one before it: null for the first. */
+export type Joiner = "&&" | ";" | null;
+
+/** One pipeline (`a | b`) and how it joins the previous one. */
+export type Group<T> = { op: Joiner; pipeline: T[] };
+
 export type ParseResult =
-  { ok: true; stages: Stage[] } | { ok: false; error: string };
+  | { ok: true; groups: { op: Joiner; stages: Stage[] }[] }
+  | { ok: false; error: string };
 
 export type TokenizeResult =
-  { ok: true; pipeline: Token[][] } | { ok: false; error: string };
+  { ok: true; groups: Group<Token[]>[] } | { ok: false; error: string };
 
 export const PARSE_ERRORS = {
   unclosedSingle: "unclosed single quote (')",
   unclosedDouble: 'unclosed double quote (")',
   trailingEscape: "a backslash at the end of the line escapes nothing",
   emptyStage: "a pipe needs a command on both sides",
+  emptyAnd: "&& needs a command on both sides",
+  emptySemicolon: "; needs a command before it",
 } as const;
 
-/** Split a line into pipe stages of tokens. A blank line is zero stages. */
+/** Split a line into groups of pipe stages of tokens. A blank line is zero groups. */
 export function tokenize(line: string): TokenizeResult {
-  const pipeline: Token[][] = [];
+  const groups: Group<Token[]>[] = [];
+  let pipeline: Token[][] = [];
+  let op: Joiner = null;
   let stage: Token[] = [];
   let value = "";
   let literal = false;
@@ -86,6 +99,26 @@ export function tokenize(line: string): TokenizeResult {
       value += line[i + 1];
       startLiteral();
       i += 2;
+    } else if (ch === ";" || (ch === "&" && line[i + 1] === "&")) {
+      const next: Joiner = ch === ";" ? ";" : "&&";
+      endToken();
+      if (stage.length === 0) {
+        // "a |;" is an empty pipe stage; ";" or "&&" with nothing before is its own error.
+        if (pipeline.length > 0)
+          return { ok: false, error: PARSE_ERRORS.emptyStage };
+        return {
+          ok: false,
+          error:
+            next === ";" ? PARSE_ERRORS.emptySemicolon : PARSE_ERRORS.emptyAnd,
+        };
+      }
+      pipeline.push(stage);
+      groups.push({ op, pipeline });
+      pipeline = [];
+      stage = [];
+      sawPipe = false;
+      op = next;
+      i += next.length;
     } else if (ch === "|") {
       endToken();
       if (stage.length === 0)
@@ -104,9 +137,16 @@ export function tokenize(line: string): TokenizeResult {
     }
   }
   endToken();
-  if (stage.length > 0) pipeline.push(stage);
-  else if (sawPipe) return { ok: false, error: PARSE_ERRORS.emptyStage };
-  return { ok: true, pipeline };
+  if (stage.length > 0) {
+    pipeline.push(stage);
+    groups.push({ op, pipeline });
+  } else if (sawPipe) {
+    return { ok: false, error: PARSE_ERRORS.emptyStage };
+  } else if (op === "&&") {
+    // "a &&" waits for a command that never comes; a trailing ";" is fine, as in a shell.
+    return { ok: false, error: PARSE_ERRORS.emptyAnd };
+  }
+  return { ok: true, groups };
 }
 
 /** Turn a command's tokens (after its name) into positionals and flags. */
@@ -129,15 +169,18 @@ export function parseArgs(tokens: Token[]): Args {
   return args;
 }
 
-/** A whole line: pipe stages, each a command name and its parsed arguments. */
+/** A whole line: groups of pipe stages, each a command name and its parsed arguments. */
 export function parse(line: string): ParseResult {
   const tokens = tokenize(line);
   if (!tokens.ok) return tokens;
   return {
     ok: true,
-    stages: tokens.pipeline.map(([name, ...rest]) => ({
-      name: name!.value,
-      args: parseArgs(rest),
+    groups: tokens.groups.map((group) => ({
+      op: group.op,
+      stages: group.pipeline.map(([name, ...rest]) => ({
+        name: name!.value,
+        args: parseArgs(rest),
+      })),
     })),
   };
 }

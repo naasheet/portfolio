@@ -8,3 +8,6 @@ public/
 stuff/
 CLAUDE.md
 AGENTS.md
+# Nasheet's own prose (CLAUDE.md §12.5); Prettier also mangles MDX comments ({/* … */}).
+content/case-studies/
+content/knowledge.md

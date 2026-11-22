@@ -42,7 +42,7 @@ export const Line = memo(function Line({ line }: { line: OutputLine }) {
     case "input":
       return (
         <div className="flex break-all whitespace-pre-wrap">
-          <Prompt />
+          <Prompt cwd={line.cwd} />
           <span className="text-island-text">{line.text}</span>
         </div>
       );
@@ -134,7 +134,7 @@ export const Line = memo(function Line({ line }: { line: OutputLine }) {
       );
     case "ascii":
       return (
-        <pre className="overflow-x-auto leading-tight text-island-text">
+        <pre className="overflow-x-auto leading-[1.1] text-island-text">
           {line.text}
         </pre>
       );

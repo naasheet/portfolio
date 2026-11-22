@@ -9,8 +9,9 @@ import {
   type MouseEvent,
 } from "react";
 import { useRouter } from "next/navigation";
-import { copy } from "@/content/copy";
+import { terminalCopy } from "@/content/terminal";
 import { execute } from "@/lib/commands/exec";
+import { getFs } from "@/lib/fs";
 import { complete } from "@/lib/commands/registry";
 import { useStore } from "@/lib/store";
 import { onTypingSound } from "@/lib/sfx";
@@ -26,7 +27,7 @@ import { Line } from "./Line";
 import { Prompt } from "./Prompt";
 import { Welcome } from "./Welcome";
 
-const t = copy.terminal;
+const t = terminalCopy.terminal;
 
 /**
  * The shell (6.1; Overlays board, Drawer). SF Mono at Footnote size on the island's near-black.
@@ -44,7 +45,7 @@ const t = copy.terminal;
  */
 export function Terminal() {
   const router = useRouter();
-  const { entries, running, banner, asking } = useSyncExternalStore(
+  const { entries, running, banner, asking, cwd } = useSyncExternalStore(
     subscribeSession,
     getSession,
     getServerSession,
@@ -78,7 +79,7 @@ export function Terminal() {
   };
 
   const run = async (raw: string) => {
-    session.print({ kind: "input", text: raw });
+    session.print({ kind: "input", text: raw, cwd: getSession().cwd });
     history.current?.push(raw);
     if (!raw.trim()) return;
     const signal = session.begin();
@@ -139,7 +140,7 @@ export function Terminal() {
       if (running) return;
       const result = complete(el.value, el.selectionStart ?? el.value.length, {
         store: useStore,
-        fs: null,
+        fs: getFs(),
         cwd: getSession().cwd,
       });
       if (result.kind === "replace") setInput(result.input, result.caret);
@@ -211,7 +212,7 @@ export function Terminal() {
             {"> "}
           </span>
         ) : (
-          <Prompt />
+          <Prompt cwd={cwd} />
         )}
         <span className="relative flex min-w-0 flex-1">
           <input

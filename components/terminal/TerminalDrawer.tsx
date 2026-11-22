@@ -1,12 +1,12 @@
 "use client";
 
 import { Terminal as TerminalIcon } from "lucide-react";
-import { copy } from "@/content/copy";
+import { terminalCopy } from "@/content/terminal";
 import { Drawer } from "@/components/overlay/Drawer";
 import { useStore } from "@/lib/store";
 import { Terminal } from "./Terminal";
 
-const t = copy.terminal;
+const t = terminalCopy.terminal;
 const close = () => useStore.getState().ui.setTerminalOpen(false);
 
 /**

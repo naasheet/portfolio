@@ -1,8 +1,8 @@
 /* echo (6.2, minimal; 6.4 may add more): prints its arguments, flags included, as typed. */
-import { copy } from "@/content/copy";
+import { terminalCopy } from "@/content/terminal";
 import type { Command } from "./types";
 
-const t = copy.commands.echo;
+const t = terminalCopy.commands.echo;
 
 export const echo: Command = {
   name: "echo",

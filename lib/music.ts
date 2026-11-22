@@ -21,7 +21,11 @@ let unsubscribe: (() => void) | null = null;
 let mediaSession: Promise<void> | null = null;
 let levels: Promise<void> | null = null;
 
-export async function startMusic(): Promise<void> {
+/**
+ * `track` (6.3, the terminal's `open song.mp3`): start with that track instead of track 1 (or
+ * switch to it with the crossfade if music is already on).
+ */
+export async function startMusic(options?: { track?: number }): Promise<void> {
   const ctx = ensureAudioContext();
   if (!ctx) return;
   mod ??= await import("./audio/engine");
@@ -38,7 +42,8 @@ export async function startMusic(): Promise<void> {
       else if (!engine.isPlaying()) void engine.play();
     },
   );
-  if (useStore.getState().ui.soundEnabled && !engine.isPlaying())
+  if (options?.track !== undefined) await engine.load(options.track);
+  else if (useStore.getState().ui.soundEnabled && !engine.isPlaying())
     await engine.play();
 }
 

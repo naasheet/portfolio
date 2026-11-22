@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { execute } from "../exec";
 import { complete, editDistance, suggest } from "../registry";
 import { getSession, session } from "@/lib/terminal/session";
+import { getFs } from "@/lib/fs";
 import { useStore } from "@/lib/store";
 
 const router = { push: () => {} };
@@ -15,7 +16,7 @@ const printed = () =>
         ? line.text
         : "",
   );
-const ctx = { store: useStore, fs: null, cwd: "~" };
+const ctx = { store: useStore, fs: getFs(), cwd: "~" };
 
 beforeEach(() => session.clear());
 
@@ -31,10 +32,11 @@ describe("pipes", () => {
     ]);
   });
   it("chains more than one pipe and inverts", async () => {
-    await run("help | grep -v help | grep -v grep");
+    await run("help | grep -v commands | grep -i print | grep -v Change");
     expect(printed()).toEqual([
-      "3 commands. Type one to run it.",
+      "cat  Print a file (Markdown with styling)",
       "echo  Print what you type after it",
+      "pwd  Print the current directory",
     ]);
   });
   it("marks the matches", async () => {
@@ -96,10 +98,18 @@ describe("Tab completion", () => {
     });
   });
   it("lists every command for an empty word", () => {
-    expect(complete("", 0, ctx)).toEqual({
-      kind: "list",
-      candidates: ["echo", "grep", "help"],
-    });
+    const result = complete("", 0, ctx);
+    expect(result.kind === "list" && result.candidates).toEqual([
+      "cat",
+      "cd",
+      "echo",
+      "grep",
+      "help",
+      "ls",
+      "open",
+      "pwd",
+      "tree",
+    ]);
   });
   it("leaves text after the caret alone", () => {
     expect(complete("ec world", 2, ctx)).toEqual({

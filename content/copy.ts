@@ -73,46 +73,6 @@ export const copy = {
     },
     valueText: (now: string, total: string) => `${now} of ${total}`,
   },
-  /** The terminal (6.1). Command output is the commands' own (6.2+). */
-  terminal: {
-    title: "Terminal",
-    close: "Close the terminal",
-    /** Before the Esc key cap in the drawer's header. */
-    escHint: "close",
-    user: "nasheet",
-    host: "portfolio",
-    path: "~",
-    banner: "Type help to start",
-    /** Three clickable commands under the banner on the first open. */
-    suggestionsLabel: "Try",
-    suggestions: ["help", "whoami", "projects"],
-    inputLabel: "Command. Type one and press Enter.",
-    outputLabel: "Terminal output",
-    /** Unknown command (6.2): with a suggestion when one is 2 edits away or closer. */
-    notFound: (command: string, suggestion?: string) =>
-      suggestion
-        ? `command not found: ${command} — did you mean ${suggestion}?`
-        : `command not found: ${command}. Type help for the list.`,
-    syntax: (error: string) => `syntax error: ${error}`,
-  },
-  /** Each command's help line and messages (6.2+): lib/commands/<name>.ts reads its own. */
-  commands: {
-    help: {
-      description: "List every command",
-      usage: "help",
-      count: (n: number) => `${n} commands. Type one to run it.`,
-    },
-    echo: {
-      description: "Print what you type after it",
-      usage: "echo <text…>",
-    },
-    grep: {
-      description: "Keep the piped lines that match a pattern",
-      usage: "grep [-i] [-v] [-n] <pattern>",
-      noPattern: "grep: what should I look for? Try: help | grep music",
-      noInput: "grep: nothing to search. Pipe something in: help | grep music",
-    },
-  },
   /** The 404 page (4.8). */
   notFound: {
     code: "404",
@@ -471,6 +431,8 @@ Reply to this email to answer them.`,
     secrets: {
       total: 5,
       plant: "You watered the plant",
+      /** 6.3: reading ~/.secrets in the terminal for the first time. */
+      dotfile: "You read the dotfile",
       count: (found: number, total: number) => `secret ${found} of ${total}`,
     },
   },

@@ -1,11 +1,11 @@
 "use client";
 
-import { copy } from "@/content/copy";
+import { terminalCopy } from "@/content/terminal";
 import { ScrambleText } from "@/components/motion/ScrambleText";
 import { focusRing } from "@/components/ui/controlStyles";
 import { cn } from "@/lib/utils";
 
-const t = copy.terminal;
+const t = terminalCopy.terminal;
 
 /**
  * The first open of a visit (6.1): the "Type help to start" banner, scrambled in, and three
