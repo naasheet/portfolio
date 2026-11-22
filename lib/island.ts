@@ -72,6 +72,8 @@ const KIND_ORDER: Record<ActivityKind, number> = {
 
 let state: IslandState = { activities: [], alert: null, expandedId: null };
 let nextAlertId = 1;
+/** expand(id, { focus: true }) from outside the island (5.5): the island focuses the card. */
+let focusRequested = false;
 let alertTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
 
@@ -120,9 +122,11 @@ export const island = {
     if (state.alert) set({ alert: null });
   },
   /** Expand an activity that has an `expanded` card. */
-  expand(id: string): void {
+  expand(id: string, options?: { focus?: boolean }): void {
     const activity = state.activities.find((a) => a.id === id);
-    if (activity?.expanded) set({ expandedId: id });
+    if (!activity?.expanded) return;
+    focusRequested = Boolean(options?.focus);
+    set({ expandedId: id });
   },
   collapse(): void {
     if (state.expandedId) set({ expandedId: null });
@@ -131,6 +135,13 @@ export const island = {
     return state.expandedId !== null;
   },
 };
+
+/** The Island component asks once per expand whether focus should move into the card. */
+export function takeFocusRequest(): boolean {
+  const asked = focusRequested;
+  focusRequested = false;
+  return asked;
+}
 
 export function subscribeIsland(listener: () => void): () => void {
   listeners.add(listener);

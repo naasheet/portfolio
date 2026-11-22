@@ -22,6 +22,7 @@ import {
   getServerIsland,
   island,
   subscribeIsland,
+  takeFocusRequest,
   type IslandActivity,
 } from "@/lib/island";
 import { useStore } from "@/lib/store";
@@ -127,7 +128,9 @@ export function Island() {
     const el = root.current;
     const active = document.activeElement;
     const focusLost = !active || active === document.body;
-    if (!el || !(focusLost || el.contains(active))) return;
+    // Opened from elsewhere by keyboard (the About card, 5.5): move focus in too.
+    const asked = shape === "expanded" && takeFocusRequest();
+    if (!el || !(focusLost || asked || el.contains(active))) return;
     if (shape === "expanded") {
       (
         el.querySelector<HTMLElement>("[data-island-autofocus]") ??

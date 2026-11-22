@@ -531,7 +531,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **5 — Music** (5.1–5.4 done; 5.5, the now-playing card, is next). Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal** (6.1 is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -553,7 +553,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -606,7 +606,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1035,6 +1035,45 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Now-playing card (5.5):** `components/cards/NowPlayingCard.tsx` (now a live client card, no
+  props but `className`), `components/player/openMusic.ts` (moved out of `roomActions.ts`, shared
+  with the headphones), from the updated About frames (row 3 on desktop, after "The short version"
+  on phones).
+  - **Place:** row 3 is Photo 1 · Photo 2 · Now playing · Off the screen (photos `lg` 6 with two
+    photos, `md:grid-cols-2`; the card `md` 3 / `lg` 3). Two instances, like ARCard: `md:hidden`
+    after the short version, `hidden md:block` in row 3, so the DOM order matches what's on screen.
+    `copy.about.photoCaptions` is down to two.
+  - **Renders on** `audio.trackIndex`, `audio.playing` and `ui.soundEnabled` only (the last for
+    silent mode). Cover (`Img`, 2:1, filling the row on lg), a mono teal "Now playing" / "Paused"
+    eyebrow, the 5.2 `Bars`, title, artist, a 2 px progress line (scaleX from the ticker through a
+    ref, only while playing), "Opens the player in the island ↗".
+  - **Silent mode:** the cover dims (scrim) with a white speaker button; "Sound's off. Turn it on?"
+    and "Starts the first track and opens the player in the island." The whole card is one button
+    (absolute, full size) whose click runs `openMusic()`: `toggleSound()` creates the
+    AudioContext synchronously in the gesture, track 1 fades in over 2 s, and the player opens
+    once the activity exists.
+  - **Sound on:** the "Opens the player…" line is the button, stretched over the card (CTACard's
+    `::after` pattern). `openMusic()` resumes first if the music left the island (paused > 30 s).
+  - **Nav:** `NavAutoHide` now subscribes to the island and clears `data-hidden` whenever an alert or
+    an expanded card appears (benefits the headphones too). No scrolling happens.
+  - **Keyboard:** `island.expand(id, { focus: true })` (new option; `takeFocusRequest()` in
+    `lib/island.ts`) makes the Island move focus into the card even though focus was outside it.
+    The card passes it for keyboard clicks (`event.detail === 0`); the headphones don't yet
+    (the 5.2 follow-up still stands for them).
+- **Verified 5.5 (headless Chromium, production build with the /dev flag, real local tracks):**
+  - **Sound off:** the card reads "Now playing · Sound's off. Turn it on? · Starts the first track
+    …"; the nav was auto-hidden at scroll 1088. **One click:** exactly one AudioContext, created
+    with user activation live; World's End Rhapsody playing, the island expanded, the nav shown,
+    scroll still 1088.
+  - **Follows the island:** Next in the island → card "Gehra · DARZI"; Pause → "Paused".
+  - **0 React commits** over 3 s of playback while the progress line moved (0.011 → 0.020).
+  - **Resume:** scrolled so the nav hid, paused card clicked → playing, player open, nav back,
+    scroll unchanged.
+  - **Keyboard:** Enter on the card → focus on the island's Pause button.
+  - **Phone (390):** profile, stats, tagline, short version, **now playing**, hand, photos, off the
+    screen (as drawn). Screenshots match both frames (light theme: headless).
+  - **[manual]** Turning sound on from the card on **iOS Safari** (first try, the AudioContext rule);
+    the card in dark theme; copy review (`copy.about.nowPlaying`, "Paused" is mine).
 - **Verified 5.4 (headless Chromium on the Iris Xe, production build, World's End Rhapsody at
   80 %; a main-world WebGL probe recorded the uniforms as uploaded):**
   - **/about playing (6 s):** uBass 0.25–0.90 (p50 0.56), uMid 0.28–0.62, uHigh 0.02–0.11, 17
@@ -1507,8 +1546,7 @@ Carry-over into later chunks:
 - **Bundle:** the card kit isn't on `/` yet. When 4.x puts it there, re-measure: SkillsCard
   brings AnimatePresence, and StatCard brings the count-up hook. There's only about 3 KB of
   headroom.
-- **5.5 / 6.1 / 8.x wiring:** NowPlayingCard (`playing`, `progress`, title, artist, cover),
-  TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`, `onToggle` flips
+- **6.1 / 8.x wiring:** (NowPlayingCard is live since 5.5) TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`, `onToggle` flips
   `ar.enabled`) all take static props for now.
 - **2.2 gate over the canvas:** the canvas is opaque now (3.5), so "make the gate's background
   transparent over it at 35%" means the gate's own bg at 35% over the canvas; delete `GateScatter`
@@ -1542,6 +1580,7 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
+- About (5.5): `copy.about.nowPlaying` for review ("Paused" isn't from the frame).
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo
   captions come with `profile.photos` (`copy.about.photoCaptions` are placeholders); the About

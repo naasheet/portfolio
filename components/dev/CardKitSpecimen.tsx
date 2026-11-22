@@ -24,7 +24,6 @@ import * as fx from "./fixtures";
 export function CardKitSpecimen() {
   const [arState, setArState] = useState<ARState>("off");
   const [log, setLog] = useState("—");
-  const [playing, setPlaying] = useState(true);
 
   return (
     <div className="flex flex-col gap-4">
@@ -66,18 +65,14 @@ export function CardKitSpecimen() {
         </BentoItem>
 
         <BentoItem col={{ md: 3, lg: 3 }}>
-          <NowPlayingCard
-            {...fx.nowPlaying}
-            playing={playing}
-            className="h-full"
-          />
+          {/* Live since 5.5: it follows the real player. */}
+          <NowPlayingCard className="h-full" />
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 3 }}>
           <CTACard
             {...fx.cta}
             onClick={() => {
               setLog("CTACard onClick");
-              setPlaying((p) => !p);
             }}
             className="h-full"
           />
@@ -117,10 +112,23 @@ export function CardKitSpecimen() {
 
         {/* 4.3 additions (About page): variants and new kit pieces. */}
         <BentoItem col={{ md: 3, lg: 4 }} row={{ lg: 2 }}>
-          <ProfileCard {...fx.profile} variant="hero" hoverable meta="Indore · 12:00 IST" className="h-full" />
+          <ProfileCard
+            {...fx.profile}
+            variant="hero"
+            hoverable
+            meta="Indore · 12:00 IST"
+            className="h-full"
+          />
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 2 }}>
-          <StatCard label="Dots (hoverable)" value={26} display="dots" monoEyebrow hoverable className="h-full" />
+          <StatCard
+            label="Dots (hoverable)"
+            value={26}
+            display="dots"
+            monoEyebrow
+            hoverable
+            className="h-full"
+          />
         </BentoItem>
         <BentoItem col={{ md: 6, lg: 6 }} row={{ lg: 2 }}>
           <TaglineCard
@@ -131,14 +139,18 @@ export function CardKitSpecimen() {
             actions={
               <>
                 <Button size="lg">[Primary]</Button>
-                <Button size="lg" variant="secondary">[Secondary]</Button>
+                <Button size="lg" variant="secondary">
+                  [Secondary]
+                </Button>
               </>
             }
           />
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 2 }}>
           <div className="flex h-full flex-col justify-center gap-4 rounded-card border border-border-default p-6">
-            <span className="text-caption-1 font-mono text-text-tertiary">DotDigits 0 / 7 / 12</span>
+            <span className="text-caption-1 font-mono text-text-tertiary">
+              DotDigits 0 / 7 / 12
+            </span>
             <DotDigits value={0} countUp={false} />
             <DotDigits value={7} countUp={false} />
             <DotDigits value={12} />
@@ -156,10 +168,18 @@ export function CardKitSpecimen() {
           />
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 3 }}>
-          <PhotoCard caption="[Placeholder photo]" placeholderLabel="[Photo 1]" className="h-full" />
+          <PhotoCard
+            caption="[Placeholder photo]"
+            placeholderLabel="[Photo 1]"
+            className="h-full"
+          />
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 3 }}>
-          <ARCard {...fx.ar} state="off" compact={{ body: "[Compact phone row]" }} />
+          <ARCard
+            {...fx.ar}
+            state="off"
+            compact={{ body: "[Compact phone row]" }}
+          />
         </BentoItem>
       </BentoGrid>
     </div>

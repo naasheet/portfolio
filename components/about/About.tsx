@@ -4,6 +4,7 @@ import { ArrowUpRight, ChevronDown, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { ARCard, type ARCardCopy } from "@/components/cards/ARCard";
+import { NowPlayingCard } from "@/components/cards/NowPlayingCard";
 import { PhotoCard } from "@/components/cards/PhotoCard";
 import { ProfileCard } from "@/components/cards/ProfileCard";
 import { StatCard } from "@/components/cards/StatCard";
@@ -67,9 +68,10 @@ function Availability() {
 /**
  * The About page (4.3; About frames). First screen: the cards from the old hero (profile, the
  * two dot-digit numbers, the tagline with its calls to action, Hand mode and the terminal), then
- * the personal part (the short version, photos, off the screen, interests). Everything comes from
- * content/; the numbers are counted (lib/content/stats.ts). Cards stagger in 60 ms apart; the
- * sphere sits top right (top centre on phones) through the page's `place` (content/chapters.ts).
+ * the personal part (the short version, the now-playing card (5.5), two photos, off the screen,
+ * interests). Everything comes from content/; the numbers are counted (lib/content/stats.ts).
+ * Cards stagger in 60 ms apart; the sphere sits top right (top centre on phones) through the
+ * page's `place` (content/chapters.ts).
  */
 export function About() {
   const router = useRouter();
@@ -78,7 +80,8 @@ export function About() {
 
   // Button links go through the page transition (CLAUDE.md: every in-site navigation).
   const go = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
-    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0)
+      return;
     e.preventDefault();
     navigate(router, href);
   };
@@ -137,7 +140,14 @@ export function About() {
 
           <BentoItem data-stagger col={{ md: 6, lg: 2 }} row={{ lg: 2 }}>
             <div className="grid h-full grid-cols-2 gap-4 lg:grid-cols-1">
-              <StatCard hoverable className="h-full" label={t.skills} value={stats.skills} display="dots" monoEyebrow />
+              <StatCard
+                hoverable
+                className="h-full"
+                label={t.skills}
+                value={stats.skills}
+                display="dots"
+                monoEyebrow
+              />
               <StatCard
                 hoverable
                 className="h-full"
@@ -200,6 +210,11 @@ export function About() {
             />
           </BentoItem>
 
+          {/* Phones: the now-playing card right after the short version (About phone frame). */}
+          <BentoItem data-stagger className="md:hidden">
+            <NowPlayingCard />
+          </BentoItem>
+
           <BentoItem data-stagger col={{ md: 3, lg: 3 }} row={{ lg: 2 }}>
             <ARCard
               hoverable
@@ -243,9 +258,9 @@ export function About() {
             />
           </BentoItem>
 
-          <BentoItem data-stagger col={{ md: 6, lg: 9 }} row={{ lg: 2 }}>
-            <div className="-mx-4 flex h-full snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:overflow-visible md:px-0 md:pb-0">
-              {photos.map((p, i) => (
+          <BentoItem data-stagger col={{ md: 6, lg: 6 }} row={{ lg: 2 }}>
+            <div className="-mx-4 flex h-full snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-4 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0">
+              {photos.slice(0, 2).map((p, i) => (
                 <PhotoCard
                   key={i}
                   className="h-72 w-[66vw] shrink-0 snap-start md:h-full md:w-auto"
@@ -257,7 +272,17 @@ export function About() {
             </div>
           </BentoItem>
 
-          <BentoItem data-stagger col={{ md: 6, lg: 3 }} row={{ lg: 2 }}>
+          {/* Desktop and tablet: in place of the third photo (About desktop frame, 5.5). */}
+          <BentoItem
+            data-stagger
+            className="hidden md:block"
+            col={{ md: 3, lg: 3 }}
+            row={{ lg: 2 }}
+          >
+            <NowPlayingCard className="h-full" />
+          </BentoItem>
+
+          <BentoItem data-stagger col={{ md: 3, lg: 3 }} row={{ lg: 2 }}>
             <TextCard
               hoverable
               className="h-full"
@@ -271,7 +296,11 @@ export function About() {
         </BentoGrid>
       </Stagger>
 
-      <div className="mt-4 hidden md:block" aria-label={t.interests} role="group">
+      <div
+        className="mt-4 hidden md:block"
+        aria-label={t.interests}
+        role="group"
+      >
         <Marquee duration={40} gap={12}>
           {profile.interests.map((interest, i) => (
             <span

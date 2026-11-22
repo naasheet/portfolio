@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getIsland } from "@/lib/island";
+import { getIsland, subscribeIsland } from "@/lib/island";
 import { isScrollLocked } from "@/lib/motion/lenis";
 import { useStore } from "@/lib/store";
 
@@ -15,7 +15,8 @@ const MIN_DELTA = 4;
  * toggles `data-hidden` on #site-nav; the CSS slide is a transform (a fade under reduced
  * motion). It never hides while the nav is hovered or holds focus (tooltips, the open island),
  * while the menu, the shortcuts or any overlay is open, or while the island shows an alert or
- * a card. Keyboard focus moving into a hidden nav shows it. Renders nothing.
+ * a card; an alert or a card opening brings a hidden nav back (5.5). Keyboard focus moving into a
+ * hidden nav shows it. Renders nothing.
  */
 export function NavAutoHide() {
   useEffect(() => {
@@ -45,10 +46,17 @@ export function NavAutoHide() {
       nav.toggleAttribute("data-hidden", hide);
     };
     const onFocusIn = () => nav.removeAttribute("data-hidden");
+    // A card opened from the page (the About now-playing card, 5.5) or an alert must be seen.
+    const offIsland = subscribeIsland(() => {
+      const { alert, expandedId } = getIsland();
+      if (alert !== null || expandedId !== null)
+        nav.removeAttribute("data-hidden");
+    });
 
     window.addEventListener("scroll", onScroll, { passive: true });
     nav.addEventListener("focusin", onFocusIn);
     return () => {
+      offIsland();
       window.removeEventListener("scroll", onScroll);
       nav.removeEventListener("focusin", onFocusIn);
     };

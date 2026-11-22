@@ -108,8 +108,19 @@ export const copy = {
     photoCaptions: [
       "[A playful caption]",
       "[Hover: the card tilts toward the pointer]",
-      "[Another caption]",
     ],
+    /** The now-playing card (5.5, About frames). */
+    nowPlaying: {
+      eyebrow: "Now playing",
+      /** Sound on, music paused. TODO(content): review. */
+      paused: "Paused",
+      opens: "Opens the player in the island",
+      offTitle: "Sound's off. Turn it on?",
+      offBody: "Starts the first track and opens the player in the island.",
+      /** The card button's accessible name. */
+      label: (title: string, artist: string, playing: boolean) =>
+        `${playing ? "Now playing" : "Paused"}: ${title} by ${artist}. Opens the player in the island`,
+    },
     interests: "Interests",
     ar: {
       title: "Steer it with your hand",
