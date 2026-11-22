@@ -1240,6 +1240,8 @@ Open TODO(content) items:
   learning (with progress if you want), tools, and "Where I used it" (project slugs). Review
   `copy.skills` (lede, legend lines). `content/socials.ts` — done (GitHub, LinkedIn, Instagram;
   the Instagram icon comes with 4.7).
+- `content/copy.ts` `contact.timeNote` (4.7) — the time card's line, in your words (placeholder
+  now). `contact.success` uses the frame's "I'll reply within a day." (approved).
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo

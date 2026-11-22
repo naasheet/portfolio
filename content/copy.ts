@@ -119,6 +119,13 @@ export const copy = {
     tools: "Open every day",
     newTab: "opens in a new tab",
   },
+  /** The Contact page (4.7; Contact frames). 4.7 adds the rest of its labels here. */
+  contact: {
+    /** After the message is sent (the frame's line, approved). */
+    success: "I'll reply within a day.",
+    /** TODO(content): the line on the local-time card, in your words. */
+    timeNote: "[Night owl. Usually replies by noon.]",
+  },
   /** Case studies (4.5; Case study frames). Facts come from projects.ts and the MDX body. */
   caseStudy: {
     allWork: "All work",
