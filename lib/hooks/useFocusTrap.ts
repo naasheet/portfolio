@@ -54,7 +54,11 @@ export function useFocusTrap(
         : null;
 
     stack.push(root);
-    const first = initialFocus?.current ?? getFocusable(root)[0] ?? root;
+    const first =
+      initialFocus?.current ??
+      root.querySelector<HTMLElement>("[data-autofocus]") ??
+      getFocusable(root)[0] ??
+      root;
     first.focus({ preventScroll: true });
 
     const onKeyDown = (e: KeyboardEvent) => {

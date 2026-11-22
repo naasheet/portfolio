@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { copy } from "@/content/copy";
 import { tracks } from "@/content/music";
 import { getIsland, island } from "@/lib/island";
@@ -10,14 +11,17 @@ import { Bars } from "./Bars";
 import { Cover } from "./Cover";
 import { PlayerCard } from "./PlayerCard";
 
+const QueueSheet = dynamic(() => import("./QueueSheet"), { ssr: false });
+
 /** Paused this long, the activity leaves the island (5.2). */
 const LINGER_MS = 30_000;
 
 /**
  * Puts the music into the island (5.2, Island board "Music · live"): album art leading, the bars
  * trailing, the page staying in the centre; either slot expands into PlayerCard. Mounted once
- * the engine exists (IslandMusicLoader); renders nothing itself. Paused, the activity stays with
- * flat bars for 30 s, then leaves.
+ * the engine exists (IslandMusicLoader). Paused, the activity stays with flat bars for 30 s, then
+ * leaves. It also hosts the queue sheet (5.3), loaded the first time it opens and kept mounted
+ * so it can animate out (it lives here, not in the card: an island alert swaps the card out).
  */
 export default function IslandMusic() {
   useEffect(() => {
@@ -65,5 +69,9 @@ export default function IslandMusic() {
     };
   }, []);
 
-  return null;
+  const queueOpen = useStore((s) => s.ui.queueOpen);
+  const [queueLoaded, setQueueLoaded] = useState(false);
+  if (queueOpen && !queueLoaded) setQueueLoaded(true);
+
+  return queueLoaded ? <QueueSheet /> : null;
 }

@@ -18,6 +18,9 @@ export type SheetProps = OverlayProps & {
   eyebrow?: string;
   /** Sticky footer actions (e.g. Close and a primary action). Full width on phones. */
   footer?: ReactNode;
+  /** Restyle the eyebrow (the queue's mono caption, 5.3). */
+  eyebrowClassName?: string;
+  titleClassName?: string;
 };
 
 const PANEL =
@@ -37,6 +40,8 @@ export function Sheet({
   closeLabel,
   eyebrow,
   footer,
+  eyebrowClassName,
+  titleClassName,
   children,
   className,
 }: SheetProps) {
@@ -60,6 +65,8 @@ export function Sheet({
         title={title}
         titleId={titleId}
         eyebrow={eyebrow}
+        eyebrowClassName={eyebrowClassName}
+        titleClassName={titleClassName}
         closeLabel={closeLabel}
         onClose={onClose}
         className={cn(

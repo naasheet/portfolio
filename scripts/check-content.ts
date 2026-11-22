@@ -162,10 +162,10 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
     warnings.push("content/projects.ts › no projects yet");
 }
 
-// --- Music (5.1) ----------------------------------------------------------------------------
-// Tracks without a licence warn locally and FAIL on CI / Vercel (CLAUDE.md §9.3): only music
-// Nasheet has the rights to stream may be deployed. public/audio/ is gitignored, so the files are
-// also missing there until licensed tracks are committed on purpose.
+// --- Music (5.1, 5.3) ------------------------------------------------------------------------
+// Every track needs a licence (5.3: the queue never shows "not set"). "local" marks a file that
+// may only play on Nasheet's machine: a warning locally, a FAILURE on CI / Vercel (CLAUDE.md
+// §9.3), so unlicensed music can't be deployed. public/audio/ is gitignored for the same reason.
 {
   const deploying = Boolean(process.env.CI || process.env.VERCEL);
   const ids = new Set<string>();
@@ -179,7 +179,18 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
       if (!filled(t[field])) fail(at, `${field} is required`);
     inPublic(`${at} › src`, t.src);
     inPublic(`${at} › cover`, t.cover);
-    if (t.license === null) {
+    if (!(
+      typeof t.duration === "number" &&
+      t.duration > 0 &&
+      t.duration < 3600
+    ))
+      fail(
+        `${at} › duration`,
+        "whole seconds, measured with ffprobe, is required",
+      );
+    if (t.license === undefined || t.license === null) {
+      fail(`${at} › license`, 'is required: { source, url }, or "local"');
+    } else if (t.license === "local") {
       if (deploying)
         fail(
           at,
@@ -187,7 +198,7 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
         );
       else
         warnings.push(
-          `${at} has no licence yet (local only; a deploy build fails)`,
+          `${at} is a local file (no licence; a deploy build fails)`,
         );
     } else {
       if (!filled(t.license.source))

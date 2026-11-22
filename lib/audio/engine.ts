@@ -33,6 +33,10 @@ const PREV_RESTART_S = 3;
 /** Consecutive load failures before the engine gives up instead of skipping forever. */
 const MAX_ERRORS = 3;
 const VOLUME_KEY = "volume";
+/** The level to come back to after a mute (5.3). */
+const UNMUTE_KEY = "volume-unmute";
+/** Unmuting with nothing saved (or a saved 0) returns to this. */
+const DEFAULT_UNMUTE = 0.6;
 
 type Deck = {
   el: HTMLAudioElement;
@@ -72,6 +76,8 @@ class AudioEngine {
   private errors = 0;
   /** Bumped on every switch, so a stale async step can tell it lost the race. */
   private switchId = 0;
+  /** Media Session (5.3): told when the active track's length or position jumps. */
+  private mediaListeners = new Set<() => void>();
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx;
@@ -117,6 +123,11 @@ class AudioEngine {
     el.addEventListener("playing", () => {
       if (this.activeDeck() === deck) this.errors = 0;
     });
+    for (const type of ["loadedmetadata", "seeked", "play", "pause"]) {
+      el.addEventListener(type, () => {
+        if (this.activeDeck() === deck) this.emitMedia();
+      });
+    }
     return deck;
   }
 
@@ -213,6 +224,35 @@ class AudioEngine {
   getDuration(): number {
     const d = this.activeDeck().el.duration;
     return Number.isFinite(d) ? d : 0;
+  }
+
+  /** This visit's play order (indices into `tracks`): the queue lists it (5.3). */
+  getOrder(): readonly number[] {
+    return this.order;
+  }
+
+  /**
+   * Called when the active track's duration or position jumps (loaded, seeked, played, paused),
+   * for Media Session's setPositionState (5.3). Returns the unsubscribe.
+   */
+  onMedia(listener: () => void): () => void {
+    this.mediaListeners.add(listener);
+    return () => this.mediaListeners.delete(listener);
+  }
+
+  /** Mute (remembering the level), or go back to the remembered level (5.3). */
+  toggleMute(): void {
+    const volume = useStore.getState().audio.volume;
+    if (volume > 0) {
+      storage.set(UNMUTE_KEY, String(volume));
+      this.applyVolume(0, false);
+      return;
+    }
+    const saved = Number(storage.get(UNMUTE_KEY));
+    this.applyVolume(
+      Number.isFinite(saved) && saved > 0 ? saved : DEFAULT_UNMUTE,
+      false,
+    );
   }
 
   /** Where the current track sits in this visit's play order: "track 3 of 8" (1-based). */
@@ -335,6 +375,10 @@ class AudioEngine {
     }
     toast(copy.music.loadError(track?.title ?? ""), { kind: "error" });
     await this.next();
+  }
+
+  private emitMedia(): void {
+    for (const listener of this.mediaListeners) listener();
   }
 
   private setPlaying(playing: boolean): void {

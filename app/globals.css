@@ -1113,3 +1113,42 @@ html[data-intro="play"] [data-intro-fade] {
     transform: scale(1);
   }
 }
+
+/* The queue sheet's volume slider (5.3): a 4 px line filled to --fill, with a round thumb. */
+@layer components {
+  .volume-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      to right,
+      var(--color-text-primary) var(--fill, 0%),
+      var(--color-border-default) var(--fill, 0%)
+    );
+  }
+  .volume-range::-moz-range-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--color-border-default);
+  }
+  .volume-range::-moz-range-progress {
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--color-text-primary);
+  }
+  .volume-range::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-top: -6px;
+    border: 2px solid var(--color-surface-solid);
+    border-radius: 9999px;
+    background: var(--color-text-primary);
+  }
+  .volume-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-surface-solid);
+    border-radius: 9999px;
+    background: var(--color-text-primary);
+  }
+}

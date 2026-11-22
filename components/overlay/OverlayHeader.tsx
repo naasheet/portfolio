@@ -13,6 +13,7 @@ export type OverlayHeaderProps = {
   onClose: () => void;
   /** Small label above the title ("Case study"). */
   eyebrow?: string;
+  eyebrowClassName?: string;
   /** One or two lines under the title (Modal). */
   description?: string;
   descriptionId?: string;
@@ -31,6 +32,7 @@ export function OverlayHeader({
   closeLabel,
   onClose,
   eyebrow,
+  eyebrowClassName,
   description,
   descriptionId,
   leading,
@@ -51,7 +53,14 @@ export function OverlayHeader({
         ) : null}
         <div className="flex min-w-0 flex-col gap-1">
           {eyebrow ? (
-            <span className="text-footnote text-text-secondary">{eyebrow}</span>
+            <span
+              className={cn(
+                "text-footnote text-text-secondary",
+                eyebrowClassName,
+              )}
+            >
+              {eyebrow}
+            </span>
           ) : null}
           <h2
             id={titleId}

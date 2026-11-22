@@ -10,7 +10,7 @@
  */
 
 export type TrackLicense = {
-  /** Who grants the right to stream it ("Pixabay Content License", "CC BY 4.0, artist's site"). */
+  /** The licence's short name, shown in the queue ("CC BY 4.0", "Used with permission"). */
   source: string;
   /** Where that licence or permission is written down. */
   url: string;
@@ -25,8 +25,17 @@ export type Track = {
   src: string;
   /** Square cover art under public/audio/. */
   cover: string;
-  /** null until the right to stream it is confirmed. */
-  license: TrackLicense | null;
+  /**
+   * Length in whole seconds, rounded down as the player shows it, measured from the file
+   * (`ffprobe`): the queue's rows show it before a track has loaded. Re-measure when a file changes.
+   */
+  duration: number;
+  /**
+   * Required (5.3): the licence the queue links to, or "local" for a file that may only play on
+   * Nasheet's machine (shown as "Local file", no link). A missing licence fails check-content
+   * everywhere; "local" fails it on CI / Vercel, so it can never be deployed.
+   */
+  license: TrackLicense | "local";
 };
 
 // TODO(content): local development tracks (commercial releases, not licensed for the site).
@@ -39,7 +48,8 @@ export const tracks: readonly Track[] = [
     artist: "Nujabes",
     src: "/audio/worlds_end_rhapsody.mp3",
     cover: "/audio/worlds_end_rhapsody.jpg",
-    license: null,
+    duration: 341,
+    license: "local",
   },
   {
     id: "gehra",
@@ -47,7 +57,8 @@ export const tracks: readonly Track[] = [
     artist: "DARZI",
     src: "/audio/gehra.mp3",
     cover: "/audio/gehra.jpg",
-    license: null,
+    duration: 370,
+    license: "local",
   },
   {
     id: "new-drop",
@@ -55,7 +66,8 @@ export const tracks: readonly Track[] = [
     artist: "Don Toliver",
     src: "/audio/new_drop.mp3",
     cover: "/audio/new_drop.jpg",
-    license: null,
+    duration: 217,
+    license: "local",
   },
   {
     id: "silk-and-cologne",
@@ -63,7 +75,8 @@ export const tracks: readonly Track[] = [
     artist: "Metro Boomin, EI8HT, Offset",
     src: "/audio/silk_and_cologne.mp3",
     cover: "/audio/silk_and_cologne.jpg",
-    license: null,
+    duration: 223,
+    license: "local",
   },
   {
     id: "smells-like-teen-spirit",
@@ -71,7 +84,8 @@ export const tracks: readonly Track[] = [
     artist: "Nirvana",
     src: "/audio/smells_like_teen_spirit.mp3",
     cover: "/audio/smells_like_teen_spirit.jpg",
-    license: null,
+    duration: 278,
+    license: "local",
   },
   {
     id: "tv-off",
@@ -79,6 +93,7 @@ export const tracks: readonly Track[] = [
     artist: "Kendrick Lamar",
     src: "/audio/tv_off.mp3",
     cover: "/audio/tv_off.jpg",
-    license: null,
+    duration: 220,
+    license: "local",
   },
 ];

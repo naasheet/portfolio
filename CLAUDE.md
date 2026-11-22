@@ -531,7 +531,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **5 — Music** (5.1–5.2 done; 5.3, the track list and volume, is next). Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **5 — Music** (5.1–5.3 done; 5.4, the audio-reactive canvas, is next). Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -553,7 +553,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -606,7 +606,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -899,11 +899,12 @@ Carry-over into later chunks:
     the phone photo row, and copy review.
 - **Audio engine (5.1):** `lib/audio/engine.ts`, `lib/music.ts`, `content/music.ts`,
   `scripts/compress-media.mjs`, `components/dev/MusicSpecimen.tsx` (/dev "Music").
-  - **MUSIC LICENSING (decided with Nasheet):** the six tracks in `public/audio/` (Nujabes, DARZI,
-    Don Toliver, Metro Boomin et al., Nirvana, Kendrick Lamar) are commercial releases, **local
-    development only**: `public/audio/*.mp3` and `*.jpg` are gitignored, every `license` is `null`,
-    and `check-content` warns locally but **fails on CI / Vercel** (`process.env.CI || VERCEL`), so
-    they can't be deployed. Before 11.1, replace them with tracks Nasheet can stream (his own,
+  - **MUSIC LICENSING (decided with Nasheet; 5.3: "use local files only", don't ask about
+    licences):** the six tracks in `public/audio/` (Nujabes, DARZI, Don Toliver, Metro Boomin et
+    al., Nirvana, Kendrick Lamar) are commercial releases, **local development only**:
+    `public/audio/*.mp3` and `*.jpg` are gitignored, every `license` is `"local"` (5.3: the field is
+    required; missing fails `check-content` everywhere), and `"local"` warns locally but **fails on
+    CI / Vercel** (`process.env.CI || VERCEL`), so they can't be deployed. Before 11.1, replace them with tracks Nasheet can stream (his own,
     Pixabay Music, YouTube Audio Library, FMA CC-BY…) and fill `license: { source, url }`, then
     un-ignore deliberately. Never commit or deploy unlicensed audio.
   - **Chain:** two `<audio>` decks (A / B) → MediaElementSource → own GainNode → master gain
@@ -935,8 +936,7 @@ Carry-over into later chunks:
     `%LOCALAPPDATA%\Microsoft\WinGet\Packages\Gyan.FFmpeg_…\ffmpeg-9.1-full_build\bin` (new
     shells have it on PATH; else set `FFMPEG_PATH` / `FFPROBE_PATH`). `world's_end_rhapsody.*` was
     renamed `worlds_end_rhapsody.*` (an apostrophe in a URL).
-  - **5.3 / 5.4:** Media Session is still to do (§9.3, 5.3); the canvas reads
-    `getMusic()?.analyser` into `audio.levels` / `beat` (5.4).
+  - **5.4:** the canvas reads `getMusic()?.analyser` into `audio.levels` / `beat`.
 - **Music in the island (5.2):** `components/player/` (IslandMusic, IslandMusicLoader, PlayerCard,
   Cover, Bars, Scrubber), `lib/audio/time.ts`, `copy.player`, `getQueuePosition()` on the engine,
   `MUSIC_ACTIVITY` (`"music"`) in `lib/music.ts`, focus handling in `components/nav/Island.tsx`.
@@ -972,6 +972,59 @@ Carry-over into later chunks:
     player once the activity exists (5 s give-up). The "Sound on" alert shows first (alert ›
     expanded), so the card opens ~2.5 s later.
   - **Phone menu:** its "now-playing strip (5.2)" comment is gone: no mini-player anywhere.
+- **Queue sheet and Media Session (5.3):** `components/player/QueueSheet.tsx` (+ `QueueRow`,
+  `VolumeControl`), `lib/audio/mediaSession.ts`, from the Queue sheet frame
+  (`stuff/reference/Queue sheet (5.3)@2x.png`).
+  - **Track model:** `Track.duration` (whole seconds, **rounded down**, measured with ffprobe: the
+    rows show it before a track loads; re-measure when a file changes) and `Track.license`
+    required: `{ source, url }` (shown "CC BY 4.0 ↗", new tab) or `"local"` (shown "Local file", no
+    link). The frame's "Licence: not set" never appears. check-content: no licence → fails
+    everywhere; `"local"` → warning locally, failure on CI / Vercel (verified both).
+  - **Opening:** the player's queue button sets `ui.queueOpen` (new, in the store, so the terminal
+    can open it later). `IslandMusic` loads `QueueSheet` lazily the first time and keeps it mounted
+    (exit animation); it can't live in PlayerCard, because an island alert swaps the card out.
+  - **Sheet:** 1.5's Sheet with new `eyebrowClassName` / `titleClassName` (OverlayHeader too): mono
+    caps "Music · 6 tracks", "Queue" in title-2 bold. Phones: `max-md:h-[82dvh]`. Footer: the
+    volume row, then the key hint (Kbd ↑ ↓ move · ↵ play) and "All music credits on /credits"
+    (a TransitionLink with `prefetch={false}`: **/credits 404s until 11.2**; the link closes the
+    sheet and the card).
+  - **Rows:** this visit's play order (`engine.getOrder()`), so the list matches "track n of N".
+    Each row's action is a **stretched button** over it (the licence link can't sit inside a
+    button), `aria-current` on the current one. Current: `accent-primary/10` fill, `/40` hairline,
+    teal title, Bars over the art (scrim), "elapsed / total" written from a ticker. Others: a play
+    icon over the art on hover or `:focus-visible` (`group-has-[button:focus-visible]`). Click or
+    Enter → `engine.load(i)` (1.2 s crossfade); with sound off it turns sound on first.
+  - **Keyboard:** roving tabindex: only the last-focused row (else the current track) and its
+    licence link are Tab stops; ↑ ↓ Home End move between rows; Tab reaches mute, then the slider.
+    `useFocusTrap` now takes `[data-autofocus]` inside the trap as the first focus (the current
+    row). Esc closes the sheet; the trap returns focus to the island's queue button.
+  - **Island:** a pointerdown or a focus move into `[data-overlay]` no longer collapses the expanded
+    card, so the player stays open behind the sheet.
+  - **Volume:** a native range 0–100, step 5 (← → ±5 %, Home / End), controlled by
+    `audio.volume`; `.volume-range` in globals.css (4 px line filled to `--fill`, 16 px thumb).
+    The speaker button calls `engine.toggleMute()`: mute saves the level under `volume-unmute`
+    (storage helpers), unmute returns to it (60 % if none).
+  - **Media Session** (`initMediaSession(engine)`, imported by `startMusic()` with the engine):
+    metadata (title, artist, the cover as an absolute URL) on `audio.trackIndex`, `playbackState`
+    on `audio.playing`, `setPositionState` on the engine's new `onMedia()` events (the active
+    deck's loadedmetadata / seeked / play / pause; the browser extrapolates between). Handlers:
+    play (turns sound on if it was off), pause, nexttrack, previoustrack, seekto, seekbackward /
+    seekforward (±10 s). Each `setActionHandler` is in try/catch.
+- **Verified 5.3 (headless Chromium, production build with the /dev flag, real local tracks):**
+  - **Keyboard:** Enter on the island's Queue → the sheet with focus on "Now playing: World's End
+    Rhapsody" (`aria-current`); ↓ → "Play Smells Like Teen Spirit by Nirvana, 4:38"; ↓ ↑ back;
+    Enter → it became current (card and row) with "0:01 / 4:38"; Tab → Mute, Tab → the slider
+    (80), ← ← → 70 % (aria-valuetext "70%", saved 0.7); End → 100; Mute → 0 ("Unmute"), Unmute →
+    100; Esc → sheet gone, focus on the island's Queue button, card still expanded.
+  - **Media Session** (a main-world shim captured the handlers and calls): metadata "Smells Like
+    Teen Spirit | Nirvana | …/smells_like_teen_spirit.jpg", state playing, all 7 handlers set;
+    pause → paused (card shows Play), play → playing, seekto 60 → position 60 and the scrubber at
+    60, nexttrack → New Drop (metadata and position state followed), previoustrack → back.
+  - **Phone (390 × 844):** the bottom sheet is 82 % of the screen (692 px). Screenshots match the
+    frame (light theme: headless prefers light). Console clean.
+  - **[manual]** **The lock screen on your phone** (cover, title, controls, the seek bar) and
+    media keys on the laptop: the chunk's Done-when; the frame's look in dark theme; the sheet's
+    drag-to-close on a real phone; VoiceOver / NVDA reading the rows and the slider.
 - **Verified 5.2 (headless Chromium, production build with the /dev flag, real local tracks):**
   - **Keyboard on /about:** M → the activity (art, "02 About", bars; slot name "Now playing: World's
     End Rhapsody by Nujabes. Open the player"); focus the art + Enter → the card with focus on

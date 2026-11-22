@@ -43,8 +43,26 @@ export const copy = {
     next: "Next track",
     play: "Play",
     pause: "Pause",
-    /** The queue button; 5.3 opens the track list from it. */
-    queue: "Track list",
+    /** The queue button and sheet (5.3). */
+    queue: "Queue",
+    queueEyebrow: (n: number) => `Music · ${n} tracks`,
+    queueClose: "Close the queue",
+    /** A row's accessible name: "Play Gehra by DARZI, 6:10". */
+    playTrack: (title: string, artist: string, length: string) =>
+      `Play ${title} by ${artist}, ${length}`,
+    nowPlaying: (title: string, artist: string) =>
+      `Now playing: ${title} by ${artist}`,
+    /** A track marked "local" in content/music.ts (no licence; never deployed). */
+    localFile: "Local file",
+    licenceLink: (source: string) => `${source} licence (opens in a new tab)`,
+    volume: "Volume",
+    mute: "Mute",
+    unmute: "Unmute",
+    /** Footer key hint: [↑] [↓] move · [↵] play. */
+    keysMove: "move",
+    keysPlay: "play",
+    creditsBefore: "All music credits on",
+    creditsLink: "/credits",
     seek: "Position in the track",
     /** Scrubber's aria-valuetext: "1 minute 20 of 3 minutes 05". */
     spokenTime: (s: number) => {

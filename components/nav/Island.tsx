@@ -145,8 +145,14 @@ export function Island() {
   useEffect(() => {
     if (!expanded) return;
     const onDown = (e: globalThis.PointerEvent) => {
-      if (e.target instanceof Node && !root.current?.contains(e.target))
-        island.collapse();
+      if (!(e.target instanceof Element)) return;
+      // Clicks inside an overlay opened from the card (the queue sheet) don't close it.
+      if (
+        root.current?.contains(e.target) ||
+        e.target.closest("[data-overlay]")
+      )
+        return;
+      island.collapse();
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || document.querySelector("[data-overlay]"))
@@ -194,7 +200,9 @@ export function Island() {
     const next = e.relatedTarget;
     if (next instanceof Node && root.current?.contains(next)) return;
     // Tabbing out of an open card closes it (a removed element's blur has no relatedTarget).
-    if (expanded && next instanceof Node) island.collapse();
+    // An overlay opened from the card (the queue sheet, 5.3) keeps it open behind.
+    if (expanded && next instanceof Element && !next.closest("[data-overlay]"))
+      island.collapse();
     if (root.current?.matches(":hover")) return;
     setNavOpen(false);
   };

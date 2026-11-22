@@ -118,11 +118,12 @@ export function PlayerCard() {
             className={ICON_CLASS.md}
           />
         </Control>
-        {/* 5.3 wires the track list to this button. */}
+        {/* Opens the queue sheet (5.3), mounted by IslandMusic. */}
         <Control
           aria-label={copy.player.queue}
-          disabled
-          className="absolute right-0 size-11 text-island-text-secondary"
+          aria-haspopup="dialog"
+          onClick={() => useStore.getState().ui.setQueueOpen(true)}
+          className="absolute right-0 size-11 text-island-text-secondary hover:bg-island-text/10 hover:text-island-text"
         >
           <ListMusic aria-hidden className={ICON_CLASS.md} />
         </Control>

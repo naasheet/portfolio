@@ -92,6 +92,8 @@ export type UiSlice = {
   shortcutsOpen: boolean;
   /** The phone menu (2.4). */
   menuOpen: boolean;
+  /** The music queue sheet (5.3), opened from the island's player. */
+  queueOpen: boolean;
   /**
    * Home's intro (R.6): "pending" until the gate starts leaving, "play" while the name forms and
    * assembles into the room, "done" once it has settled (or was skipped). lib/motion/intro.ts.
@@ -109,6 +111,7 @@ export type UiSlice = {
   setShortcutsOpen: (open: boolean) => void;
   toggleShortcuts: () => void;
   setMenuOpen: (open: boolean) => void;
+  setQueueOpen: (open: boolean) => void;
 };
 
 export type ThemeSlice = {
@@ -235,6 +238,7 @@ export const useStore = create<StoreState>()(
         chatStreaming: false,
         shortcutsOpen: false,
         menuOpen: false,
+        queueOpen: false,
         intro: "pending",
         setIntro: (intro) => {
           if (get().ui.intro !== intro) patch("ui", { intro });
@@ -255,6 +259,7 @@ export const useStore = create<StoreState>()(
         toggleShortcuts: () =>
           patch("ui", { shortcutsOpen: !get().ui.shortcutsOpen }),
         setMenuOpen: (menuOpen) => patch("ui", { menuOpen }),
+        setQueueOpen: (queueOpen) => patch("ui", { queueOpen }),
       },
 
       theme: {

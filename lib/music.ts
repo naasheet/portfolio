@@ -18,12 +18,17 @@ export const MUSIC_ACTIVITY = "music";
 type EngineModule = typeof import("./audio/engine");
 let mod: EngineModule | null = null;
 let unsubscribe: (() => void) | null = null;
+let mediaSession: Promise<void> | null = null;
 
 export async function startMusic(): Promise<void> {
   const ctx = ensureAudioContext();
   if (!ctx) return;
   mod ??= await import("./audio/engine");
   const engine = mod.getEngine(ctx);
+  // Lock screen and media keys (5.3), loaded with the engine.
+  mediaSession ??= import("./audio/mediaSession").then((m) =>
+    m.initMediaSession(engine),
+  );
   unsubscribe ??= useStore.subscribe(
     (s) => s.ui.soundEnabled,
     (on) => {
