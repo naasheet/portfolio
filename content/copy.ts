@@ -88,8 +88,30 @@ export const copy = {
     suggestions: ["help", "whoami", "projects"],
     inputLabel: "Command. Type one and press Enter.",
     outputLabel: "Terminal output",
-    notFound: (command: string) =>
-      `${command}: command not found. Type help for the list.`,
+    /** Unknown command (6.2): with a suggestion when one is 2 edits away or closer. */
+    notFound: (command: string, suggestion?: string) =>
+      suggestion
+        ? `command not found: ${command} — did you mean ${suggestion}?`
+        : `command not found: ${command}. Type help for the list.`,
+    syntax: (error: string) => `syntax error: ${error}`,
+  },
+  /** Each command's help line and messages (6.2+): lib/commands/<name>.ts reads its own. */
+  commands: {
+    help: {
+      description: "List every command",
+      usage: "help",
+      count: (n: number) => `${n} commands. Type one to run it.`,
+    },
+    echo: {
+      description: "Print what you type after it",
+      usage: "echo <text…>",
+    },
+    grep: {
+      description: "Keep the piped lines that match a pattern",
+      usage: "grep [-i] [-v] [-n] <pattern>",
+      noPattern: "grep: what should I look for? Try: help | grep music",
+      noInput: "grep: nothing to search. Pipe something in: help | grep music",
+    },
   },
   /** The 404 page (4.8). */
   notFound: {

@@ -7,7 +7,13 @@ import type { ReactNode } from "react";
 export type OutputLine =
   /** A command as it was typed, after the prompt. */
   | { kind: "input"; text: string }
-  | { kind: "text"; text: string; tone?: "muted" | "accent" }
+  | {
+      kind: "text";
+      text: string;
+      tone?: "muted" | "accent";
+      /** Ranges to highlight ([start, end) in `text`), e.g. grep's matches. */
+      marks?: [number, number][];
+    }
   | { kind: "error"; text: string }
   /** Site paths ("/work") navigate in place; anything else opens in a new tab. */
   | { kind: "link"; text: string; href: string }
@@ -18,16 +24,3 @@ export type OutputLine =
 
 export type EntryId = number;
 export type Entry = { id: EntryId; line: OutputLine };
-
-/** What a running command gets (6.2 adds store, router and fs). */
-export type RunContext = {
-  print: (line: OutputLine | OutputLine[]) => void;
-  clear: () => void;
-  /** Aborted by Ctrl+C. */
-  signal: AbortSignal;
-};
-
-export type Runner = (input: string, ctx: RunContext) => void | Promise<void>;
-
-/** Tab completion (6.2): the new input, or null to leave it. */
-export type Completer = (input: string, caret: number) => string | null;

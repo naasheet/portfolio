@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowUpRight } from "lucide-react";
-import { memo } from "react";
+import { memo, type ReactNode } from "react";
 import { TransitionLink } from "@/components/nav/TransitionLink";
 import { focusRing } from "@/components/ui/controlStyles";
 import type { OutputLine } from "@/lib/terminal/types";
@@ -12,6 +12,26 @@ const LINK = cn(
   "inline-flex items-center gap-0.5 rounded-key text-island-accent underline decoration-island-accent/40 underline-offset-2 hover:decoration-island-accent",
   focusRing,
 );
+
+/** Text with highlighted ranges (grep's matches, 6.2). */
+function Marked({ text, marks }: { text: string; marks: [number, number][] }) {
+  const parts: ReactNode[] = [];
+  let at = 0;
+  for (const [start, end] of marks) {
+    if (start > at) parts.push(text.slice(at, start));
+    parts.push(
+      <mark
+        key={start}
+        className="rounded-[2px] bg-accent-secondary/25 text-accent-secondary"
+      >
+        {text.slice(start, end)}
+      </mark>,
+    );
+    at = end;
+  }
+  if (at < text.length) parts.push(text.slice(at));
+  return <>{parts}</>;
+}
 
 /**
  * One output line (6.1). Memoised: an entry never changes after it's printed, so appending a
@@ -38,7 +58,11 @@ export const Line = memo(function Line({ line }: { line: OutputLine }) {
                 : "text-island-text",
           )}
         >
-          {line.text}
+          {line.marks?.length ? (
+            <Marked text={line.text} marks={line.marks} />
+          ) : (
+            line.text
+          )}
         </div>
       );
     case "error":

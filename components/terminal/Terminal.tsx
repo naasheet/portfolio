@@ -8,7 +8,11 @@ import {
   type KeyboardEvent,
   type MouseEvent,
 } from "react";
+import { useRouter } from "next/navigation";
 import { copy } from "@/content/copy";
+import { execute } from "@/lib/commands/exec";
+import { complete } from "@/lib/commands/registry";
+import { useStore } from "@/lib/store";
 import { onTypingSound } from "@/lib/sfx";
 import { createHistory, type History } from "@/lib/terminal/history";
 import {
@@ -17,21 +21,12 @@ import {
   session,
   subscribeSession,
 } from "@/lib/terminal/session";
-import { runStub } from "@/lib/terminal/stub";
-import type { Completer, Runner } from "@/lib/terminal/types";
 import { cn } from "@/lib/utils";
 import { Line } from "./Line";
 import { Prompt } from "./Prompt";
 import { Welcome } from "./Welcome";
 
 const t = copy.terminal;
-
-type TerminalProps = {
-  /** Runs one command line (6.1: the echo stub; 6.2: the registry). */
-  runner?: Runner;
-  /** Tab completion (hooked up in 6.2). */
-  complete?: Completer;
-};
 
 /**
  * The shell (6.1; Overlays board, Drawer). SF Mono at Footnote size on the island's near-black.
@@ -41,12 +36,15 @@ type TerminalProps = {
  *   Input     a real <input> (paste, IME and phone keyboards work natively) with its own caret
  *             hidden; an amber block caret is moved to the caret position by transform (no
  *             re-render), solid and blinking while focused, hollow when not.
- *   Keys      Enter runs · ↑ ↓ history (last 50, localStorage) · Tab completes (6.2) · Ctrl+L
+ *   Engine    lines run through lib/commands (6.2: parser, registry, pipes); a command's
+ *             ctx.prompt() makes the next Enter an answer ("> ").
+ *   Keys      Enter runs · ↑ ↓ history (last 50, localStorage) · Tab completes · Ctrl+L
  *             clears · Ctrl+C cancels a running command (or abandons the line, "^C"; with text
  *             selected it copies as usual) · Esc closes (the Drawer's).
  */
-export function Terminal({ runner = runStub, complete }: TerminalProps) {
-  const { entries, running, banner } = useSyncExternalStore(
+export function Terminal() {
+  const router = useRouter();
+  const { entries, running, banner, asking } = useSyncExternalStore(
     subscribeSession,
     getSession,
     getServerSession,
@@ -85,11 +83,7 @@ export function Terminal({ runner = runStub, complete }: TerminalProps) {
     if (!raw.trim()) return;
     const signal = session.begin();
     try {
-      await runner(raw, {
-        print: session.print,
-        clear: session.clear,
-        signal,
-      });
+      await execute(raw, { router, signal });
     } catch (error) {
       if (signal.aborted)
         session.print({ kind: "text", text: "^C", tone: "muted" });
@@ -106,11 +100,11 @@ export function Terminal({ runner = runStub, complete }: TerminalProps) {
     }
   };
 
-  const setInput = (value: string) => {
+  const setInput = (value: string, caretAt = value.length) => {
     const el = input.current;
     if (!el) return;
     el.value = value;
-    el.setSelectionRange(value.length, value.length);
+    el.setSelectionRange(caretAt, caretAt);
     placeCaret();
   };
 
@@ -121,8 +115,15 @@ export function Terminal({ runner = runStub, complete }: TerminalProps) {
 
     if (e.key === "Enter") {
       e.preventDefault();
-      if (running || e.nativeEvent.isComposing) return;
+      if (e.nativeEvent.isComposing) return;
       const value = el.value;
+      // A command is waiting for an answer (ctx.prompt): this line is it.
+      if (asking !== null) {
+        setInput("");
+        session.answer(value);
+        return;
+      }
+      if (running) return;
       setInput("");
       void run(value);
     } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
@@ -135,8 +136,19 @@ export function Terminal({ runner = runStub, complete }: TerminalProps) {
     } else if (e.key === "Tab" && !e.shiftKey) {
       // Shift+Tab still leaves the input (to the close button); Esc closes.
       e.preventDefault();
-      const next = complete?.(el.value, el.selectionStart ?? el.value.length);
-      if (next !== null && next !== undefined) setInput(next);
+      if (running) return;
+      const result = complete(el.value, el.selectionStart ?? el.value.length, {
+        store: useStore,
+        fs: null,
+        cwd: getSession().cwd,
+      });
+      if (result.kind === "replace") setInput(result.input, result.caret);
+      else if (result.kind === "list")
+        session.print({
+          kind: "text",
+          text: result.candidates.join("  "),
+          tone: "muted",
+        });
     } else if (ctrl && e.key.toLowerCase() === "l") {
       e.preventDefault();
       session.clear();
@@ -191,10 +203,16 @@ export function Terminal({ runner = runStub, complete }: TerminalProps) {
         className={cn(
           "flex items-center",
           // No prompt while a command runs (as in a real shell); the input keeps focus.
-          running && "opacity-0",
+          running && asking === null && "opacity-0",
         )}
       >
-        <Prompt />
+        {asking !== null ? (
+          <span aria-hidden className="shrink-0 text-island-accent">
+            {"> "}
+          </span>
+        ) : (
+          <Prompt />
+        )}
         <span className="relative flex min-w-0 flex-1">
           <input
             ref={input}

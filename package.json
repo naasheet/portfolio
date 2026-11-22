@@ -12,7 +12,8 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "next typegen && tsc --noEmit",
     "format": "prettier --write .",
-    "analyze": "node scripts/analyze.mjs"
+    "analyze": "node scripts/analyze.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
@@ -49,6 +50,7 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "raw-loader": "^4.0.2",
     "tailwindcss": "4.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.12"
   }
 }

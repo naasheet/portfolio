@@ -141,14 +141,14 @@ lib/
   store.ts              # the Zustand store
   audio/                # context.ts, engine.ts, time.ts, levels.ts, mediaSession.ts
   chat/                 # knowledge.ts, system.ts, rateLimit.ts, tools.ts
-  commands/             # one file per terminal command + registry.ts + parser.ts + types.ts
+  commands/             # one file per terminal command + registry.ts + parser.ts + exec.ts + types.ts; __tests__/
   motion/               # gsap.ts, lenis.ts, tokens.ts, intro.ts, scrollMemory.ts
   content/              # stats.ts: numbers derived from content/ (4.1)
   hooks/                # useReducedMotion, useMediaQuery, useFocusTrap, useCountUp …
   fs.ts                 # virtual filesystem built from content/
   island.ts             # the nav island's activity / alert store (2.4)
   music.ts              # 5.1: startMusic() / getMusic(); loads lib/audio/engine.ts on demand
-  terminal/             # 6.1: types.ts (output lines, runner), session.ts (scrollback), history.ts, stub.ts
+  terminal/             # 6.1: types.ts (output lines), session.ts (scrollback, prompt, cwd), history.ts
 mdx-components.tsx      # MDX element styles + the case-study components (required by @next/mdx)
   sfx.ts  shortcuts.ts  quality.ts  preload.ts  theme.ts  browser.ts  supabase.ts  utils.ts
 content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
@@ -430,7 +430,7 @@ npm run format     # Prettier
 npm run analyze    # bundle analyzer: node scripts/analyze.mjs (sets ANALYZE=true, runs next build)
 npm run check-content  # content check (4.1); also runs as `prebuild`, so a broken content/ stops the build
 npm run compress-media # 5.1: MP3s in public/audio/ above 192 kbps → 160 kbps (ffmpeg; originals kept in stuff/audio-src/)
-npm run test       # vitest (from chunk 6.2)
+npm run test       # vitest run (6.2): **/__tests__/**/*.test.ts, config in vitest.config.mts
 ```
 
 ### Environment variables
@@ -533,7 +533,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal** (6.1 done; 6.2, the parser and registry, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal** (6.1–6.2 done; 6.3, the virtual filesystem, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -555,7 +555,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -608,7 +608,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1036,6 +1036,53 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Parser and command registry (6.2):** `lib/commands/` (types, parser, registry, exec, grep,
+  help, echo, `__tests__/`), `vitest.config.mts`.
+  - **vitest 4.1.12**, not 5.x: vitest 5 wants `@types/node` 22+, the project pins 20 (Node itself
+    is 24). Bumping `@types/node` would unlock 5 (ask first). The config is `.mts` (an ESM config
+    in a CommonJS package warns otherwise); `@/` is aliased as in tsconfig; Node environment.
+  - **Contract** (`types.ts`): `Command { name, aliases?, description, usage, examples?,
+    complete?(args, ctx), run(args, ctx) }` (run may be async). `Args { _, flags, raw }`.
+    `CommandContext`: print (a string or OutputLine(s)), printError (always to the screen),
+    clear, store (`useStore`), router, fs (**null until 6.3**), cwd / setCwd (session, "~"),
+    prompt(question), signal, stdin, **`piped`** (added: stdin can legitimately be empty), openUrl
+    (`window.open`, noopener). Command strings live in `copy.commands.<name>`.
+  - **Parser** (pure, `parser.ts`): single quotes literal; double quotes unescape only `\"` and
+    `\\`; a backslash outside quotes escapes the next character (`\|`, `\ `); unquoted `|` splits
+    stages; `--name=value` (later `=` kept), `--flag`, `-f`, `-abc` → a, b, c; `--` ends flags; a
+    lone `-` and any token that **starts** quoted or escaped are values (`"-v"`), while
+    `--name="two words"` is still a flag. Errors: unclosed ' / ", a trailing backslash, an empty
+    pipe stage (`| x`, `x |`, `x || y`).
+  - **Registry:** explicit imports (`[help, echo, grep]`), names and aliases checked for
+    duplicates at load. `suggest()`: the closest name within **2 edits, adjacent swaps counting as
+    one** (optimal string alignment; plain Levenshtein made `hlep` tie with `grep`). `complete()`:
+    the word before the caret, a command name at the start of a pipe stage, else the command's
+    `complete`; one match fills in plus a space, several fill their common prefix, else they're
+    printed (muted). Adding a command: one file + one line in `commands`.
+  - **exec.ts:** parse → check every stage's command first ("command not found: x — did you mean
+    y?") → run left to right; non-last stages print into a buffer that becomes the next stage's
+    `stdin` (`toText`: text / error / link text, table rows joined by two spaces, ascii lines;
+    node lines are dropped). Ctrl+C aborts the line (an AbortError after the stage).
+  - **grep:** plain substring (not a regex), `-i`, `-v`, `-n`; matches carry `marks` (new optional
+    field on text lines, drawn amber in `Line`); without a pipe it says how to use one.
+  - **help** (minimal, approved): the count line ("3 commands. Type one to run it." — it must never
+    match a grep by itself; the first draft did and faked `help | grep music`) and a table of
+    name / description, reading the registry lazily (cycle). 6.4 adds `man` and per-command help.
+    **echo** (minimal): its raw arguments.
+  - **Terminal:** runs lines through `execute` with `useRouter()`; Tab → `complete`;
+    `ctx.prompt` sets `session.asking`, shows a "> " prompt, and the next Enter answers
+    (`session.answer`); Ctrl+C rejects it. No command uses prompt yet (`sudo hire-me` will).
+  - **Focus trap fix:** `useFocusTrap` ignores a Tab whose default was prevented by a control inside
+    (the terminal's completion moved focus out to a link before).
+  - **`help | grep music` prints nothing until 6.5 registers the music commands:** check it then.
+- **Verified 6.2:** `npm run test`: **38 tests pass** (24 parser: quotes, escapes, flags, pipes,
+  bad input; 14 exec / registry: pipes, chained and inverted pipes, marks, -n, grep without a pipe,
+  suggestions, syntax errors, completion). In the terminal (production build): help lists 3;
+  `help | grep grep`, `echo "Hello World" | grep -i world` and `help | grep -v help | grep -n echo`
+  print the right lines with amber marks; `hlep` / `grpe` → did you mean help / grep; `help | nope`,
+  an unclosed quote and a bare `grep` give their messages; Tab: `gr` → `grep `, `help | e` →
+  `help | echo `, empty → "echo  grep  help", focus stays in the input. Console clean.
+  - **[manual]** The feel of Tab completion; `help | grep music` once 6.5 lands.
 - **Terminal UI (6.1):** `components/terminal/` (TerminalDrawerSlot, TerminalDrawer, Terminal, Line,
   Prompt, Welcome), `lib/terminal/` (types, session, history, stub), from the Overlays board's
   Drawer frame ("Holds the terminal").
@@ -1071,9 +1118,7 @@ Carry-over into later chunks:
     blank lines and immediate repeats skipped.
   - **Welcome:** the ScrambleText "Type help to start" (mount trigger) and three chips (`help`,
     `whoami`, `projects`, from `copy.terminal.suggestions`) that run on click.
-  - **Stub** (`lib/terminal/stub.ts`): `echo`, `sleep <s>` (cancellable, for Ctrl+C), otherwise
-    "<cmd>: command not found. Type help for the list." **6.2 replaces it** (pass `runner` /
-    `complete` to `<Terminal>`).
+  - **Stub** (6.1 only, deleted in 6.2 for `lib/commands/`).
 - **Verified 6.1 (headless Chromium, production build with the /dev flag):** ` opens it with focus in
   the input; 396 px tall at 720 (55 %), `rgb(9, 11, 11)` in light theme, SF Mono 13 px; the banner
   and chips; the `help` chip runs ("help: command not found …"); **0 React commits while typing 20

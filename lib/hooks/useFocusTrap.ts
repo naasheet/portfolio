@@ -62,7 +62,8 @@ export function useFocusTrap(
     first.focus({ preventScroll: true });
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Tab" || !isTopmostTrap(root)) return;
+      // A control inside that uses Tab itself (the terminal's completion, 6.2) prevents the default.
+      if (e.key !== "Tab" || e.defaultPrevented || !isTopmostTrap(root)) return;
       const items = getFocusable(root);
       if (items.length === 0) {
         e.preventDefault();
