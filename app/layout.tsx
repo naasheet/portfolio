@@ -13,13 +13,34 @@ import { StoreHydrator } from "@/components/providers/StoreHydrator";
 import { ThemeScript } from "@/components/ui/ThemeScript";
 import { copy } from "@/content/copy";
 import { profile } from "@/content/profile";
+import { baseOpenGraph, baseTwitter } from "@/lib/seo";
+import { siteUrl } from "@/lib/site";
 import { fontVariables } from "./fonts";
 import "./globals.css";
 
-// From content/ (4.1); 4.8 adds Open Graph and the rest.
+// Site-wide metadata (4.1, 4.8). Pages set their own title (through the template) and
+// description; app/opengraph-image.tsx is the share image for every route.
 export const metadata: Metadata = {
-  title: copy.meta.title(profile.name, profile.title),
-  description: copy.meta.description,
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: copy.meta.title(profile.name, profile.title),
+    template: copy.meta.template(profile.name),
+  },
+  description: profile.tagline,
+  applicationName: profile.name,
+  authors: [{ name: profile.name, url: siteUrl }],
+  creator: profile.name,
+  openGraph: {
+    ...baseOpenGraph,
+    title: copy.meta.title(profile.name, profile.title),
+    description: profile.tagline,
+    url: "/",
+  },
+  twitter: {
+    ...baseTwitter,
+    title: copy.meta.title(profile.name, profile.title),
+    description: profile.tagline,
+  },
 };
 
 // Let the page run under the notch and home indicator; fixed UI pads itself with

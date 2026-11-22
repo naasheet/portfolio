@@ -6,9 +6,19 @@
 export const copy = {
   /** The site's <title> and description (app/layout.tsx, 4.8 adds Open Graph). */
   meta: {
+    /** Home's title, and the default. */
     title: (name: string, title: string) => `${name} · ${title}`,
-    /** TODO(content): a one-sentence description for search results. */
-    description: "[One sentence about you and this site]",
+    /** Every other page: "Work · Nasheet Khan". */
+    template: (name: string) => `%s · ${name}`,
+    /** Per-page descriptions (4.8). The site's own description is profile.tagline. */
+    pages: {
+      about:
+        "Who's behind this site: the short version, photos, and life off the screen.",
+      work: "Case studies and side projects, filterable by domain and stack.",
+      skills: "What I use, and how much. Honest dots, no logo wall.",
+      arcade: "Two small games, played with a mouse, a finger or your hand.",
+      contact: "Say hi, or hire me: a message form, email and socials.",
+    },
   },
   ui: {
     /** Screen-reader text for a button that is busy. */
@@ -17,6 +27,15 @@ export const copy = {
     dismiss: "Dismiss",
   },
   /** Shared errors (4.1): any feature that can fail uses these unless it has its own line. */
+  /** The 404 page (4.8). */
+  notFound: {
+    code: "404",
+    title: "This page wandered off the desk.",
+    body: "The link is old, mistyped, or never existed. The particles are as lost as you are.",
+    /** Before and after the key: "Or press ` and type ls to look around." */
+    hintBefore: "Or press",
+    hintAfter: "and type ls to look around.",
+  },
   errors: {
     generic: "Something broke on my side.",
     retry: "Try again",
@@ -235,6 +254,8 @@ Reply to this email to answer them.`,
   },
   /** The footer on content pages (4.3; About frames). */
   footer: {
+    /** The footer landmark's name. */
+    label: "Site footer",
     psst: "Psst. Press ` for the terminal.",
     backToTop: "Back to top",
   },

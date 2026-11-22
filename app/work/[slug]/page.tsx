@@ -8,6 +8,7 @@ import { TableOfContents } from "@/components/case-study/TableOfContents";
 import { SiteFooter } from "@/components/layer/SiteFooter";
 import { chapters } from "@/content/chapters";
 import { copy } from "@/content/copy";
+import { caseStudyMetadata } from "@/lib/seo";
 import {
   getCaseStudies,
   getCaseStudy,
@@ -32,7 +33,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const p = getCaseStudy(slug);
   if (!p) return {};
-  return { title: t.title(p.title), description: p.summary };
+  // The layout's template adds " · Nasheet Khan".
+  return caseStudyMetadata(
+    t.title(p.title),
+    p.summary,
+    `${workRoute}/${p.slug}`,
+  );
 }
 
 /**

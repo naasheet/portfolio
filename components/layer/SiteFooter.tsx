@@ -8,17 +8,23 @@ import { copy } from "@/content/copy";
 import { scrollTo } from "@/lib/motion/lenis";
 
 /**
- * The footer of the content pages (4.3, About frames): the wordmark and a terminal hint, the
- * social links, and "Back to top". Not on Home (the room doesn't scroll). The social links are
- * desktop only, as drawn.
+ * The footer of the content pages (4.3, About frames; 4.8 checked it against the chunk): the
+ * wordmark and the easter-egg terminal hint, the social links, and "Back to top" (a Lenis glide).
+ * Not on Home (the room doesn't scroll). The social links are desktop only, as drawn.
  */
 export function SiteFooter() {
   return (
-    <footer className="mt-24 border-t border-border-default pt-8 pb-[calc(var(--layer-inset-bottom)+72px)]">
+    <footer
+      aria-label={copy.footer.label}
+      className="mt-24 border-t border-border-default pt-8 pb-[calc(var(--layer-inset-bottom)+72px)]"
+    >
       <div className="flex items-end justify-between gap-6">
         <div className="flex flex-col items-start gap-3">
           <Wordmark />
-          <p className="hidden text-caption-1 font-mono text-text-tertiary md:block">{copy.footer.psst}</p>
+          {/* The easter-egg line (4.8): the terminal is the site's hidden second interface. */}
+          <p className="text-caption-1 font-mono text-text-tertiary">
+            {copy.footer.psst}
+          </p>
         </div>
         <SocialButtons className="hidden md:flex" />
         <button

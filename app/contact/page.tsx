@@ -2,6 +2,9 @@ import { statSync } from "node:fs";
 import { join } from "node:path";
 import { Contact } from "@/components/contact/Contact";
 import { profile } from "@/content/profile";
+import { pageMetadata } from "@/lib/seo";
+
+export const metadata = pageMetadata("contact");
 
 /** The resume's size in KB, read once at build time (the resume card's "PDF · 180 KB"). */
 function resumeKb(): number | null {

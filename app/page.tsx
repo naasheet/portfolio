@@ -8,6 +8,9 @@ import { focusRing } from "@/components/ui/controlStyles";
 import { chapterNumber, chapters } from "@/content/chapters";
 import { copy } from "@/content/copy";
 import { profile } from "@/content/profile";
+import { homeMetadata } from "@/lib/seo";
+
+export const metadata = homeMetadata;
 
 const t = copy.home;
 
@@ -57,7 +60,7 @@ export default function Home() {
             <span className="relative size-2 rounded-chip bg-status-success" />
           </span>
           {t.status} · {profile.location.city}
-          <LocalTime className="font-mono text-footnote text-text-tertiary tabular-nums" />
+          <LocalTime className="text-footnote font-mono text-text-tertiary tabular-nums" />
         </p>
         <h1 className="text-stat-3 font-bold">
           {t.title}
@@ -110,7 +113,7 @@ export default function Home() {
         className="absolute inset-x-0 bottom-[calc(var(--layer-inset-bottom)+80px)] flex flex-col gap-4 md:hidden"
       >
         <p className="px-6 text-subhead text-text-secondary">{t.hints.phone}</p>
-        <ul className="flex gap-2 overflow-x-auto px-6 [scrollbar-width:none]">
+        <ul className="flex [scrollbar-width:none] gap-2 overflow-x-auto px-6">
           {chapters.slice(1).map((c, i) => (
             <li key={c.id} className="shrink-0">
               <ChapterLink

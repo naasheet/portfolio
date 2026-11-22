@@ -438,6 +438,7 @@ SUPABASE_SERVICE_ROLE_KEY=     # server only
 LLM_API_KEY=                   # server only; rename to the provider's own variable
 EMAIL_API_KEY=                 # optional, server only (contact form)
 CHAT_SALT=                     # server only; salt for hashing IPs in rate limits
+NEXT_PUBLIC_SITE_URL=          # optional (4.8): the final https URL; else Vercel's production URL
 NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
 ```
 
@@ -528,7 +529,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1, 4.3–4.7 done; 4.2 replaced by phase R; 4.8, SEO, is next).
+Current phase: **4 — Pages and content** (4.1, 4.3–4.8 done; 4.2 replaced by phase R; 4.9, the MVP review, is next: [manual]).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -549,7 +550,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -602,7 +603,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -895,6 +896,41 @@ Carry-over into later chunks:
   the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
   - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
     the phone photo row, and copy review.
+- **Footer, 404 and SEO (4.8):** `app/not-found.tsx` → `components/layer/NotFound.tsx`,
+  `app/opengraph-image.tsx`, `app/sitemap.ts`, `app/robots.ts`, `app/icon.svg`, `lib/site.ts`,
+  `lib/seo.ts`, metadata in `app/layout.tsx` and every page.
+  - **Footer:** `SiteFooter` (4.3) already had the name, socials and "Back to top" (Lenis glide);
+    4.8 shows its easter-egg line ("Psst. Press ` for the terminal.") on phones too and names the
+    landmark. The chunk's `components/Footer.tsx` is that file (no new file).
+  - **404 must stay a server component:** Next mounts `app/not-found.tsx` inside the root layout's
+    boundary **on every page**, so its client code ships in everyone's first-load JS. Built on
+    Button it cost +18 KB on `/` (Framer); now it's a TransitionLink styled like a large primary
+    Button (+1.1 KB). Status 404, "404 · Nasheet Khan", Next's own `noindex`, the R.2 scatter.
+  - **Metadata:** `metadataBase` from `lib/site.ts` (`NEXT_PUBLIC_SITE_URL`, else
+    `https://$VERCEL_PROJECT_PRODUCTION_URL`, else localhost:3000). Title default
+    `copy.meta.title` ("Nasheet Khan · Designer and frontend developer"), template "%s · Nasheet
+    Khan"; the site description is `profile.tagline` (approved; `copy.meta.description` is gone).
+    **Next replaces the layout's whole `openGraph` / `twitter` when a page sets them**, so
+    `lib/seo.ts` exports `baseOpenGraph` / `baseTwitter` (site name, locale, the share image, the
+    large card) and `pageMetadata(id)` / `caseStudyMetadata()` / `homeMetadata` spread them back in,
+    with a canonical URL per page. Per-page descriptions: `copy.meta.pages`. No `robots` in the
+    layout (index/follow is the default, and it contradicted the 404's noindex).
+  - **Share image** (`/opengraph-image`, 1200 × 630 PNG, ~0.4 s): name in SF Pro Display Bold, title,
+    city and availability, seeded teal / amber specks. Literal palette hex values (Satori can't
+    read CSS variables): the one allowed exception, commented. **The OG OTF had its GSUB table
+    removed** (fontTools): Satori's parser throws "lookupType: 7 - substFormat: 1 is not yet
+    supported". Satori also needs `display: flex` on any div with more than one child.
+  - **Sitemap:** Home + the five pages (`content/chapters.ts`) + every case study; add `/arcade/*`,
+    `/terminal`, `/credits` when they exist. **robots.txt:** allow all, disallow `/dev` and `/api/`.
+  - **Favicon:** `app/icon.svg` (the two brand dots on near-black). The every-page favicon 404 is gone.
+- **Verified 4.8 (production build):** `/opengraph-image` 200 `image/png` (screenshot: name, title,
+  specks); `/sitemap.xml` 7 URLs; `/robots.txt` as above; `/icon.svg` 200; an unknown URL → 404 with
+  the page, its button goes home. Head tags: titles through the template, a description, canonical,
+  `og:image` and `summary_large_image` on Home, About and a case study (`og:type` article).
+  **Lighthouse SEO 100** on `/`, `/about`, `/work`, `/skills`, `/contact` and `/work/project-1`
+  (Lighthouse 12 via `npx`, headless Chromium 1248); **Best Practices 100** on `/`.
+  - **[manual]** Paste a deployed URL into a share debugger (LinkedIn Post Inspector, opengraph.xyz)
+    after 11.1; set `NEXT_PUBLIC_SITE_URL` to the final domain then.
 - **Contact page and API (4.7):** `app/contact/page.tsx` (reads the resume's size at build) →
   `components/contact/Contact.tsx`, `ContactSheet.tsx`, `app/api/contact/route.ts`,
   `lib/contact/validate.ts`, `lib/supabase.ts`, `supabase/migrations/001_contact.sql`, from the
@@ -1278,7 +1314,6 @@ Carry-over into later chunks:
 - **2.2 gate over the canvas:** the canvas is opaque now (3.5), so "make the gate's background
   transparent over it at 35%" means the gate's own bg at 35% over the canvas; delete `GateScatter`
   then (4.2).
-- **Next's default not-found page** has hard-coded black text, unreadable on the dark canvas.
   A styled `app/not-found.tsx` belongs to 4.x / 10.x.
 Open TODO(content) items:
 - `content/preload.ts`: add the hero photo (4.2, `kind: "image"`) and the first track's first
@@ -1292,7 +1327,6 @@ Open TODO(content) items:
 - `content/copy.ts` — the island alert lines for theme, sound and mode ("Light theme · T to switch
   back" is the board's; "Dark theme", "Sound on/off", "Hand/Mouse mode" follow its pattern) and
   the nav's accessible names ("Navigation", "Pointer", "Open the menu"): Nasheet to review.
-- `content/copy.ts` `meta.description` — one sentence for search results (4.1).
 - `content/profile.ts` — tagline, bio, offScreen, photos (files in `public/photos/`); confirm title
   and the "Open to work" label.
 - `content/projects.ts` — three placeholder projects (`placeholder: true`, not counted in stats)
@@ -1320,7 +1354,6 @@ Known issues:
 - An unknown `/work/<slug>` shows the not-found page (noindex) with status **200**, not 404:
   `dynamicParams = false` is rejected with `cacheComponents`, and `notFound()` runs after the shell
   streamed. Revisit with the styled not-found page (4.x / 10.x).
-- `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
   Add `app/icon.*` with the brand assets (11.2 at the latest).
 - The browser-automation skill's runner wants Chromium build 1248, but only 1243 is in
   `%LOCALAPPDATA%\ms-playwright`. For 1.1 a small patchright runner with `executablePath` pointed
@@ -1339,7 +1372,8 @@ Decisions so far (don't re-ask):
   and chose to self-host SF Pro anyway. Don't raise it again.
 - **Font files:** `public/fonts/sf-{pro-text,pro-display,mono}-{400,500,600,700}.woff2`, subset to
   Latin, Latin-1, Latin Ext-A, punctuation, currency, arrows, maths, box-drawing and geometric shapes.
-  `public/fonts/og/SF-Pro-Display-Bold.otf` is a subset OTF for OG images (next/og can't read WOFF2).
+  `public/fonts/og/SF-Pro-Display-Bold.otf` is a subset OTF for OG images (next/og can't read WOFF2;
+  its GSUB table was removed in 4.8 for Satori).
   The source installers in `stuff/*.dmg` are gitignored. For non-Latin text, re-subset from the DMGs
   (7-Zip, then fontTools `pyftsubset`).
 - **Stack versions:** Next.js 16.4 (App Router, Turbopack, `cacheComponents` and
