@@ -32,6 +32,8 @@ type OwnProps = {
   /** Link only, e.g. "_blank" with rel "noopener noreferrer" for external profiles. */
   target?: string;
   rel?: string;
+  /** Link only: download the file instead of opening it (Contact's resume card, 4.7). */
+  download?: boolean | string;
   /** Hover lift, lift shadow, border change and pointer spotlight (mouse only). */
   interactive?: boolean;
   /**
@@ -59,6 +61,7 @@ export function Card({
   href,
   target,
   rel,
+  download,
   interactive = false,
   hoverable = false,
   sound = true,
@@ -126,6 +129,7 @@ export function Card({
         href={href}
         target={target}
         rel={rel}
+        download={download}
         {...(rest as Omit<ComponentPropsWithoutRef<"a">, "href">)}
         {...shared}
         ref={(el) => {

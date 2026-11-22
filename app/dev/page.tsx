@@ -8,6 +8,7 @@ import { CaseStudySpecimen } from "@/components/dev/CaseStudySpecimen";
 import { ChipSpecimen } from "@/components/dev/ChipSpecimen";
 import { CursorSpecimen } from "@/components/dev/CursorSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
+import { ContactSpecimen } from "@/components/dev/ContactSpecimen";
 import { DevSection } from "@/components/dev/DevSection";
 import { IconButtonSpecimen } from "@/components/dev/IconButtonSpecimen";
 import { IslandSpecimen } from "@/components/dev/IslandSpecimen";
@@ -54,6 +55,7 @@ const SECTIONS = [
   { id: "project-card", label: "ProjectCard" },
   { id: "case-study", label: "Case study" },
   { id: "skills-cards", label: "Skills cards" },
+  { id: "contact", label: "Contact" },
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
@@ -220,6 +222,14 @@ export default function DevPage() {
         note="4.6: LevelDots, the rated SkillsCard (←/→ when the body is focused, swipe on touch, area chips from md), ProgressCard (bars grow once in view), LegendCard and LinkListCard (rows, or one line on phones). Dev values, not content."
       >
         <SkillsSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="contact"
+        title="Contact"
+        note="4.7: TextField states, the hero CTACard, EmailCard (Copy → Copied + island alert), TimeCard, SocialCard's Follow hover and resume forms, and ContactSheet. The sheet posts to the real /api/contact."
+      >
+        <ContactSpecimen />
       </DevSection>
 
       <DevSection

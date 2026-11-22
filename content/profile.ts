@@ -35,6 +35,8 @@ export type Profile = {
   photos: readonly Photo[];
   /** A file under public/. */
   resume: string;
+  /** When the resume was last updated ("Nov 2026"), shown on Contact's resume card when set. */
+  resumeUpdated?: string;
   email: string;
 };
 
@@ -51,11 +53,14 @@ export const profile: Profile = {
   tagline:
     "I design interfaces, then build them — with motion, 3D and an unhealthy interest in easing curves.",
   bio: ["[A short paragraph about you]", "[A second paragraph]"],
-  offScreen: "[A paragraph about life outside code: what you watch, play, make or obsess over.]",
+  offScreen:
+    "[A paragraph about life outside code: what you watch, play, make or obsess over.]",
   // TODO(content): your interests.
   interests: Array.from({ length: 12 }, (_, i) => `[Interest ${i + 1}]`),
   // TODO(content): photos (files in public/photos/), each with alt text and a caption.
   photos: [],
   resume: "/resume.pdf",
+  // TODO(content): when the resume was last updated, e.g. "Nov 2026" (hidden until set).
+  resumeUpdated: undefined,
   email: "nxsheet@gmail.com",
 };

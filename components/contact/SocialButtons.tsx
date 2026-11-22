@@ -44,7 +44,11 @@ export function SocialButtons({ className }: { className?: string }) {
             {ICONS[s.platform]?.()}
           </a>
         ))}
-      <a href={`mailto:${profile.email}`} aria-label={`${copy.about.social.email}: ${profile.email}`} className={button}>
+      <a
+        href={`mailto:${profile.email}`}
+        aria-label={`${copy.about.social.email}: ${profile.email}`}
+        className={button}
+      >
         <Mail aria-hidden className="size-4" />
       </a>
     </div>

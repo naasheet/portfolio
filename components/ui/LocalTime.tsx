@@ -16,7 +16,14 @@ function nowIn(timeZone: string): string {
  * "22:06": the local time where Nasheet is, updated on the minute. It only renders after
  * mount (the server can't know it), so the slot keeps its width meanwhile.
  */
-export function LocalTime({ className }: { className?: string }) {
+export function LocalTime({
+  className,
+  zoneClassName,
+}: {
+  className?: string;
+  /** Styles the zone label separately (Contact's time card: a big time, a small "IST"). */
+  zoneClassName?: string;
+}) {
   const [time, setTime] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +39,7 @@ export function LocalTime({ className }: { className?: string }) {
   return (
     <span className={className}>
       <span className="inline-block min-w-[5ch]">{time ?? "--:--"}</span>{" "}
-      {profile.location.zoneLabel}
+      <span className={zoneClassName}>{profile.location.zoneLabel}</span>
     </span>
   );
 }

@@ -109,6 +109,11 @@ export const chapters = [
     subtitle: "Say hi",
     shape: { kind: "model", url: "/models/envelope.glb" },
     mood: { size: 0.95, drift: 0.7, spread: 0.8 }, // calm
+    // Contact frames (4.7): top right beside the title on desktop, above it on phones.
+    place: {
+      desktop: { x: 1.55, y: 0.55, scale: 0.6 },
+      phone: { x: 0, y: 1.05, scale: 0.3 },
+    },
   },
 ] as const satisfies readonly Chapter[];
 

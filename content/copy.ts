@@ -40,7 +40,11 @@ export const copy = {
     source: (field: string) => `content/profile.ts · ${field}`,
     photo: (n: number) => `[Photo ${n}]`,
     /** TODO(content): photo captions come with the photos (profile.photos). */
-    photoCaptions: ["[A playful caption]", "[Hover: the card tilts toward the pointer]", "[Another caption]"],
+    photoCaptions: [
+      "[A playful caption]",
+      "[Hover: the card tilts toward the pointer]",
+      "[Another caption]",
+    ],
     interests: "Interests",
     ar: {
       title: "Steer it with your hand",
@@ -104,7 +108,8 @@ export const copy = {
     orSwipe: "or swipe",
     swipeHint: "Swipe for the next area",
     /** The dots' accessible text. */
-    level: (level: number | undefined) => (level === undefined ? "Not rated yet" : `${level} of 5`),
+    level: (level: number | undefined) =>
+      level === undefined ? "Not rated yet" : `${level} of 5`,
     years: (n: number) => `${n} ${n === 1 ? "yr" : "yrs"}`,
     learning: "Learning now",
     legend: "How to read the dots",
@@ -119,12 +124,90 @@ export const copy = {
     tools: "Open every day",
     newTab: "opens in a new tab",
   },
-  /** The Contact page (4.7; Contact frames). 4.7 adds the rest of its labels here. */
+  /** The Contact page, its sheet and its email (4.7; Contact frames). */
   contact: {
+    lede: "Say hi, or hire me. Pick whichever button is closest.",
+    ledeShort: "Say hi, or hire me.",
     /** After the message is sent (the frame's line, approved). */
     success: "I'll reply within a day.",
+    sent: "Message sent",
     /** TODO(content): the line on the local-time card, in your words. */
     timeNote: "[Night owl. Usually replies by noon.]",
+    messages: {
+      eyebrow: "Messages",
+      title: "Say hello",
+      body: "Projects, internships, collabs, or just a hi. I read everything and reply within a day.",
+      bodyShort: "Projects, internships, collabs, or just a hi.",
+      write: "Write a message",
+      resume: "Resume",
+    },
+    emailCard: {
+      eyebrow: "Email",
+      copy: "Copy",
+      copied: "Copied",
+      openMail: "Open mail app",
+      /** The island alert after copying. */
+      copiedAlert: "Email copied",
+      copyFailed: "Couldn't copy it. Select the address instead.",
+    },
+    time: {
+      eyebrow: (city: string) => `Local time · ${city}`,
+    },
+    social: {
+      github: "GitHub",
+      linkedin: "LinkedIn",
+      instagram: "Instagram",
+      follow: "Follow",
+      newTab: "opens in a new tab",
+    },
+    resumeCard: {
+      title: "Resume",
+      meta: (kb: number) => `PDF · ${kb} KB`,
+      updated: (when: string) => `Updated ${when}`,
+    },
+    sheet: {
+      title: "Say hello",
+      close: "Close",
+      topic: "What's it about?",
+      name: "Name",
+      email: "Email",
+      message: "Message",
+      escHint: "Esc to close",
+      /** The honeypot's hidden label (only bots see it). */
+      honeypot: "Website",
+      send: "Send message",
+      direct: "Or email me directly:",
+      /** Inline errors (codes from lib/contact/validate.ts). */
+      errors: {
+        required: {
+          name: "Tell me what to call you.",
+          email: "I'll need an email to reply to.",
+          message: "Say something. Even just hi.",
+        },
+        tooLong: (max: number) => `That's over ${max} characters.`,
+        emailFormat: "That doesn't look like an email.",
+        emailUnfinished: "That email looks unfinished. Missing the .com?",
+        topic: "Pick what it's about.",
+        rateLimited:
+          "That's a lot of messages for one hour. Try again later, or email me.",
+        failed: "Something broke on my side. Email me instead?",
+        offline: "You look offline. Try again in a moment.",
+      },
+    },
+    /** The chips, also the email's subject tag. */
+    topics: { project: "Project", collab: "Collab", hi: "Just saying hi" },
+    /** The email you get (Resend). */
+    email: {
+      from: "Portfolio <onboarding@resend.dev>",
+      subject: (topic: string, name: string) =>
+        `[${topic}] ${name} via your portfolio`,
+      body: (name: string, email: string, topic: string, message: string) =>
+        `${name} <${email}> wrote (${topic}):
+
+${message}
+
+Reply to this email to answer them.`,
+    },
   },
   /** Case studies (4.5; Case study frames). Facts come from projects.ts and the MDX body. */
   caseStudy: {

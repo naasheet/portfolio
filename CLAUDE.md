@@ -77,7 +77,7 @@ what it costs in bundle size.
 | AR | `@mediapipe/tasks-vision` HandLandmarker, run in a Web Worker |
 | Game physics | `cannon-es` (Stack only) |
 | Chatbot | Next.js route handler + Vercel AI SDK (`streamText`) + an LLM API |
-| Backend | Supabase (leaderboards, contact messages, chat rate limits) |
+| Backend | Supabase (leaderboards, contact messages, chat rate limits) via `@supabase/supabase-js` (server only, added in 4.7) |
 | Content | `content/*.ts` typed data + MDX for case studies (`@next/mdx`, `@mdx-js/loader`, `@mdx-js/react`, dev `@types/mdx`; added in 4.5) |
 | UI utilities | `clsx`, `tailwind-merge` (for `cn()`), `lucide-react` icons |
 | Analytics | `@vercel/analytics`, `@vercel/speed-insights` (added in chunk 11.1) |
@@ -133,6 +133,7 @@ components/
   home/                 # the particle room's DOM: overlay, hover card, links, phone sheet, cards (R.4–R.5)
   chapters/             # PagePlaceholder (ChapterSection was removed in R.1)
   about/  work/  skills/  # About.tsx (4.3), Work.tsx (4.4), Skills.tsx (4.6): one client component per content page
+                        # (Contact.tsx lives in contact/ with ContactSheet, 4.7)
   case-study/           # header, hero, contents, reading progress, prev / next (4.5); mdx/ = the MDX components
   cursor/  nav/  gate/  layer/  contact/
   player/  chat/  terminal/  ar/  dev/
@@ -251,7 +252,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   faint top inner highlight) → solid overlay. Radius: 24 px cards, 12 px controls, round chips.
 - **Card kit** (build pages from these; don't invent one-off cards): ProfileCard, StatCard,
   SocialCard, PhotoCard, SkillsCard, CTACard, NowPlayingCard, TextCard, ProjectCard, GameCard,
-  plus (approved in 4.3–4.6) TaglineCard, ProgressCard, LegendCard, LinkListCard.
+  plus (approved in 4.3–4.7) TaglineCard, ProgressCard, LegendCard, LinkListCard, EmailCard, TimeCard.
 - **Micro-interactions:** hover lift 2 px + shadow + pointer spotlight (CSS variables, no React
   state); press scale 0.97 with a spring; 2 px accent focus ring; staggered entry (40–60 ms);
   numbers count up once; skeletons in the card's shape instead of spinners; every action gives
@@ -432,7 +433,7 @@ npm run test       # vitest (from chunk 6.2)
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=   # Supabase's new name for the anon key (4.7)
 SUPABASE_SERVICE_ROLE_KEY=     # server only
 LLM_API_KEY=                   # server only; rename to the provider's own variable
 EMAIL_API_KEY=                 # optional, server only (contact form)
@@ -527,7 +528,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1, 4.3–4.6 done; 4.2 replaced by phase R; 4.7, Contact, is next).
+Current phase: **4 — Pages and content** (4.1, 4.3–4.7 done; 4.2 replaced by phase R; 4.8, SEO, is next).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -548,7 +549,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -601,7 +602,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -894,6 +895,67 @@ Carry-over into later chunks:
   the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
   - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
     the phone photo row, and copy review.
+- **Contact page and API (4.7):** `app/contact/page.tsx` (reads the resume's size at build) →
+  `components/contact/Contact.tsx`, `ContactSheet.tsx`, `app/api/contact/route.ts`,
+  `lib/contact/validate.ts`, `lib/supabase.ts`, `supabase/migrations/001_contact.sql`, from the
+  Contact frames (`stuff/reference/Contact — desktop 1440 (4.7)`, `— message sheet open`, `— phone 390`).
+  - **Supabase (run by Nasheet on 2026-11-22):** `contact_messages` (topic in project / collab / hi,
+    name 1–100, email 3–254, message 1–2000, `ip_hash` 64 hex) with RLS on, **no policies**, and
+    anon / authenticated revoked; `submit_contact_message(...)` (security definer, execute for
+    `service_role` only) counts the IP's messages in the last hour and inserts **under a per-IP
+    advisory lock**, returning false at 5. Later migrations: `002_chat.sql`, `003_scores.sql`.
+  - **`lib/supabase.ts`** (server only; uses the secret key): `getSupabaseAdmin()` (null when not
+    configured), `hashIp(ip)` (SHA-256 of `CHAT_SALT:ip`; null without the salt, so a deploy
+    without it fails closed with 503), `clientIp(request)` (x-forwarded-for, then x-real-ip). 7.x
+    and 9.x reuse it. **Env:** the publishable key is `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` now (the
+    route doesn't need it); `SUPABASE_SERVICE_ROLE_KEY` holds an `sb_secret_` key; `CHAT_SALT` was
+    generated into `.env.local` (32 random bytes). **Vercel (11.1) needs all four, plus
+    `EMAIL_API_KEY`.**
+  - **`/api/contact`:** bad JSON 400; filled honeypot (`website`) → 200 `{ ok: true }`, nothing
+    stored or sent (approved); `validateContact` (shared with the sheet) → 422 `{ error: "invalid",
+    errors: { field: code } }`; missing Supabase or salt → 503; RPC error → 500 `failed`; over the
+    limit → 429 `rateLimited` + `Retry-After: 3600`; then Resend (REST, no package) from
+    `onboarding@resend.dev` to `profile.email`, reply-to the sender, subject "[Topic] Name via your
+    portfolio" (`copy.contact.email`). A failed email is logged and doesn't fail the request.
+    **Deploy check:** the limit trusts x-forwarded-for, which Vercel sets itself; behind any other
+    proxy, make sure the header can't be spoofed.
+  - **Sheet (1.5's Sheet):** topic chips (`Chip tone="solid"`), Name, Email, Message (counter,
+    "Esc to close"), an off-screen honeypot; errors on blur and on submit (focus moves to the first
+    bad field), re-checked while typing once shown; server field errors land on their field,
+    others above Send (`role="alert"`). Success: the sheet closes, the form resets, the island says
+    "Message sent · I'll reply within a day." No typing sound (CLAUDE.md asks first; not added).
+  - **Page:** CTACard `variant="hero"` (Messages: status, "Say hello.", Write a message, Resume),
+    EmailCard (Copy → "✓ Copied" for 2 s + "Email copied" island alert; mailto), TimeCard
+    (`LocalTime` gained `zoneClassName`), and a row of SocialCards (GitHub, LinkedIn, Instagram with
+    "Follow ↗" on hover) plus the resume (`download`, "PDF · 513 KB" read at build;
+    `profile.resumeUpdated` adds "Updated …" when set). Phones: Say hello, Email, GitHub | LinkedIn,
+    Instagram (full width, approved), Resume as a row (`layout="row"`), then the time card
+    (`order-last`).
+  - **Kit changes:** `components/ui/TextField.tsx` (the first text input: label, error with
+    aria-describedby, hint row, respects a passed `id`), `EmailCard`, `TimeCard`, CTACard `hero`,
+    SocialCard `hoverLabel` / `meta` / `download` / `layout`, Card `download` (link form),
+    `components/media/icons/InstagramIcon.tsx` (Simple Icons, CC0). All on `/dev` ("Contact").
+  - **Envelope placement:** desktop (1.55, 0.55) × 0.6, phone (0, 1.05) × 0.3.
+- **Verified 4.7 (headless Chromium + the real Supabase project and Resend, production build):**
+  - **Access rules:** the publishable key is refused (42501) on select, insert and the function;
+    the secret key works.
+  - **Keyboard only:** Tab to "Write a message", Enter opens the sheet (focus on Close); order Project
+    → Collab → Just saying hi → Name → Email → Message → Send → the email link → Close (trapped).
+    Empty submit: three errors, focus on Name; `riya@studio` → "That email looks unfinished. Missing
+    the .com?"; Space picks Collab; Enter on Send stores the message, the island says "Message
+    sent", focus returns to "Write a message". Esc closes and returns focus.
+  - **Delivery:** the row landed (topic collab, a 64-char ip_hash) and Resend accepted the email (no
+    error logged); the 5 test emails went to nxsheet@gmail.com.
+  - **Rate limit:** 10 quick posts after the form send → 200 ×4, then 429 ×6 (`Retry-After: 3600`).
+    10 **simultaneous** posts from a fresh IP (email off) → exactly 5 × 200, 5 × 429 (the lock).
+  - **API:** bad JSON 400; invalid fields 422 with codes; honeypot 200 with nothing stored; a
+    101-char name 422 `tooLong`. With the table missing, the sheet showed "Something broke on my
+    side. Email me instead?" and kept the text.
+  - **Copy:** "✓ Copied", the clipboard holds the address, the island says "Email copied".
+  - All 10 `[test]` rows were deleted afterwards (the table is empty). Screenshots match the frames.
+  - **[manual]** The 5 test emails in your inbox (from onboarding@resend.dev; check spam once and
+    mark it "not spam"); the sheet on a real phone (keyboard covering the fields, the drag handle);
+    copy review (`copy.contact`).
 - **Skills page (4.6):** `app/skills/page.tsx` → `components/skills/Skills.tsx` (client), from the
   Skills frames (`stuff/reference/Skills — desktop 1440 (4.6)`, `— phone 390`). The chunk named
   `components/chapters/Skills.tsx`; it lives in `components/skills/` like About and Work (approved).
@@ -1241,7 +1303,9 @@ Open TODO(content) items:
   `copy.skills` (lede, legend lines). `content/socials.ts` — done (GitHub, LinkedIn, Instagram;
   the Instagram icon comes with 4.7).
 - `content/copy.ts` `contact.timeNote` (4.7) — the time card's line, in your words (placeholder
-  now). `contact.success` uses the frame's "I'll reply within a day." (approved).
+  now). `contact.success` uses the frame's "I'll reply within a day." (approved). Review the rest
+  of `copy.contact` (lede, card lines, form errors).
+- `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo
