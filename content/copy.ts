@@ -90,7 +90,32 @@ export const copy = {
       caseStudy: "Case study",
       preview: "Preview",
       playingInView: "Playing in view",
+      newTab: "opens in a new tab",
     },
+  },
+  /** Case studies (4.5; Case study frames). Facts come from projects.ts and the MDX body. */
+  caseStudy: {
+    allWork: "All work",
+    eyebrow: "Case study",
+    role: "Role",
+    year: "Year",
+    team: "Team",
+    stack: "Stack",
+    liveSite: "Live site",
+    repo: "Repo",
+    newTab: "opens in a new tab",
+    contents: "Contents",
+    /** The phone's contents pill: "2 / 5". */
+    position: (i: number, n: number) => `${i} / ${n}`,
+    previous: "Previous",
+    next: "Next",
+    marginNote: "Margin note",
+    before: "Before",
+    after: "After",
+    /** The Compare slider's accessible name. */
+    compare: "Before and after",
+    /** The page's <title>: "[Project 1] · Case study". */
+    title: (project: string) => `${project} · Case study`,
   },
   /** The footer on content pages (4.3; About frames). */
   footer: {

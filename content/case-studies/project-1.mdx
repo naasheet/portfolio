@@ -1,0 +1,70 @@
+{/*
+  TODO(content): a SAMPLE case study (4.5). It shows every component the template offers, with
+  bracketed placeholders instead of facts. Replace it with your own write-up (and rename the file
+  to your project's slug). Title, role, year, team, stack and links come from content/projects.ts;
+  this file holds only the body. Each <Section title="…"> becomes a heading and a contents entry.
+*/}
+
+<Section title="The problem">
+
+[What was broken or missing, who it hurt, and why it mattered. Keep it to two short paragraphs.]
+
+<MarginNote>[Optional side notes sit here on wide screens.]</MarginNote>
+
+[The constraint that made it interesting: time, budget, data, a device, a deadline.]
+
+</Section>
+
+<Section title="Approach">
+
+[How you thought about it before building. What you tried first and why you changed course.]
+
+<Callout title="[Callout title]">[A lesson or a decision worth highlighting.]</Callout>
+
+<Figure
+  src="/projects/placeholder-cover.svg"
+  alt="[What the screenshot shows]"
+  caption="[Figure caption: what to notice in this screenshot.]"
+/>
+
+</Section>
+
+<Section title="Build">
+
+[The interesting technical parts, in plain words. One diagram or code snippet is plenty.]
+
+<Compare
+  before={{ src: "/projects/placeholder-before.svg", alt: "[The old screen]" }}
+  after={{ src: "/projects/placeholder-after.svg", alt: "[The new screen]" }}
+/>
+
+```ts
+// [A short snippet, if it helps.]
+```
+
+<Gallery>
+  <Figure src="/projects/placeholder-before.svg" alt="[Detail one]" caption="[Caption one]" />
+  <Figure src="/projects/placeholder-after.svg" alt="[Detail two]" caption="[Caption two]" />
+</Gallery>
+
+</Section>
+
+<Section title="Results">
+
+<Metrics>
+  <Metric value="[−42%]" label="[load time]" />
+  <Metric value="[3×]" label="[faster checkout]" />
+  <Metric value="[12k]" label="[monthly users]" />
+</Metrics>
+
+[What happened after launch. Real numbers if you have them; honest words if you don't.]
+
+</Section>
+
+<Section title="What's next">
+
+[What you'd do with more time, and what you learned.]
+
+<Callout kind="note" title="[A note]">[Something a reader should know.]</Callout>
+
+</Section>

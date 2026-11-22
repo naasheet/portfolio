@@ -11,6 +11,7 @@ import {
   endLeaving,
   isLeaving,
   subscribeLeaving,
+  takeSharedNav,
   takePushed,
 } from "@/lib/motion/pageTransition";
 import {
@@ -33,6 +34,8 @@ const serverLeaving = () => false;
  * - Exit: while TransitionLink's `leaving` flag is set, `data-page="leave"` (fade, 12 px up).
  * Before the first paint it places the page: Back / Forward restores the saved position, a
  * #hash goes to its section, anything else starts at the top. Reduced motion: no transition.
+ * This runs on every pathname change, since nested routes (/work → /work/[slug]) share one
+ * template instance.
  */
 export default function Template({ children }: { children: ReactNode }) {
   const leaving = useSyncExternalStore(
@@ -47,12 +50,15 @@ export default function Template({ children }: { children: ReactNode }) {
     startScrollMemory();
     setScrollPath(pathname);
     const pushed = takePushed();
+    const shared = takeSharedNav();
     endLeaving();
     if (firstPage) {
       firstPage = false;
       return;
     }
     placeNewPage(pathname, !pushed);
+    // A shared-element navigation (4.5): the View Transition is the animation, so no CSS enter.
+    if (shared) return;
     const el = ref.current;
     if (!el) return;
     el.dataset.page = "from";
@@ -62,9 +68,10 @@ export default function Template({ children }: { children: ReactNode }) {
       el.dataset.page = "in";
     });
     return () => cancelAnimationFrame(frame);
-    // Mount only: Next gives every route its own template instance.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    // Per pathname, not per mount: Next keys this root template by the first segment only, so
+    // /work → /work/[slug] (4.5) keeps the same instance and must still place and enter the page.
+    // Query-only changes (Work's ?stack= filter) don't change the pathname, so they never get here.
+  }, [pathname]);
 
   return (
     <div ref={ref} className="page" data-leaving={leaving ? "" : undefined}>

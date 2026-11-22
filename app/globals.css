@@ -964,10 +964,33 @@ html[data-gate="done"] .entry-gate {
  * new theme is revealed by a clip-path circle animated on ::view-transition-new(root). Without
  * the API, .theme-veil (the old background colour) fades out over 400 ms.
  */
-::view-transition-old(root),
-::view-transition-new(root) {
+html[data-theme-reveal]::view-transition-old(root),
+html[data-theme-reveal]::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+}
+
+/*
+ * Shared-element navigation (4.5): React's <ViewTransition share="morph"> pairs (a project
+ * card's cover and the case study's hero) carry the `morph` class. The rest of the page uses
+ * the browser's root crossfade. Reduced motion: no View Transition animation at all.
+ */
+::view-transition-group(.morph) {
+  animation-duration: 500ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(.morph),
+::view-transition-new(.morph) {
+  height: 100%;
+  object-fit: cover;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }
 .theme-veil {
   position: fixed;

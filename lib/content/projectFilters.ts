@@ -4,17 +4,12 @@
  * URL as ?domain=<slug> or ?stack=<slug>; one at a time.
  */
 import { projects, type Project } from "@/content/projects";
+import { slugify } from "@/lib/content/slug";
 
 export type FilterKind = "domain" | "stack";
 export type Filter = { kind: FilterKind; slug: string; label: string };
 
-/** "Next.js" → "next-js", "AI / ML" → "ai-ml". */
-export function slugify(label: string): string {
-  return label
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+export { slugify };
 
 /** How many stack items get a chip. */
 export const TOP_STACK = 6;
@@ -26,7 +21,8 @@ export function getFilters(list: readonly Project[] = projects): {
   const domains = new Map<string, Filter>();
   for (const p of list) {
     const slug = slugify(p.domain);
-    if (slug && !domains.has(slug)) domains.set(slug, { kind: "domain", slug, label: p.domain });
+    if (slug && !domains.has(slug))
+      domains.set(slug, { kind: "domain", slug, label: p.domain });
   }
 
   // Count each stack item; ties keep first-seen order (Map preserves insertion).
@@ -50,7 +46,9 @@ export function getFilters(list: readonly Project[] = projects): {
 }
 
 /** The active filter from the URL's search params (null = All). Unknown values still filter. */
-export function filterFromParams(params: { get(name: string): string | null }): {
+export function filterFromParams(params: {
+  get(name: string): string | null;
+}): {
   kind: FilterKind;
   slug: string;
 } | null {
@@ -62,7 +60,9 @@ export function filterFromParams(params: { get(name: string): string | null }): 
 }
 
 /** The query string for a filter: "?stack=react", or "" for All. */
-export function filterQuery(filter: { kind: FilterKind; slug: string } | null): string {
+export function filterQuery(
+  filter: { kind: FilterKind; slug: string } | null,
+): string {
   return filter ? `?${filter.kind}=${filter.slug}` : "";
 }
 

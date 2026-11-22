@@ -2,7 +2,13 @@
 
 import { ArrowUpRight, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, type HTMLAttributes, type MouseEvent, type SyntheticEvent } from "react";
+import {
+  ViewTransition,
+  useRef,
+  type HTMLAttributes,
+  type MouseEvent,
+  type SyntheticEvent,
+} from "react";
 import { Img } from "@/components/media/Img";
 import { LoopVideo } from "@/components/media/LoopVideo";
 import { Card } from "@/components/ui/Card";
@@ -19,7 +25,18 @@ export type ProjectCardLabels = {
 };
 
 export type ProjectCardProps = {
-  href: string;
+  /**
+   * The case study (`/work/<slug>`: opens with the cover morphing into its hero, 4.5), an
+   * external https link (opens in a new tab), or none (the card isn't a link).
+   */
+  href?: string;
+  /**
+   * A React <ViewTransition> name for the cover (4.5: `cover-<slug>`), shared with the case
+   * study's hero so the cover morphs into it. Only for cards that open a case study.
+   */
+  coverTransition?: string;
+  /** Accessible hint for external links ("opens in a new tab"). */
+  newTabLabel?: string;
   title: string;
   role: string;
   year: number;
@@ -35,12 +52,16 @@ export type ProjectCardProps = {
   /** Responsive sizes hint for the cover. */
   sizes?: string;
   className?: string;
-} & Omit<HTMLAttributes<HTMLElement>, "title" | "role" | "onClick" | "children">;
+} & Omit<
+  HTMLAttributes<HTMLElement>,
+  "title" | "role" | "onClick" | "children"
+>;
 
 /** Cover inset: the card's 8 px padding, so the cover's radius is the card's minus 8 (concentric). */
 const COVER_RADIUS = "rounded-[calc(var(--radius-card)-8px)]";
 
-const videoType = (src: string) => (src.endsWith(".mp4") ? "video/mp4" : "video/webm");
+const videoType = (src: string) =>
+  src.endsWith(".mp4") ? "video/mp4" : "video/webm";
 
 function formatTime(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));
@@ -52,7 +73,8 @@ function formatTime(seconds: number): string {
  * ↗, role and year, up to four stack tags. With a preview, a muted loop plays over the cover
  * while the card is hovered or focused (with a mouse) or on screen (touch), and a pill says so.
  * The playing state is a data attribute written from the video's own events (capture phase):
- * no React state. The whole card is one link that leaves through the page transition.
+ * no React state. The whole card is one link: to its case study (the cover morphs into the
+ * hero where View Transitions exist, else the page transition), to the live site, or none.
  */
 export function ProjectCard({
   href,
@@ -66,17 +88,21 @@ export function ProjectCard({
   featured = false,
   labels,
   sizes,
+  newTabLabel,
+  coverTransition,
   className,
   ...rest
 }: ProjectCardProps) {
   const router = useRouter();
   const duration = useRef<HTMLSpanElement>(null);
+  const external = href !== undefined && /^https?:/.test(href);
 
   const onClick = (e: MouseEvent<HTMLElement>) => {
+    if (href === undefined || external) return;
     if (e.defaultPrevented || e.button !== 0) return;
     if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    navigate(router, href);
+    navigate(router, href, { shared: coverTransition !== undefined });
   };
 
   const setPlaying = (on: boolean) => (e: SyntheticEvent<HTMLElement>) => {
@@ -91,10 +117,70 @@ export function ProjectCard({
     }
   };
 
+  const coverEl = (
+    <div
+      className={cn(
+        "relative aspect-video shrink-0 overflow-hidden bg-surface-glass",
+        featured && "lg:aspect-[37/10]",
+        COVER_RADIUS,
+      )}
+    >
+      <Img
+        src={cover.src}
+        alt={cover.alt}
+        width={1600}
+        height={1000}
+        sizes={sizes}
+        className="h-full"
+      />
+      {preview ? (
+        <LoopVideo
+          sources={[{ src: preview, type: videoType(preview) }]}
+          width={1600}
+          height={900}
+          trigger="hover"
+          className="absolute inset-0 h-full opacity-0 transition-opacity duration-300 ease-out group-data-playing/card:opacity-100"
+        />
+      ) : null}
+
+      {caseStudy ? (
+        <span className="absolute top-3 left-3 flex h-7 items-center gap-2 rounded-chip border border-island-border bg-island-bg/80 px-3 text-footnote text-island-text">
+          <span
+            aria-hidden
+            className="size-1.5 rounded-chip bg-island-accent"
+          />
+          {labels.caseStudy}
+        </span>
+      ) : null}
+
+      {preview ? (
+        <span
+          aria-hidden
+          className="absolute right-3 bottom-3 flex h-8 translate-y-1 items-center gap-2 rounded-chip bg-island-text px-3 text-footnote font-semibold text-island-bg opacity-0 transition-[opacity,translate] duration-200 ease-out group-data-playing/card:translate-y-0 group-data-playing/card:opacity-100"
+        >
+          <Play className="size-3 fill-current" />
+          <span className="pointer-coarse:hidden">
+            {labels.preview}
+            <span ref={duration} />
+          </span>
+          <span className="hidden pointer-coarse:inline">
+            {labels.playingInView}
+          </span>
+        </span>
+      ) : null}
+    </div>
+  );
+
   return (
     <Card
       {...rest}
       href={href}
+      hoverable={href === undefined}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener noreferrer" : undefined}
+      aria-label={
+        external && newTabLabel ? `${title}, ${newTabLabel}` : undefined
+      }
       onClick={onClick}
       data-loop-host=""
       onPlayCapture={setPlaying(true)}
@@ -106,52 +192,13 @@ export function ProjectCard({
         className,
       )}
     >
-      <div
-        className={cn(
-          "relative aspect-video shrink-0 overflow-hidden bg-surface-glass",
-          featured && "lg:aspect-[37/10]",
-          COVER_RADIUS,
-        )}
-      >
-        <Img
-          src={cover.src}
-          alt={cover.alt}
-          width={1600}
-          height={1000}
-          sizes={sizes}
-          className="h-full"
-        />
-        {preview ? (
-          <LoopVideo
-            sources={[{ src: preview, type: videoType(preview) }]}
-            width={1600}
-            height={900}
-            trigger="hover"
-            className="absolute inset-0 h-full opacity-0 transition-opacity duration-300 ease-out group-data-playing/card:opacity-100"
-          />
-        ) : null}
-
-        {caseStudy ? (
-          <span className="absolute top-3 left-3 flex h-7 items-center gap-2 rounded-chip border border-island-border bg-island-bg/80 px-3 text-footnote text-island-text">
-            <span aria-hidden className="size-1.5 rounded-chip bg-island-accent" />
-            {labels.caseStudy}
-          </span>
-        ) : null}
-
-        {preview ? (
-          <span
-            aria-hidden
-            className="absolute right-3 bottom-3 flex h-8 translate-y-1 items-center gap-2 rounded-chip bg-island-text px-3 text-footnote font-semibold text-island-bg opacity-0 transition-[opacity,translate] duration-200 ease-out group-data-playing/card:translate-y-0 group-data-playing/card:opacity-100"
-          >
-            <Play className="size-3 fill-current" />
-            <span className="pointer-coarse:hidden">
-              {labels.preview}
-              <span ref={duration} />
-            </span>
-            <span className="hidden pointer-coarse:inline">{labels.playingInView}</span>
-          </span>
-        ) : null}
-      </div>
+      {coverTransition ? (
+        <ViewTransition name={coverTransition} share="morph" default="none">
+          {coverEl}
+        </ViewTransition>
+      ) : (
+        coverEl
+      )}
 
       <div className="flex flex-1 flex-col gap-1 px-4 pt-4 pb-4">
         <div className="flex items-start justify-between gap-4">

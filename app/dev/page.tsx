@@ -4,6 +4,7 @@ import { BentoSpecimen } from "@/components/dev/BentoSpecimen";
 import { ButtonSpecimen } from "@/components/dev/ButtonSpecimen";
 import { CardKitSpecimen } from "@/components/dev/CardKitSpecimen";
 import { CardSpecimen } from "@/components/dev/CardSpecimen";
+import { CaseStudySpecimen } from "@/components/dev/CaseStudySpecimen";
 import { ChipSpecimen } from "@/components/dev/ChipSpecimen";
 import { CursorSpecimen } from "@/components/dev/CursorSpecimen";
 import { ColorSwatches } from "@/components/dev/ColorSwatches";
@@ -50,6 +51,7 @@ const SECTIONS = [
   { id: "text-motion", label: "Text motion" },
   { id: "card-kit", label: "Card kit" },
   { id: "project-card", label: "ProjectCard" },
+  { id: "case-study", label: "Case study" },
   { id: "overlays", label: "Overlays" },
   { id: "media", label: "Media" },
   { id: "cursor", label: "Cursor and sound" },
@@ -200,6 +202,14 @@ export default function DevPage() {
         note="Work's card (4.4): cover, Case study badge, title and arrow, role and year, up to four stack tags. With a preview, the dev loop plays while the card is hovered or focused (mouse) or on screen (touch), with a pill and the clip's length."
       >
         <ProjectCardSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="case-study"
+        title="Case study"
+        note="The MDX components (4.5) outside a case study. The whole template, with every component in place, is /work/project-1 (the sample)."
+      >
+        <CaseStudySpecimen />
       </DevSection>
 
       <DevSection

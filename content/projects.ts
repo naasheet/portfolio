@@ -24,6 +24,8 @@ export type Project = {
   featured: boolean;
   /** content/case-studies/<slug>.mdx exists. */
   hasCaseStudy: boolean;
+  /** Who built it ("Solo", "Team of 3"), shown on the case study when set (4.5). */
+  team?: string;
   /** A placeholder until the real project is in: shown, but not counted in the stats. */
   placeholder?: boolean;
 };
@@ -41,6 +43,8 @@ export const projects: readonly Project[] = [1, 2, 3].map((n) => ({
   cover: "/projects/placeholder-cover.svg",
   preview: null,
   featured: n === 1,
-  hasCaseStudy: false,
+  // TODO(content): the sample case study (4.5) lives on project 1 until your real ones exist.
+  hasCaseStudy: n === 1,
+  team: n === 1 ? "[Solo]" : undefined,
   placeholder: true,
 }));

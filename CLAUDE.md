@@ -78,7 +78,7 @@ what it costs in bundle size.
 | Game physics | `cannon-es` (Stack only) |
 | Chatbot | Next.js route handler + Vercel AI SDK (`streamText`) + an LLM API |
 | Backend | Supabase (leaderboards, contact messages, chat rate limits) |
-| Content | `content/*.ts` typed data + MDX for case studies (`@next/mdx`) |
+| Content | `content/*.ts` typed data + MDX for case studies (`@next/mdx`, `@mdx-js/loader`, `@mdx-js/react`, dev `@types/mdx`; added in 4.5) |
 | UI utilities | `clsx`, `tailwind-merge` (for `cn()`), `lucide-react` icons |
 | Analytics | `@vercel/analytics`, `@vercel/speed-insights` (added in chunk 11.1) |
 | Dev only | `prettier-plugin-tailwindcss`, `eslint-config-prettier`, `@next/bundle-analyzer`, `raw-loader` (GLSL imports), `vitest` |
@@ -133,7 +133,8 @@ components/
   home/                 # the particle room's DOM: overlay, hover card, links, phone sheet, cards (R.4–R.5)
   chapters/             # PagePlaceholder (ChapterSection was removed in R.1)
   about/  work/         # About.tsx (4.3), Work.tsx (4.4): one client component per content page
-  cursor/  nav/  gate/  layer/  case-study/  contact/
+  case-study/           # header, hero, contents, reading progress, prev / next (4.5); mdx/ = the MDX components
+  cursor/  nav/  gate/  layer/  contact/
   player/  chat/  terminal/  ar/  dev/
 lib/
   store.ts              # the Zustand store
@@ -145,6 +146,7 @@ lib/
   hooks/                # useReducedMotion, useMediaQuery, useFocusTrap, useCountUp …
   fs.ts                 # virtual filesystem built from content/
   island.ts             # the nav island's activity / alert store (2.4)
+mdx-components.tsx      # MDX element styles + the case-study components (required by @next/mdx)
   sfx.ts  shortcuts.ts  quality.ts  preload.ts  theme.ts  browser.ts  supabase.ts  utils.ts
 content/                # profile, socials, projects, skills, music, chapters, copy, preload (.ts),
                         # knowledge.md, case-studies/*.mdx
@@ -524,7 +526,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **4 — Pages and content** (4.1, 4.3 and 4.4 done; 4.2 replaced by phase R; 4.5, case studies, is next).
+Current phase: **4 — Pages and content** (4.1, 4.3, 4.4 and 4.5 done; 4.2 replaced by phase R; 4.6, Skills, is next).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
 
@@ -545,7 +547,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -598,7 +600,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -891,6 +893,72 @@ Carry-over into later chunks:
   the frame's order with the sphere above the title. Frames on `/` unchanged (p50 6.1 ms).
   - **[manual]** The digits (00 until real skills / projects), the ScrubText feel, the photo tilt,
     the phone photo row, and copy review.
+- **Case-study template (4.5):** `app/work/[slug]/page.tsx`, `components/case-study/*` (+ `mdx/`),
+  `mdx-components.tsx`, `lib/content/caseStudies.ts`, `lib/content/slug.ts`, from the Case study
+  frames (`stuff/reference/Case study — desktop 1440 (4.5)`, `— phone 390`).
+  - **Data:** the MDX file (`content/case-studies/<slug>.mdx`) holds only the body. Title, summary,
+    role, year, `team` (new optional field on `Project`, shown when set), stack and links come
+    from `content/projects.ts`. Pages exist for `hasCaseStudy` projects only
+    (`generateStaticParams`); `generateMetadata` gives "<title> · Case study" and the summary.
+  - **`dynamicParams` isn't allowed with `cacheComponents`:** an unknown slug reaches `notFound()`
+    and shows the not-found page with `noindex`, but the status is **200** (the shell has already
+    streamed). Known issue below.
+  - **Contents:** `getToc(slug)` reads the MDX at build time and lists its `<Section title="…">`
+    tags (MDX comments are stripped first); Section ids use the same `slugify`. Desktop: a sticky
+    list (current section: the last whose top is above 35% of the window, an IntersectionObserver
+    plus five rect reads per crossing). Phones: a "2 / 5 Approach ⌄" disclosure. Plain `#hash`
+    links (SmoothScroll glides). `check-content` fails a case study with no Section.
+  - **Layout (lg):** `minmax(0,248px) | minmax(0,720px) | 1fr`, gap 48; the body column is
+    `relative space-y-16`. `MarginNote` is absolute in the right margin from 88rem (1408 px) and an
+    inline aside below; Section is a **block** container on purpose (an absolute child of a flex
+    container loses its place in the flow).
+  - **MDX components** (registered globally in `mdx-components.tsx`, no imports in the MDX):
+    `Section`, `Figure` (src, alt, width / height default 1600 × 1000, caption), `Gallery` (2 cols
+    from md), `Callout` (`kind` lesson / note), `Metric` (number → counts up once; string → shown
+    as written) + `Metrics` (row), `Compare` (before / after; transforms of one `--pos` variable,
+    no clip-path; drag, sideways touch, or the handle's role="slider" with arrows / Shift / Home /
+    End), `MarginNote`. Plus styled `h2 h3 p a ul ol strong code pre blockquote hr`; site links in
+    the body go through `TransitionLink`, others open in a new tab.
+  - **Reading progress:** a 2 px teal bar (`ReadingProgress`) whose `scaleX` follows
+    `scroll.progress` through a store subscription (no React state).
+  - **Prev / next:** `getNeighbours()` among case studies in `projects.ts` order; `ProjectNav`
+    cards with the cover thumbnail on the outer side; Previous is hidden on phones.
+  - **Shared element (React `<ViewTransition>`, no config in Next 16 / React 19.3):** the Work
+    card's cover, the hero and the prev / next thumbnails are wrapped in
+    `<ViewTransition name={coverTransitionName(slug)} share="morph" default="none">`. React starts
+    the View Transition itself at commit and applies the names only for it (so R.5's theme reveal
+    is untouched). `navigate(router, href, { shared: true })` skips the 2.5 exit fade when the
+    API exists, and the template skips its enter fade (`takeSharedNav()`). CSS:
+    `::view-transition-group(.morph)` 500 ms ease-out; under reduced motion every VT pseudo has
+    `animation: none`. **A hand-rolled `document.startViewTransition` around `router.push` was
+    tried first and deadlocked:** Next's navigation needs a rendered frame, and rendering is paused
+    during the update (the R.5 lesson again), so it only ended at a 2 s timeout.
+  - **R.5's root rule is scoped now:** `::view-transition-old/new(root) { animation: none }` applies
+    only under `html[data-theme-reveal]`, so navigations keep the browser's root crossfade.
+  - **Template fix (a 2.5 bug):** Next keys the root `template.tsx` by the **first** segment, so
+    `/work` → `/work/[slug]` kept the same instance and the new page was never placed (it opened at
+    the old scroll position). The placement / enter effect now runs on every pathname change.
+  - **Work cards** (4.4 change): projects without a case study link to `links.live`, else
+    `links.repo` (new tab, "opens in a new tab" in the name), else aren't links (hover look only).
+  - **Sample:** `content/case-studies/project-1.mdx` (TODO(content), bracketed placeholders, every
+    component) on placeholder project 1 (`hasCaseStudy: true`, `team: "[Solo]"`);
+    `public/projects/placeholder-before.svg` / `-after.svg` for Compare and Gallery.
+- **Verified 4.5 (headless Chromium on the Iris Xe, production build):**
+  - **Sample page** (desktop and phone): title "[Project 1] · Case study"; five h2s and five contents
+    entries; 2 callouts, 3 figures, 1 slider, 3 metrics, the margin note and a code block render.
+    Contents follow the reading position ("The problem" → "Approach"; phone pill "2 / 5"). The bar's
+    `scaleX` matches the scroll (0.35 at 35%). Compare: End → 100, Home + → + Shift → = 12, a drag to
+    a quarter → 45. Screenshots match both frames (body column at x = 344 as drawn).
+  - **Cover → hero:** a click on the Work card (scrolled to 300) runs one View Transition with a
+    `::view-transition-group(cover-project-1)` and old / new snapshots; a screencast shows the
+    cover growing into the hero by ~450 ms; no names left afterwards. Without the API (deleted in
+    a probe) the 2.5 fade runs. The case study opens at scroll 0 in both.
+  - **Back** returns `/work` to exactly 300; Forward returns to the case study; "All work" → `/work`;
+    `T` still switches the theme on a case study.
+  - Console: only the favicon 404. First-load JS on `/` 210.8 KB.
+  - **[manual]** The morph's feel (500 ms) in Chrome and the fallback in **Safari / Firefox**
+    (Safari 18 has View Transitions: check the morph there too); Back's reverse morph by eye; the
+    Compare drag on a real phone (sideways drag vs. scroll); VoiceOver reading the slider.
 - **Work page (4.4):** `app/work/page.tsx` → `components/work/Work.tsx` (client),
   `components/cards/ProjectCard.tsx`, `lib/content/projectFilters.ts`, from the Work frames
   (`stuff/reference/Work — desktop 1440 (4.4)`, `— phone 390`). The chunk named
@@ -933,7 +1001,7 @@ Carry-over into later chunks:
   - **Chip `tone="solid"`:** the selected state as a solid `text-primary` pill with `bg-base` text and
     no check (Work frames and the Skills frame's area chips). The default `tint` is unchanged. On `/dev`.
   - **Laptop placement:** desktop (1.45, 0.55) × 0.58, phone (0, 1.05) × 0.32.
-  - **Case-study links** prefetch `/work/<slug>` and 404 until 4.5 (the console shows them).
+  - **Case-study links:** only `hasCaseStudy` cards link to `/work/<slug>` since 4.5.
 - **Verified 4.4 (headless Chromium on the Iris Xe, production build):**
   - **Real content** (three placeholders): All · [Domain] | [Tech]; clicking [Tech] → `/work?stack=tech`
     with no reload; reload keeps it ([Tech] pressed, 3 cards); `?stack=nope` → 0 cards and the empty
@@ -1132,7 +1200,13 @@ Open TODO(content) items:
   copy in `copy.about` (lede, AR lines, terminal peek) for review.
 - Work (4.4): real projects with covers and short WebM previews (`public/projects/`); the Work copy
   in `copy.work` (lede, empty line) for review. The frame's mock covers are placeholders only.
+- Case studies (4.5): your write-ups in `content/case-studies/<slug>.mdx` (set `hasCaseStudy` and
+  `team` on the project); delete the sample `project-1.mdx` and the placeholder before / after SVGs
+  when the real ones exist; review `copy.caseStudy`.
 Known issues:
+- An unknown `/work/<slug>` shows the not-found page (noindex) with status **200**, not 404:
+  `dynamicParams = false` is rejected with `cacheComponents`, and `notFound()` runs after the shell
+  streamed. Revisit with the styled not-found page (4.x / 10.x).
 - `/favicon.ico` returns 404 (there's no icon yet). It shows as one console error on every page.
   Add `app/icon.*` with the brand assets (11.2 at the latest).
 - The browser-automation skill's runner wants Chromium build 1248, but only 1243 is in

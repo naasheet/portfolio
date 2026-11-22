@@ -1,7 +1,12 @@
 "use client";
 
 import { AnimatePresence, m, type Variants } from "framer-motion";
-import { useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import {
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import { ProjectCard } from "@/components/cards/ProjectCard";
 import { SiteFooter } from "@/components/layer/SiteFooter";
 import { Stagger } from "@/components/motion/Stagger";
@@ -20,6 +25,7 @@ import {
   type Filter,
 } from "@/lib/content/projectFilters";
 import { gsap } from "@/lib/motion/gsap";
+import { coverTransitionName } from "@/lib/motion/pageTransition";
 import { easeOutPoints, spring } from "@/lib/motion/tokens";
 
 const t = copy.work;
@@ -46,7 +52,11 @@ const getSearch = () => window.location.search;
 const getServerSearch = () => "";
 
 function setSearch(query: string) {
-  window.history.replaceState(window.history.state, "", `${page.route}${query}${window.location.hash}`);
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${page.route}${query}${window.location.hash}`,
+  );
   listeners.forEach((fn) => fn());
 }
 
@@ -69,7 +79,9 @@ const cardVariants: Variants = {
   shown: (animate: boolean) => ({
     opacity: 1,
     scale: 1,
-    transition: animate ? { ...spring.soft, opacity: { duration: 0.2 } } : INSTANT,
+    transition: animate
+      ? { ...spring.soft, opacity: { duration: 0.2 } }
+      : INSTANT,
   }),
   exit: (animate: boolean) => ({
     opacity: 0,
@@ -96,7 +108,8 @@ export function Work() {
   const choose = (next: Filter | null) => {
     // Cards still waiting for their scroll-in stagger would move into view while invisible:
     // show them now, then let the layout animation take over.
-    const pending = grid.current?.querySelectorAll<HTMLElement>("[data-stagger]");
+    const pending =
+      grid.current?.querySelectorAll<HTMLElement>("[data-stagger]");
     if (pending?.length) {
       gsap.killTweensOf(pending);
       gsap.set(pending, { clearProps: "transform,opacity" });
@@ -106,10 +119,17 @@ export function Work() {
   };
 
   const isSelected = (f: Filter | null) =>
-    f === null ? filter === null : filter?.kind === f.kind && filter.slug === f.slug;
+    f === null
+      ? filter === null
+      : filter?.kind === f.kind && filter.slug === f.slug;
 
   const chip = (f: Filter) => (
-    <Chip key={`${f.kind}-${f.slug}`} tone="solid" selected={isSelected(f)} onClick={() => choose(f)}>
+    <Chip
+      key={`${f.kind}-${f.slug}`}
+      tone="solid"
+      selected={isSelected(f)}
+      onClick={() => choose(f)}
+    >
       {f.label}
     </Chip>
   );
@@ -139,16 +159,29 @@ export function Work() {
         <div
           role="group"
           aria-label={t.filters}
-          className="-mx-4 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-4 py-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+          className="-mx-4 flex min-w-0 flex-1 [scrollbar-width:none] items-center gap-2 overflow-x-auto px-4 py-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
         >
-          <Chip tone="solid" selected={isSelected(null)} onClick={() => choose(null)}>
+          <Chip
+            tone="solid"
+            selected={isSelected(null)}
+            onClick={() => choose(null)}
+          >
             {t.all}
           </Chip>
           {domains.map(chip)}
-          {stack.length > 0 ? <Divider decorative orientation="vertical" className="mx-2 my-1.5" /> : null}
+          {stack.length > 0 ? (
+            <Divider
+              decorative
+              orientation="vertical"
+              className="mx-2 my-1.5"
+            />
+          ) : null}
           {stack.map(chip)}
         </div>
-        <span aria-hidden className="hidden shrink-0 text-footnote font-mono text-text-tertiary lg:block">
+        <span
+          aria-hidden
+          className="hidden shrink-0 text-footnote font-mono text-text-tertiary lg:block"
+        >
           {page.route}
           {filterQuery(filter)}
         </span>
@@ -178,7 +211,15 @@ export function Work() {
                   <div data-stagger className="h-full">
                     <ProjectCard
                       className="h-full"
-                      href={`${page.route}/${p.slug}`}
+                      href={
+                        p.hasCaseStudy
+                          ? `${page.route}/${p.slug}`
+                          : (p.links.live ?? p.links.repo)
+                      }
+                      newTabLabel={t.card.newTab}
+                      coverTransition={
+                        p.hasCaseStudy ? coverTransitionName(p.slug) : undefined
+                      }
                       title={p.title}
                       role={p.role}
                       year={p.year}
@@ -188,7 +229,11 @@ export function Work() {
                       caseStudy={p.hasCaseStudy}
                       featured={p.featured}
                       labels={t.card}
-                      sizes={p.featured ? "(min-width: 1024px) 66vw, 100vw" : "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
+                      sizes={
+                        p.featured
+                          ? "(min-width: 1024px) 66vw, 100vw"
+                          : "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      }
                     />
                   </div>
                 </m.div>
@@ -205,7 +250,7 @@ export function Work() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={layoutTransition}
-              className="glass flex flex-col items-start gap-4 rounded-card p-6 md:flex-row md:items-center md:justify-between"
+              className="flex flex-col items-start gap-4 rounded-card glass p-6 md:flex-row md:items-center md:justify-between"
             >
               <p className="text-body text-text-secondary">{t.empty}</p>
               <Button variant="secondary" onClick={() => choose(null)}>

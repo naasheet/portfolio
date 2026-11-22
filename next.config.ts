@@ -1,9 +1,14 @@
 import type { NextConfig } from "next";
 import bundleAnalyzer from "@next/bundle-analyzer";
+import createMDX from "@next/mdx";
 
 const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
+
+// Case-study bodies (4.5): content/case-studies/*.mdx, imported by app/work/[slug]/page.tsx.
+// Not pages (pageExtensions unchanged). Components come from mdx-components.tsx.
+const withMDX = createMDX({});
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
@@ -32,4 +37,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(withMDX(nextConfig));

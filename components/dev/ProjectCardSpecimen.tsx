@@ -1,6 +1,9 @@
 "use client";
 
-import { ProjectCard, type ProjectCardLabels } from "@/components/cards/ProjectCard";
+import {
+  ProjectCard,
+  type ProjectCardLabels,
+} from "@/components/cards/ProjectCard";
 import { BentoGrid } from "@/components/ui/BentoGrid";
 import { BentoItem } from "@/components/ui/BentoItem";
 import { DevState } from "./DevState";
@@ -32,7 +35,14 @@ export function ProjectCardSpecimen() {
     <div className="flex flex-col gap-8">
       <BentoGrid>
         <BentoItem col={{ md: 6, lg: 8 }}>
-          <ProjectCard {...base} title="[Featured project]" featured caseStudy preview="/dev/loop.webm" className="h-full" />
+          <ProjectCard
+            {...base}
+            title="[Featured project]"
+            featured
+            caseStudy
+            preview="/dev/loop.webm"
+            className="h-full"
+          />
         </BentoItem>
         <BentoItem col={{ md: 3, lg: 4 }}>
           <ProjectCard {...base} caseStudy className="h-full" />
@@ -40,7 +50,11 @@ export function ProjectCardSpecimen() {
       </BentoGrid>
       <div className="grid gap-4 md:grid-cols-3">
         <DevState label="Rest">
-          <ProjectCard {...base} stack={["React", "TypeScript"]} tabIndex={-1} />
+          <ProjectCard
+            {...base}
+            stack={["React", "TypeScript"]}
+            tabIndex={-1}
+          />
         </DevState>
         <DevState label="Hover · playing (data-playing)">
           <ProjectCard
@@ -53,7 +67,12 @@ export function ProjectCardSpecimen() {
           />
         </DevState>
         <DevState label="Focus-visible">
-          <ProjectCard {...base} stack={["Python"]} tabIndex={-1} className={forced.focus} />
+          <ProjectCard
+            {...base}
+            stack={["Python"]}
+            tabIndex={-1}
+            className={forced.focus}
+          />
         </DevState>
       </div>
     </div>

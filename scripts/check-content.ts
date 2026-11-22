@@ -8,7 +8,7 @@
  * imports the content files by their .ts path. Content data files must therefore import nothing
  * but types (or other content files by a relative ".ts" path).
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { profile as profileData, type Profile } from "../content/profile.ts";
 import { projects } from "../content/projects.ts";
@@ -102,9 +102,15 @@ function url(where: string, value: string | undefined, schemes = ["https:"]) {
     url(at("links.repo"), p.links.repo);
     inPublic(at("cover"), p.cover);
     inPublic(at("preview"), p.preview);
-    if (p.hasCaseStudy && !existsSync(join(root, "content", "case-studies", `${p.slug}.mdx`))) {
+    const mdx = join(root, "content", "case-studies", `${p.slug}.mdx`);
+    if (p.hasCaseStudy && !existsSync(mdx)) {
       fail(at("hasCaseStudy"), `is true but content/case-studies/${p.slug}.mdx doesn't exist`);
+    } else if (p.hasCaseStudy && !/<Section\s+[^>]*title=/.test(readFileSync(mdx, "utf8").replace(/\{\/\*[\s\S]*?\*\/\}/g, ""))) {
+      // The contents and headings come from <Section title="…"> (4.5).
+      fail(at("hasCaseStudy"), `content/case-studies/${p.slug}.mdx has no <Section title="…">`);
     }
+    if (p.team !== undefined && !filled(p.team)) fail(at("team"), "is set but empty");
+    if (p.team !== undefined && placeholder(p.team)) warnings.push(`content/projects.ts › ${p.slug} › team is a placeholder`);
     if (p.placeholder) warnings.push(`content/projects.ts › ${p.slug} is a placeholder project`);
   });
   if (projects.length === 0) warnings.push("content/projects.ts › no projects yet");
