@@ -2299,6 +2299,13 @@ Decisions so far (don't re-ask):
   renders nothing. Lenis uses `autoRaf: false` and `lerp: 0.1`, is driven by `gsap.ticker`, and
   sets `lagSmoothing(0)`; `lenis.on('scroll', ScrollTrigger.update)`. Lenis's CSS is copied into
   `@layer base` in `globals.css`. Don't set CSS `scroll-behavior: smooth` anywhere.
+- **Lenis measures the viewport with `html.clientWidth / clientHeight`** (fixed after 8.5, Nasheet's
+  bug): Lenis's own `window.innerHeight` can be taller than the visible viewport in some Chrome
+  windows (his: 1152 vs 1036), so the wheel stopped 116 px short of the footer while the
+  scrollbar reached it. SmoothScroll overrides `lenis.dimensions.onWrapperResize`; RouteWatcher's
+  page progress uses `scrollHeight - clientHeight` too. **Any new "how far can this page scroll"
+  maths uses clientHeight, never innerHeight.** (Fixed elements sized from innerHeight:
+  `pointer.ts`, the hand mapping, the theme reveal, CameraPreview's snap: check in 10.2.)
 - **Anchors:** Lenis's `anchors` option is off on purpose: it doesn't cancel the native jump, so
   the page flashed to the target for one frame. SmoothScroll has its own click handler for
   same-page `#hash` links: it cancels the jump, `pushState`s the hash and calls `scrollTo()`.

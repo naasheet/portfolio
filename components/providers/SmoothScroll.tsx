@@ -56,6 +56,18 @@ export function SmoothScroll() {
     const lenis = new Lenis({ autoRaf: false, lerp: 0.1 });
     setLenis(lenis);
 
+    // Measure the viewport the way the browser scrolls it. Lenis takes window.innerHeight,
+    // which some Chrome windows report taller than the visible viewport (Nasheet's: 1152 vs
+    // html.clientHeight 1036), so the wheel stopped 116 px before the end while the scrollbar
+    // could still reach the footer. clientWidth / clientHeight are the scrollable viewport (and
+    // leave out the scrollbar), the same numbers the native scroll limit uses.
+    const dims = lenis.dimensions;
+    dims.onWrapperResize = () => {
+      dims.width = document.documentElement.clientWidth;
+      dims.height = document.documentElement.clientHeight;
+    };
+    lenis.resize();
+
     const offScroll = lenis.on("scroll", ScrollTrigger.update);
     const tick = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(tick);

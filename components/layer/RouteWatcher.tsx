@@ -8,7 +8,9 @@ import { useStore } from "@/lib/store";
 /** This page's scroll, 0–1 (0 when it doesn't scroll). Lenis moves the native scroll, so this
  * reads the same with or without it. */
 function pageProgress(): number {
-  const max = document.documentElement.scrollHeight - window.innerHeight;
+  // clientHeight, not innerHeight: the visible viewport the browser scrolls (see SmoothScroll).
+  const root = document.documentElement;
+  const max = root.scrollHeight - root.clientHeight;
   return max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
 }
 
