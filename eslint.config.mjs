@@ -6,7 +6,14 @@ import prettier from "eslint-config-prettier/flat";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+  globalIgnores([
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+    // MediaPipe wasm glue copied from node_modules (8.2)
+    "public/mediapipe/wasm/**",
+  ]),
   // Must stay last: switches off rules that clash with Prettier.
   prettier,
 ]);

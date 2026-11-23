@@ -39,7 +39,7 @@ export const ar: Command = {
       text: what === "on" ? t.on : t.off,
       tone: "accent",
     });
-    // TODO(8.2): drop this line once the hand is tracked.
+    // TODO(8.3): drop this line once the hand drives the cursor (8.2 only tracks it).
     if (what === "on")
       ctx.print({
         kind: "text",

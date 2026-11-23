@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CameraPreview } from "@/components/ar/CameraPreview";
 import { HandSkeleton } from "@/components/ar/HandSkeleton";
 import { Button } from "@/components/ui/Button";
 import { rememberAllowed } from "@/features/ar/camera";
-import { LANDMARK_COUNT, landmarks } from "@/features/ar/landmarks";
+import { TRACKED, landmarks } from "@/features/ar/landmarks";
 import { gsap } from "@/lib/motion/gsap";
 import { useStore } from "@/lib/store";
 import { DevState } from "./DevState";
@@ -61,16 +61,17 @@ function fakePalm(on: boolean) {
     [0.31, 0.45],
     [0.29, 0.37],
   ];
-  for (let i = 0; i < LANDMARK_COUNT; i++) {
-    landmarks.points[i * 2] = palm[i]![0]!;
-    landmarks.points[i * 2 + 1] = palm[i]![1]!;
-  }
+  // The nine tracked points, as the worker sends them (8.2).
+  TRACKED.forEach((index, slot) => {
+    landmarks.points[slot * 2] = palm[index]![0]!;
+    landmarks.points[slot * 2 + 1] = palm[index]![1]!;
+  });
   landmarks.visible = on;
   landmarks.version++;
 }
 
 /**
- * Hand mode, 8.1: the explainer (through the store, as the switch opens it), the three gesture
+ * Hand mode, 8.1 / 8.2: the explainer (through the store, as the switch opens it), the three gesture
  * drawings, and the camera preview fed by a test pattern instead of the webcam (drag it to a
  * corner; "Palm" draws fake landmarks over it). The real flow: the Hand switch or A.
  */
@@ -81,7 +82,21 @@ export function ARSpecimen() {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [palm, setPalm] = useState(false);
 
+  const readout = useRef<HTMLSpanElement>(null);
+
   useEffect(() => () => fakePalm(false), []);
+
+  // 8.2: the live tracker's numbers (Hand on through the switch or A), written without renders.
+  useEffect(() => {
+    const write = () => {
+      const el = readout.current;
+      if (!el) return;
+      const text = `tracker ${landmarks.phase}${landmarks.delegate ? ` (${landmarks.delegate})` : ""} · ${landmarks.fps.toFixed(1)} fps · hand ${landmarks.visible ? "yes" : "no"}`;
+      if (el.textContent !== text) el.textContent = text;
+    };
+    gsap.ticker.add(write);
+    return () => gsap.ticker.remove(write);
+  }, []);
 
   const togglePreview = () => {
     if (stream) {
@@ -121,6 +136,11 @@ export function ARSpecimen() {
         <span className="text-footnote font-mono text-text-secondary">
           ar.enabled {String(enabled)} · status {status} · camera {camera}
         </span>
+        <span
+          ref={readout}
+          data-ar-tracker
+          className="text-footnote font-mono text-text-secondary"
+        />
       </div>
       <div className="flex flex-wrap gap-4">
         {(["point", "pinch", "palm"] as const).map((pose) => (

@@ -8,8 +8,11 @@ import {
   rememberAllowed,
   stopCamera,
 } from "@/features/ar/camera";
+import { startTracker } from "@/features/ar/tracker";
+import { arCopy } from "@/content/ar";
 import { island } from "@/lib/island";
 import { useStore } from "@/lib/store";
+import { toast } from "@/lib/toast";
 import { CameraPreview } from "./CameraPreview";
 
 /** Camera refused or lost: the AR board's "Camera's shy?" island alert, then back to Mouse. */
@@ -37,7 +40,10 @@ function cameraAlert(kind: "denied" | "lost" | "error") {
  *   lost   a track's `ended` (permission revoked mid-session, the webcam unplugged): the
  *          "lost" alert, every track stops, back to Mouse.
  *
- * Detection (8.2) and the hand cursor (8.3) hang off the same stream later.
+ * Detection (8.2): once the camera is live, features/ar/tracker.ts runs the hand model in a
+ * worker on the same stream and fills `landmarks`; it stops with the camera. If it fails, an
+ * error toast, ar.status "error", and back to Mouse (the camera light goes off). The hand cursor
+ * (8.3) hangs off the same landmarks later.
  */
 export default function ARLayer() {
   const enabled = useStore((s) => s.ar.enabled);
@@ -100,6 +106,18 @@ export default function ARLayer() {
         useStore.getState().ar.setStatus("off");
     };
   }, [enabled]);
+
+  useEffect(() => {
+    if (!stream) return;
+    return startTracker(stream, {
+      onError: (message) => {
+        console.error("[hand tracker]", message);
+        toast(arCopy.tracker.error, { kind: "error" });
+        useStore.getState().ar.setStatus("error");
+        useStore.getState().ar.setEnabled(false);
+      },
+    });
+  }, [stream]);
 
   return stream ? <CameraPreview stream={stream} /> : null;
 }

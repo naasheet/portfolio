@@ -154,7 +154,7 @@ mdx-components.tsx      # MDX element styles + the case-study components (requir
 content/                # profile, socials, projects, skills, music, chapters, copy, terminal, preload (.ts),
                         # knowledge.md, case-studies/*.mdx
 supabase/migrations/    # 001_contact.sql, 002_chat.sql, 003_scores.sql
-scripts/                # analyze, check-content, chat-eval, copy-mediapipe-wasm, compress-media
+scripts/                # analyze, check-content, chat-eval, copy-mediapipe-wasm (8.2, postinstall), compress-media
 types/                  # ambient declarations (glsl.d.ts: `*.glsl` imports as strings)
 docs/                   # motion-audit.md, deploy.md
 public/                 # fonts/, models/, audio/, sfx/, mediapipe/
@@ -432,6 +432,7 @@ npm run analyze    # bundle analyzer: node scripts/analyze.mjs (sets ANALYZE=tru
 npm run check-content  # content check (4.1); also runs as `prebuild`, so a broken content/ stops the build
 npm run compress-media # 5.1: MP3s in public/audio/ above 192 kbps → 160 kbps (ffmpeg; originals kept in stuff/audio-src/)
 npm run test       # vitest run (6.2): **/__tests__/**/*.test.ts, config in vitest.config.mts
+# postinstall (8.2): scripts/copy-mediapipe-wasm.ts copies MediaPipe's wasm/ to public/mediapipe/wasm (gitignored)
 ```
 
 ### Environment variables
@@ -540,7 +541,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **8 — AR** (8.1 done; 8.2, worker tracking, is next). Phase 6 (Terminal, 6.1–6.6) is
+Current phase: **8 — AR** (8.1–8.2 done; 8.3, gestures, is next). Phase 6 (Terminal, 6.1–6.6) is
 complete. Build order changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
 Ask pill and the `/` shortcut are off (see "Chat off until Phase 7" below). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
@@ -564,7 +565,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -617,7 +618,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1119,6 +1120,66 @@ Carry-over into later chunks:
     copy; the drag feel.
   - **Follow-ups:** the preview can't be moved by keyboard (drag only); add arrow-key corners in
     10.6. The About ARCard's on / blocked states aren't wired yet (see "6.1 / 8.x wiring").
+- **Hand tracking in a worker (8.2):** `features/ar/hand.worker.ts`, `features/ar/tracker.ts`,
+  `scripts/copy-mediapipe-wasm.ts` (postinstall), `features/ar/landmarks.ts` (reshaped),
+  `components/ar/ARLayer.tsx` / `CameraPreview.tsx`, `content/ar.ts` (`preview.loadingModel /
+  tracking / searching`, `tracker.error`), /dev's tracker readout.
+  - **Package:** `@mediapipe/tasks-vision` 1.2.3 (approved), imported only by the worker. Its
+    `wasm/` (two builds, ~14.7 MB each; only one is fetched) is copied to `public/mediapipe/wasm/`
+    on every install (gitignored; ESLint ignores it). The model is `public/mediapipe/hand_landmarker.task`
+    (7.8 MB, committed). Turning Hand on the first time downloads ~22 MB from our own origin.
+  - **Worker:** `new Worker(new URL("./hand.worker.ts", import.meta.url), { type: "module" })`.
+    **Turbopack runs it through a classic bootstrap**, so `importScripts` works there and
+    MediaPipe's ES-module glue fails ("Cannot use import.meta outside a module"). The worker
+    detects which it is (`importScripts()` with no URLs throws only in a module worker) and passes
+    `useModule` to `FilesetResolver.forVisionTasks` accordingly; for a module worker it also sets
+    `self.import` (an ignored dynamic import that re-sets `ModuleFactory`). The model is fetched
+    once as a buffer; GPU delegate first, CPU if creating it (or the first detect) fails. One hand,
+    VIDEO mode, detection 0.6, tracking 0.5. Timestamps forced strictly increasing.
+  - **Protocol:** main → `{ type: "frame", bitmap, ts }` (bitmap transferred); worker → `ready`
+    (delegate), `result` (`Float32Array(18)` transferred, or null = no hand), `error`. The worker
+    always answers a frame, so the tracker's one-in-flight rule can't stall.
+  - **tracker.ts:** `startTracker(stream, { onReady?, onError })` → stop. Plays the stream in its
+    own detached `<video>` (not the preview's), one `gsap.ticker` callback: skip unless ready, no
+    frame in flight, ≥ 31.3 ms since the last (`MAX_FPS` 30 minus slack, so 60 Hz ticks give 30),
+    and `readyState ≥ 2` with a real size; then `createImageBitmap(video)` → transfer. Results go
+    to `writeLandmarks()`; `landmarks.fps` is measured per second; `phase` (off / loading / ready)
+    and `delegate` live on `landmarks` too. ARLayer starts it once the stream exists.
+  - **landmarks.ts:** `points` holds the **nine tracked points** (`TRACKED` = MediaPipe 0, 4, 5, 8,
+    9, 12, 16, 17, 20) in slot order (`SLOT.wrist`, `thumbTip`, `indexKnuckle`, `indexTip`,
+    `middleKnuckle`, `middleTip`, `ringTip`, `littleKnuckle`, `littleTip`). 8.3 reads these slots.
+    `HAND_CONNECTIONS` / `FINGERTIPS` (21-point) stay for the explainer's drawings only.
+  - **Preview:** the simplified skeleton (`TRACKED_BONES`: palm outline + knuckle → tip, the thumb
+    from the wrist, the ring tip from halfway between the middle and little knuckles), mapped
+    through the video's `object-cover` crop (a 16:9 camera in the 4:3 box). The status row text
+    ("Loading hand model…", "Tracking", "Looking for your hand"; "Camera on" without a tracker, as
+    on /dev's test pattern) is written from the drawing ticker, no React state.
+  - **Errors** (model / wasm load, detection, the worker itself): `console.error`, an error toast
+    (`arCopy.tracker.error`), `ar.status = "error"`, Hand off (camera light off).
+  - **Terminal:** `ar on` still prints "on its way (phase 8)" until 8.3 makes the hand do something
+    (TODO(8.3) in `lib/commands/ar.ts`).
+- **Verified 8.2 (headless Chromium 1248 on the Iris Xe, production build with the /dev flag,
+  `--use-fake-device-for-media-stream`):**
+  - **Rate:** model ready ~1.0 s after Hand on (localhost), **GPU delegate**, detection a steady
+    **27.5 fps** (the fake camera's 30 fps through the 60 Hz ticker).
+  - **Main thread with tracking on:** 5 s of rAF, p50 6.1 / p95 6.2–6.3 ms, max 6.4, 0 frames over
+    20 ms (same as with AR off).
+  - **Alignment:** with a hand photo as the camera (MediaPipe's `thumb_up.jpg` as a 4:3 and a 16:9
+    y4m), "Tracking", and the screenshot shows the amber tips on the thumb and the curled fingers,
+    mirrored like the video.
+  - **No hand** (Chrome's default pattern): "Looking for your hand", detection still 27.5 fps.
+  - **Off (A):** tracker off, 0 fps. **Model blocked (404):** "[hand tracker] Model: HTTP 404", the
+    toast "Hand tracking didn't start…", Hand off, preview gone, status error.
+  - `npm run test`: 134 (+6: tracked slots, writeLandmarks, the result handler's ready / rate /
+    error order). First-load JS on `/` 214.2 KB (unchanged).
+  - **[manual]** The Done-when on **your laptop with your real hand**: /dev → Hand mode → the
+    readout says `tracker ready (GPU) · ~25–30 fps`; the skeleton follows your hand in the preview
+    (bright and dim light); the page stays smooth (Performance panel with AR on). The first load
+    over a real connection (~22 MB: watch the "Loading hand model…" time). Safari / Firefox (GPU
+    delegate support differs; the CPU fallback should kick in).
+  - **Follow-ups:** cache the model / wasm across visits (HTTP caching covers repeat loads; a
+    service worker is out of scope). The tracker skips frames while the tab is hidden only because
+    the gsap ticker stops; the worker stays alive (idle) until Hand is off.
 - **Mobile terminal and polish (6.6):** `app/terminal/page.tsx`, `components/terminal/TerminalPage.tsx`,
   `QuickChips.tsx`, `lib/terminal/run.ts`, `components/overlay/useDrawerResize.ts`, `Drawer`'s
   `resizable` / `resizeLabel`, `openTerminal()` / `leaveTerminal()` / `TERMINAL_ROUTE` in
@@ -1957,7 +2018,8 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
-- Hand mode (8.1): `content/ar.ts` (the explainer and the preview) and the camera alerts in
+- Hand mode (8.1, 8.2): `content/ar.ts` (the explainer, the preview, 8.2's status lines and the
+  tracker error toast) and the camera alerts in
   `copy.alerts` ("Camera's shy?", "Camera's gone quiet", "Can't start the camera", "No camera here",
   "Best on a laptop"): review the wording.
 - Terminal (6.1–6.4): `content/terminal.ts` — the banner and chips, command descriptions and

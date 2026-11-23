@@ -25,11 +25,18 @@ export const arCopy = {
     /** The card's accessible name. */
     label: "Camera preview",
     mirrored: "mirrored",
-    /** The status row: the camera is on (8.2 adds "Tracking" and "Looking for your hand"). */
+    /** The status row: the camera alone (no tracker, e.g. /dev's test pattern), then 8.2's states. */
     live: "Camera on",
+    loadingModel: "Loading hand model…",
+    tracking: "Tracking",
+    searching: "Looking for your hand",
     starting: "Starting…",
     off: "Turn Hand mode off",
     dragHint: "Drag to any corner",
+  },
+  /** 8.2: the hand tracker failed (an error toast; Hand switches back to Mouse). */
+  tracker: {
+    error: "Hand tracking didn't start, so I switched back to Mouse.",
   },
 } as const;
 

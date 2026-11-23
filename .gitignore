@@ -39,3 +39,6 @@ coverage/
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+
+# MediaPipe wasm (8.2): copied from node_modules on every install (scripts/copy-mediapipe-wasm.ts)
+public/mediapipe/wasm/

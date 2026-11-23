@@ -6,9 +6,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { arCopy } from "@/content/ar";
 import { focusRing } from "@/components/ui/controlStyles";
 import {
-  FINGERTIPS,
-  HAND_CONNECTIONS,
-  LANDMARK_COUNT,
+  SLOT,
+  TRACKED_BONES,
+  TRACKED_COUNT,
+  TRACKED_TIPS,
   landmarks,
 } from "@/features/ar/landmarks";
 import { storage } from "@/lib/browser";
@@ -47,12 +48,27 @@ const readCorner = (): Corner => {
 const W = 160;
 const H = 120;
 
+/** The status row's text for the tracker's phase (8.2). */
+const statusText = () =>
+  landmarks.phase === "off"
+    ? t.live
+    : landmarks.phase === "loading"
+      ? t.loadingModel
+      : landmarks.visible
+        ? t.tracking
+        : t.searching;
+
 /**
- * Landmarks over the video (8.1; 8.2 fills the buffer): bones teal, joints white, fingertips
- * amber, mirrored like the video. Runs on the gsap ticker only while the tab is visible, and
- * redraws only when the buffer changed, so before 8.2 it costs one comparison a frame.
+ * Landmarks over the video (8.1; 8.2's tracker fills the buffer): the simplified skeleton of the
+ * nine tracked points, bones teal, joints white, fingertips amber, mirrored like the video. Also
+ * keeps the status row's text in step (through the element, no React state). Runs on the gsap
+ * ticker only while the tab is visible, and redraws only when the buffer changed.
  */
-function startLandmarkCanvas(el: HTMLCanvasElement): () => void {
+function startLandmarkCanvas(
+  el: HTMLCanvasElement,
+  video: HTMLVideoElement | null,
+  status: HTMLElement | null,
+): () => void {
   {
     const ctx = el.getContext("2d");
     if (!ctx) return () => {};
@@ -66,26 +82,44 @@ function startLandmarkCanvas(el: HTMLCanvasElement): () => void {
     let drawn = -1;
 
     const draw = () => {
+      if (status) {
+        const text = statusText();
+        if (status.textContent !== text) status.textContent = text;
+      }
       if (landmarks.version === drawn) return;
       drawn = landmarks.version;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
       if (!landmarks.visible) return;
       const p = landmarks.points;
+      // The video is object-cover: a frame that isn't 4:3 (many webcams give 16:9) is scaled to
+      // fill the box and cropped, so the points are scaled and offset the same way.
+      const vw = video?.videoWidth || W;
+      const vh = video?.videoHeight || H;
+      const scale = Math.max(W / vw, H / vh);
+      const sw = vw * scale;
+      const sh = vh * scale;
+      const ox = (W - sw) / 2;
+      const oy = (H - sh) / 2;
       // Mirrored, like the video.
-      const x = (i: number) => (1 - p[i * 2]!) * W;
-      const y = (i: number) => p[i * 2 + 1]! * H;
+      const x = (i: number) => ox + (1 - p[i * 2]!) * sw;
+      const y = (i: number) => oy + p[i * 2 + 1]! * sh;
       ctx.lineWidth = 1.5;
       ctx.lineCap = "round";
       ctx.strokeStyle = bone;
       ctx.beginPath();
-      for (const [a, b] of HAND_CONNECTIONS) {
+      for (const [a, b] of TRACKED_BONES) {
         ctx.moveTo(x(a), y(a));
         ctx.lineTo(x(b), y(b));
       }
+      // The ring finger has no knuckle in the set: from halfway between middle and little.
+      const m = SLOT.middleKnuckle;
+      const l = SLOT.littleKnuckle;
+      ctx.moveTo((x(m) + x(l)) / 2, (y(m) + y(l)) / 2);
+      ctx.lineTo(x(SLOT.ringTip), y(SLOT.ringTip));
       ctx.stroke();
-      for (let i = 0; i < LANDMARK_COUNT; i++) {
-        const isTip = FINGERTIPS.includes(i);
+      for (let i = 0; i < TRACKED_COUNT; i++) {
+        const isTip = TRACKED_TIPS.includes(i);
         ctx.fillStyle = isTip ? tip : joint;
         ctx.beginPath();
         ctx.arc(x(i), y(i), isTip ? 3 : 2, 0, Math.PI * 2);
@@ -118,6 +152,7 @@ export function CameraPreview({ stream }: { stream: MediaStream }) {
   const video = useRef<HTMLVideoElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const card = useRef<HTMLDivElement>(null);
+  const status = useRef<HTMLSpanElement>(null);
   const reduced = useReducedMotion();
   const [corner, setCorner] = useState<Corner>(readCorner);
   const x = useMotionValue(0);
@@ -134,7 +169,10 @@ export function CameraPreview({ stream }: { stream: MediaStream }) {
   }, [stream]);
 
   useEffect(
-    () => (canvas.current ? startLandmarkCanvas(canvas.current) : undefined),
+    () =>
+      canvas.current
+        ? startLandmarkCanvas(canvas.current, video.current, status.current)
+        : undefined,
     [],
   );
 
@@ -217,7 +255,7 @@ export function CameraPreview({ stream }: { stream: MediaStream }) {
       <div className="flex items-center justify-between pl-1">
         <span className="flex items-center gap-2 text-footnote text-text-primary">
           <span aria-hidden className="size-2 rounded-chip bg-accent-primary" />
-          {t.live}
+          <span ref={status}>{statusText()}</span>
         </span>
         <button
           type="button"
