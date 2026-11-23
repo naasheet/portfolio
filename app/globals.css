@@ -31,9 +31,10 @@
   /* Drop Tailwind's default palette: only our tokens exist. */
   --color-*: initial;
 
-  --color-bg-base: #090b0b;
-  --color-surface-glass: #1e2524;
-  --color-surface-solid: #121716;
+  /* OLED black (after 8.5, Nasheet): true black page, near-black surfaces; borders define cards. */
+  --color-bg-base: #000000;
+  --color-surface-glass: #121716;
+  --color-surface-solid: #0a0d0c;
   --color-text-primary: #f4f7f6;
   --color-text-secondary: #a3b2af;
   --color-text-tertiary: #7a8b88;
@@ -41,7 +42,7 @@
   --color-border-focus: #2ec0a0;
   --color-accent-primary: #2ec0a0;
   --color-accent-primary-hover: #4fd9b8;
-  --color-accent-contrast: #090b0b;
+  --color-accent-contrast: #000000;
   --color-accent-secondary: #ffc56b;
   --color-canvas-particle-a: #2ec0a0;
   --color-canvas-particle-b: #ffc56b;
@@ -52,7 +53,7 @@
    * The island (2.4) is near-black in both themes, so these are never overridden in light.
    * Its own accent stays the dark-theme teal (light accent/primary is too dark on near-black).
    */
-  --color-island-bg: #090b0b;
+  --color-island-bg: #000000;
   --color-island-border: #2f3a38;
   --color-island-text: #f4f7f6;
   --color-island-text-secondary: #a3b2af;
@@ -108,7 +109,7 @@
 }
 
 :root {
-  --glass-fill: rgba(30, 37, 36, 0.55);
+  --glass-fill: rgba(18, 23, 22, 0.55);
   /* Faint top inner highlight on glass (inset 0 1px 0). */
   --glass-highlight: rgba(244, 247, 246, 0.06);
   --lift-shadow: 0 8px 24px -8px rgb(0 0 0 / 0.5);

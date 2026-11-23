@@ -17,7 +17,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 const C = {
-  bg: "#090B0B", // bg/base
+  bg: "#000000", // bg/base
   text: "#F4F7F6", // text/primary
   secondary: "#A3B2AF", // text/secondary
   tertiary: "#7A8B88", // text/tertiary

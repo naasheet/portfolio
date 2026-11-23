@@ -277,9 +277,9 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 
 | Token | Dark | Light |
 | --- | --- | --- |
-| `bg/base` | `#090B0B` | `#F4F7F6` |
-| `surface/glass` (base fill; blur and opacity set at the layer) | `#1E2524` | `#E4EBE9` |
-| `surface/solid` | `#121716` | `#FFFFFF` |
+| `bg/base` | `#000000` (OLED black) | `#F4F7F6` |
+| `surface/glass` (base fill; blur and opacity set at the layer) | `#121716` | `#E4EBE9` |
+| `surface/solid` | `#0A0D0C` | `#FFFFFF` |
 | `text/primary` | `#F4F7F6` | `#121716` |
 | `text/secondary` | `#A3B2AF` | `#43514F` |
 | `text/tertiary` | `#7A8B88` | `#5B6B68` |
@@ -287,19 +287,21 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 | `border/focus` | `#2EC0A0` | `#22997F` |
 | `accent/primary` | `#2EC0A0` (dark text on it) | `#187263` (white text on it) |
 | `accent/primary-hover` | `#4FD9B8` | `#11564A` |
-| `accent/contrast` (text and icons on `accent/primary`) | `#090B0B` | `#FFFFFF` |
+| `accent/contrast` (text and icons on `accent/primary`) | `#000000` | `#FFFFFF` |
 | `accent/secondary` (amber) | `#FFC56B` | `#E68D1E` |
 | `canvas/particle-a` (`uColorA`) | `#2EC0A0` | `#22997F` |
 | `canvas/particle-b` (`uColorB`) | `#FFC56B` | `#FFAD3D` |
 | `status/success` | `#2EC0A0` | `#187263` |
 | `status/danger` | `#FF7A6B` | `#B42318` |
 | `overlay/scrim` | `#000000` | `#000000` |
-| `island/bg` · `island/border` | `#090B0B` · `#2F3A38` | same (the island is near-black in both themes) |
+| `island/bg` · `island/border` | `#000000` · `#2F3A38` | same (the island is black in both themes) |
 | `island/text` · `island/text-secondary` | `#F4F7F6` · `#A3B2AF` | same |
 | `island/accent` | `#2EC0A0` | same (light `accent/primary` is too dark on near-black) |
 | `island/danger` (6.1, the terminal's errors) | `#FF7A6B` | same (light `status/danger` is 2.6:1 on near-black) |
 
-- Glass cards in dark mode: `rgba(30, 37, 36, 0.55)` + `backdrop-filter: blur(24px)` + 1 px
+- **Dark is OLED black (after 8.5, Nasheet's request):** true black page, canvas and island,
+  near-black surfaces; the 1 px borders are what define the cards. Light is unchanged.
+- Glass cards in dark mode: `rgba(18, 23, 22, 0.55)` + `backdrop-filter: blur(24px)` + 1 px
   `border/default` + `inset 0 1px 0 rgba(244, 247, 246, 0.06)`.
 - Light-mode amber fails as text (2.4:1): use it only as a fill with dark text, or in the canvas.
 
