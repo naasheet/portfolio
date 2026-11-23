@@ -10,12 +10,12 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { terminalCopy } from "@/content/terminal";
-import { execute } from "@/lib/commands/exec";
 import { getFs } from "@/lib/fs";
 import { complete } from "@/lib/commands/registry";
 import { useStore } from "@/lib/store";
 import { onTypingSound } from "@/lib/sfx";
 import { getHistory, type History } from "@/lib/terminal/history";
+import { runLine } from "@/lib/terminal/run";
 import {
   getServerSession,
   getSession,
@@ -43,7 +43,12 @@ const t = terminalCopy.terminal;
  *             clears · Ctrl+C cancels a running command (or abandons the line, "^C"; with text
  *             selected it copies as usual) · Esc closes (the Drawer's).
  */
-export function Terminal() {
+export function Terminal({
+  suggestions = true,
+}: {
+  /** The banner's command chips; /terminal (6.6) has its own row above the keyboard. */
+  suggestions?: boolean;
+} = {}) {
   const router = useRouter();
   const { entries, running, banner, asking, cwd } = useSyncExternalStore(
     subscribeSession,
@@ -78,28 +83,20 @@ export function Terminal() {
     block.style.transform = `translateX(${pos * charWidth.current - el.scrollLeft}px)`;
   };
 
-  const run = async (raw: string) => {
-    session.print({ kind: "input", text: raw, cwd: getSession().cwd });
-    history.current?.push(raw);
-    if (!raw.trim()) return;
-    const signal = session.begin();
-    try {
-      await execute(raw, { router, signal });
-    } catch (error) {
-      if (signal.aborted)
-        session.print({ kind: "text", text: "^C", tone: "muted" });
-      else
-        session.print({
-          kind: "error",
-          text: error instanceof Error ? error.message : String(error),
-        });
-    } finally {
-      session.end();
-      requestAnimationFrame(() =>
+  const run = (raw: string) => runLine(raw, router);
+
+  // A command ended (typed, or a chip, 6.6): the input takes focus back for the next one.
+  const wasRunning = useRef(false);
+  useEffect(() => {
+    if (wasRunning.current && !running) {
+      const frame = requestAnimationFrame(() =>
         input.current?.focus({ preventScroll: true }),
       );
+      wasRunning.current = false;
+      return () => cancelAnimationFrame(frame);
     }
-  };
+    wasRunning.current = running;
+  }, [running]);
 
   const setInput = (value: string, caretAt = value.length) => {
     const el = input.current;
@@ -192,20 +189,25 @@ export function Terminal() {
         0000000000
       </span>
 
-      {banner ? <Welcome onRun={(command) => void run(command)} /> : null}
+      {banner ? (
+        <Welcome
+          onRun={suggestions ? (command) => void run(command) : undefined}
+        />
+      ) : null}
 
       <div role="log" aria-live="polite" aria-label={t.outputLabel}>
-        {entries.map((entry) =>
-          // A live status line (a progress bar redrawing) is hidden from screen readers until
-          // it settles; then it's announced once.
-          entry.live ? (
-            <div key={entry.id} aria-hidden>
-              <Line line={entry.line} />
-            </div>
-          ) : (
-            <Line key={entry.id} line={entry.line} />
-          ),
-        )}
+        {entries.map((entry) => (
+          // Each line fades in once over 80 ms (6.6, .terminal-line). A live status line (a
+          // progress bar redrawing) is hidden from screen readers until it settles; then it's
+          // announced once.
+          <div
+            key={entry.id}
+            className="terminal-line"
+            aria-hidden={entry.live ? true : undefined}
+          >
+            <Line line={entry.line} />
+          </div>
+        ))}
       </div>
 
       <div

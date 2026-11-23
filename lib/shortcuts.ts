@@ -90,6 +90,44 @@ export function setShortcutRouter(next: PushRouter | null): void {
   router = next;
 }
 
+/** The full-page terminal (6.6): phones get it instead of the drawer. */
+export const TERMINAL_ROUTE = "/terminal";
+/** Phones: below md, the same breakpoint as the room's phone layout. */
+const PHONE_QUERY = "(max-width: 47.99rem)";
+/** Set when openTerminal() pushed /terminal, so leaving it can go Back instead of Home. */
+let terminalReturn = false;
+
+/**
+ * The terminal button and ` (6.6): on a phone, the full-page terminal; already there, its input
+ * takes focus; otherwise the drawer opens or closes as before.
+ */
+export function openTerminal(): void {
+  const { ui } = useStore.getState();
+  if (window.location.pathname === TERMINAL_ROUTE) {
+    document
+      .querySelector<HTMLInputElement>("[data-terminal-page] input[data-autofocus]")
+      ?.focus();
+    return;
+  }
+  if (!ui.terminalOpen && router && window.matchMedia(PHONE_QUERY).matches) {
+    ui.setMenuOpen(false);
+    terminalReturn = true;
+    navigate(router, TERMINAL_ROUTE);
+    return;
+  }
+  ui.toggleTerminal();
+}
+
+/** Leave /terminal (its Back button and `exit`): Back if we pushed it, else Home. */
+export function leaveTerminal(to: PushRouter): void {
+  if (terminalReturn) {
+    terminalReturn = false;
+    window.history.back();
+    return;
+  }
+  navigate(to, "/");
+}
+
 /** Something sits over the page: the terminal, the chat, the phone menu, any overlay. */
 function somethingOpen(): boolean {
   const { ui } = useStore.getState();
@@ -150,7 +188,7 @@ export const SHORTCUTS: readonly Shortcut[] = [
     key: "`",
     match: ["`"],
     label: copy.shortcuts.terminal,
-    run: () => useStore.getState().ui.toggleTerminal(),
+    run: openTerminal,
   },
   {
     id: "chat",

@@ -19,6 +19,17 @@ export const terminalCopy = {
     suggestionsLabel: "Try",
     suggestions: ["help", "whoami", "projects"],
     inputLabel: "Command. Type one and press Enter.",
+    /** The full-page terminal (6.6, phones). */
+    page: {
+      back: "Back to the site",
+      /** The page's meta description. */
+      description: "The site's terminal, full screen: every feature, one command away.",
+      /** Above the keyboard: one tap runs each. */
+      chipsLabel: "Quick commands",
+      chips: ["help", "projects", "whoami", "play", "ar on"],
+    },
+    /** The drawer's drag handle (6.6, desktop). */
+    resize: "Resize the terminal",
     outputLabel: "Terminal output",
     /** Unknown command (6.2): with a suggestion when one is 2 edits away or closer. */
     notFound: (command: string, suggestion?: string) =>

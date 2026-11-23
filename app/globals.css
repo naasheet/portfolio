@@ -666,6 +666,11 @@ html[data-gate="done"] .entry-gate {
     opacity: 0;
   }
 }
+@keyframes terminal-line {
+  from {
+    opacity: 0;
+  }
+}
 
 @layer components {
   .np-bar {
@@ -692,6 +697,16 @@ html[data-gate="done"] .entry-gate {
     .terminal-caret[data-focused],
     [data-playing] .np-bar,
     .terminal-cursor {
+      animation: none;
+    }
+  }
+
+  /* A new terminal line (6.6): fades in once over 80 ms; instant under reduced motion. */
+  .terminal-line {
+    animation: terminal-line 80ms var(--ease-out) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-line {
       animation: none;
     }
   }

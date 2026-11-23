@@ -5,8 +5,8 @@ import { absoluteUrl } from "@/lib/site";
 
 /*
  * /sitemap.xml (4.8): Home and the five pages from content/chapters.ts, then every case study
- * from content/projects.ts. Not listed: /dev (never linked), /api, and routes that don't exist yet
- * (arcade games, /terminal, /credits): add them when their chunks land.
+ * from content/projects.ts, and the full-page /terminal (6.6). Not listed: /dev (never linked),
+ * /api, and routes that don't exist yet (arcade games, /credits): add them when their chunks land.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = chapters.map((c) => ({
@@ -19,5 +19,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly" as const,
     priority: 0.6,
   }));
-  return [...pages, ...caseStudies];
+  const terminal = {
+    url: absoluteUrl("/terminal"),
+    changeFrequency: "monthly" as const,
+    priority: 0.4,
+  };
+  return [...pages, ...caseStudies, terminal];
 }

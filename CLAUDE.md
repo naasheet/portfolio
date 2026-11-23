@@ -534,7 +534,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal** (6.1–6.5 done; 6.6, the mobile /terminal page, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal is complete** (6.1–6.6); Phase 7 (Chatbot, 7.1) is next. Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -556,7 +556,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -609,7 +609,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -638,7 +638,7 @@ Carry-over into later chunks:
   animation, that's how a new page knows it was pushed: a page that mounts without the push mark
   is treated as Back / Forward and restored to its saved scroll position. (Page links:
   `ChapterLink`, a TransitionLink to the page's route.)
-- **Terminal (6.1, built):** see "Terminal UI (6.1)" below. "Resizable" is still a later addition.
+- **Terminal (6.1, built):** see "Terminal UI (6.1)" below; resizable and /terminal since 6.6.
 - **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
   sized for the 40 px placeholder pill plus a 16 px gap. Change the 56 px to the real bubble's
   height + 16.
@@ -1037,6 +1037,62 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Mobile terminal and polish (6.6):** `app/terminal/page.tsx`, `components/terminal/TerminalPage.tsx`,
+  `QuickChips.tsx`, `lib/terminal/run.ts`, `components/overlay/useDrawerResize.ts`, `Drawer`'s
+  `resizable` / `resizeLabel`, `openTerminal()` / `leaveTerminal()` / `TERMINAL_ROUTE` in
+  `lib/shortcuts.ts`, `.terminal-line` in globals.css.
+  - **Opening:** the nav's terminal circle (nav row and phone menu) and ` call `openTerminal()`:
+    below md (`max-width: 47.99rem`) it closes the menu and pushes `/terminal` with the page
+    transition; on `/terminal` it focuses the input; otherwise it toggles the drawer as before.
+    `leaveTerminal(router)` (the page's Back button, Esc, and `exit` on /terminal) goes Back if
+    `openTerminal` pushed the page, else navigates Home.
+  - **/terminal:** portalled to `<body>` at `z-overlay` (`<main>` is its own stacking context under
+    the nav, so a fixed child couldn't cover it): it covers the nav and the Ask pill (Nasheet's
+    call; island alerts are hidden underneath, the terminal prints its own line). The page shell
+    paints at once; `Terminal` and `QuickChips` load with `next/dynamic` (`ssr: false`). The page
+    underneath is scroll-locked while it's mounted. Safe-area padding on every side; the bottom one
+    drops while the keyboard is up (`data-keyboard`, when `innerHeight - visualViewport.height` >
+    120 px).
+  - **Keyboard:** `visualViewport` resize and scroll write the panel's height and
+    `translateY(offsetTop)` through a ref (no React state), and scroll the log to the newest line,
+    so the input and the chips stay just above the keyboard.
+  - **QuickChips** (`terminalCopy.terminal.page.chips`: help, projects, whoami, play, ar on): 44 px,
+    one sideways-scrolling row, `pointerdown` prevented so a tap keeps the input focused (and the
+    keyboard up); disabled while a command runs or waits for an answer. The Welcome banner shows no
+    chips on /terminal (`Terminal suggestions={false}`).
+  - **runLine(raw, router)** (`lib/terminal/run.ts`): the one way a line runs (the prompt, the
+    Welcome chips, the quick chips). Terminal re-focuses its input when `running` turns false.
+  - **Resize (desktop, md up):** a 24 px `role="separator"` strip at the drawer's bottom edge
+    (cursor ns-resize; the grip lights on hover, focus and drag). Drag, or ↑ / ↓ (32 px), Home (the
+    200 px minimum), End (window − 24 px). Height written straight to the panel's style while
+    dragging (layout per move, only while dragging); saved as a fraction of the window under
+    `terminal-height` and restored as `calc(f * 100dvh)` when the drawer opens. `aria-valuenow` is
+    the % of the window. Phones keep the decorative handle. **React Compiler lint:** style writes
+    through a ref passed into a hook fail `react-hooks/immutability`; they go through the
+    module-level `setHeight()` helper.
+  - **Line fade:** each log entry is wrapped in `.terminal-line` (opacity 0 → 1 over 80 ms,
+    ease-out; none under reduced motion). A live status line keeps its key, so a redraw doesn't
+    re-fade.
+  - **Sitemap:** `/terminal` added (priority 0.4).
+- **Verified 6.6 (headless Chromium, production build):**
+  - **Desktop (1280 × 800):** the drawer opened at 440 px (55 %); dragging the handle 150 px down →
+    590 px, `data-dragging` while held, `aria-valuenow` 74, saved 0.7375; ↑ → 558, Home → 200, End
+    → 776; set to 360, reloaded, reopened → 360. A new line's computed animation:
+    `terminal-line` 0.08 s.
+  - **Phone (390 × 844, touch):** menu → the terminal circle → `/terminal`, the panel in `<body>`
+    at z 50, 844 tall, chips at the bottom; the "projects" chip ran the table and focus stayed in
+    the input; Back → `/about`; a direct load of `/terminal` + `exit` → `/`, scroll lock released.
+    Screenshot: header with Back, the log, the chip row. Console clean.
+  - **[manual]** The Done-when: **one-handed on your phone** — the keyboard pushing the input and
+    chips up (iOS Safari and Android Chrome; headless has no on-screen keyboard), the chips'
+    reach and the tap-to-keep-keyboard behaviour, the safe areas, Back vs the system Back gesture.
+    The drag handle's feel on a trackpad.
+  - **Follow-ups:** the canvas keeps rendering behind the opaque /terminal (wasted GPU on phones):
+    pause FrameDriver there (10.4). Back sits top-right, out of thumb reach (the system Back gesture
+    and `exit` cover it); revisit in 10.2 if it bothers you.
+  - **Testing note:** stopping a background `npx next start` task leaves the `next start` node
+    process listening on Windows; find it by port (`Get-NetTCPConnection -LocalPort …`) and stop
+    that PID, or the next run serves the old build (500s on new chunks).
 - **Site-control commands (6.5):** `lib/commands/{projects,goto,play,pause,next,prev,vol,sound,
   theme,particles,ar,ask,contact,helpers}.ts`, `open.ts` (project slugs), the store's `particles`
   slice, `canvas/RouteMorph.tsx` (override + explode), `uExplode` in `Particles.tsx` and the vertex

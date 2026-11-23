@@ -1,12 +1,13 @@
 "use client";
 
 import { m } from "framer-motion";
-import { useId, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { Kbd } from "@/components/ui/Kbd";
 import { cn } from "@/lib/utils";
 import type { OverlayProps } from "./Modal";
 import { OverlayHeader } from "./OverlayHeader";
 import { OverlayRoot } from "./OverlayRoot";
+import { useDrawerResize, type DrawerResize } from "./useDrawerResize";
 import { usePanelMotion } from "./usePanelMotion";
 
 export type DrawerProps = OverlayProps & {
@@ -19,6 +20,12 @@ export type DrawerProps = OverlayProps & {
    * tokens in both themes (the terminal, 6.1).
    */
   surface?: "solid" | "island";
+  /**
+   * 6.6: the bottom handle resizes the drawer from md up (drag, or ↑ ↓ Home End when focused),
+   * and the height is remembered. Without it the handle is decorative. `resizeLabel` names it.
+   */
+  resizable?: DrawerResize;
+  resizeLabel?: string;
 };
 
 const ISLAND = {
@@ -30,11 +37,12 @@ const ISLAND = {
   hint: "text-island-text-secondary",
   kbd: "border-island-border bg-island-bg text-island-text-secondary",
   handle: "bg-island-border",
+  grip: "group-hover/handle:bg-island-text-secondary group-data-dragging/handle:bg-island-accent group-focus-visible/handle:bg-island-accent",
 };
 
 /**
- * Drops from the top: full width minus 12 px insets, 300 tall (resizable later; the handle
- * at the bottom is decorative for now). The terminal (6.1) is its only user.
+ * Drops from the top: full width minus 12 px insets, 300 tall. With `resizable` (6.6) its bottom
+ * handle resizes it on desktop. The terminal (6.1) is its only user.
  * Fades only under reduced motion.
  */
 export function Drawer({
@@ -45,16 +53,22 @@ export function Drawer({
   icon,
   escHint,
   surface = "solid",
+  resizable,
+  resizeLabel,
   children,
   className,
 }: DrawerProps) {
   const island = surface === "island";
   const titleId = useId();
+  const panel = useRef<HTMLDivElement>(null);
+  const handle = useRef<HTMLDivElement>(null);
+  const resize = useDrawerResize(panel, handle, resizable, open);
   const motion = usePanelMotion({ y: "calc(-100% - 12px)" }, { y: 0 });
 
   return (
     <OverlayRoot open={open} onClose={onClose}>
       <m.div
+        ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -104,8 +118,35 @@ export function Drawer({
           className={cn(
             "absolute bottom-2 left-1/2 h-1 w-10 -translate-x-1/2 rounded-chip bg-border-default",
             island && ISLAND.handle,
+            resizable && "md:hidden",
           )}
         />
+        {resizable ? (
+          // A 24 px grab strip along the bottom edge, with the grip drawn in the middle.
+          <div
+            ref={handle}
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label={resizeLabel}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            tabIndex={0}
+            onPointerDown={resize.onPointerDown}
+            onKeyDown={resize.onKeyDown}
+            className={cn(
+              "group/handle absolute inset-x-0 bottom-0 hidden h-6 cursor-ns-resize touch-none items-end justify-center pb-2 outline-none md:flex",
+            )}
+          >
+            <span
+              aria-hidden
+              className={cn(
+                "h-1 w-10 rounded-chip bg-border-default transition-colors duration-150 ease-out group-hover/handle:bg-text-tertiary group-focus-visible/handle:bg-border-focus group-data-dragging/handle:bg-accent-primary",
+                island && ISLAND.handle,
+                island && ISLAND.grip,
+              )}
+            />
+          </div>
+        ) : null}
       </m.div>
     </OverlayRoot>
   );
