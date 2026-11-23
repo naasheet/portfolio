@@ -31,6 +31,12 @@ import {
 /** A page shape's default placement: centred, full size (4.3). */
 const CENTRED = { x: 0, y: 0, scale: 1 };
 
+/**
+ * `particles --explode` (6.5), in seconds: the push out (uExplode 0 -> 1), its settle back to 0,
+ * the scatter morph that runs with it, when the page's shape starts re-forming, and how long that takes.
+ */
+const EXPLODE = { out: 0.25, settle: 1.1, scatter: 0.6, hold: 1.2, back: 0.9 };
+
 /** The room's phone layout below the tablet breakpoint (md, 48rem). */
 const PHONE_QUERY = "(max-width: 47.99rem)";
 
@@ -98,6 +104,11 @@ export function RouteMorph({ pathname }: { pathname: string }) {
   const previous = useRef<string | null>(null);
   const intro = useStore((s) => s.ui.intro);
   const introTimeline = useRef<gsap.core.Timeline | null>(null);
+  const override = useStore((s) =>
+    s.particles.path === pathname ? s.particles.shape : null,
+  );
+  const reapply = useRef<(() => void) | null>(null);
+  const explodeTimeline = useRef<gsap.core.Timeline | null>(null);
 
   // Home's intro (R.6): runs once, while ui.intro is "play" on Home.
   useEffect(() => {
@@ -170,11 +181,14 @@ export function RouteMorph({ pathname }: { pathname: string }) {
     previous.current = pathname;
     // Home before its intro has finished: the intro effect above drives the particles.
     if (current?.shape.kind === "room" && intro !== "done") return;
-    const focus = reduced || !getRoom() ? -1 : focusFor(from, pathname);
-    const isRoom = current?.shape.kind === "room";
-    const id = current
-      ? current.id + (isRoom && phone ? PHONE_SUFFIX : "")
-      : "scatter";
+    // The terminal's `particles <shape>` (6.5) replaces the page's shape while you stay here.
+    const isRoom = override
+      ? override === "home"
+      : current?.shape.kind === "room";
+    const focus =
+      override || reduced || !getRoom() ? -1 : focusFor(from, pathname);
+    const base = override ?? (current ? current.id : "scatter");
+    const id = base + (isRoom && phone ? PHONE_SUFFIX : "");
     const apply = () => {
       if (cancelled) return;
       const mesh = scene.getObjectByName("particles") as
@@ -183,7 +197,10 @@ export function RouteMorph({ pathname }: { pathname: string }) {
       if (!mesh || !shape) return;
       morphTo(mesh, shape, { instant: reduced, focus });
       moodTo(current?.mood ?? fallbackMood, { instant: reduced });
-      placeTo(current?.place?.[phone ? "phone" : "desktop"] ?? CENTRED, { instant: reduced });
+      // The room is laid out for the whole view: centred when it's an override on another page.
+      const place =
+        isRoom && override ? CENTRED : current?.place?.[phone ? "phone" : "desktop"];
+      placeTo(place ?? CENTRED, { instant: reduced });
       const state = isRoom ? layoutState(phone) : null;
       if (state) {
         roomTo(state, { instant: reduced });
@@ -191,16 +208,54 @@ export function RouteMorph({ pathname }: { pathname: string }) {
         roomTo({ room: 0 }, { instant: reduced });
       }
     };
+    // `particles --explode` returns here (and focus never applies to a return).
+    reapply.current = () => {
+      if (cancelled) return;
+      const mesh = scene.getObjectByName("particles") as
+        ParticleMesh | undefined;
+      const shape = getShape(id);
+      if (!mesh || !shape) return;
+      morphTo(mesh, shape, { duration: EXPLODE.back });
+      const state = isRoom ? layoutState(phone) : null;
+      roomTo(state ?? { room: 0 }, { duration: EXPLODE.back });
+    };
     if (getShape(id)) apply();
     else void loadShapes().then(apply);
     return () => {
       cancelled = true;
     };
-  }, [scene, pathname, reduced, phone, intro]);
+  }, [scene, pathname, reduced, phone, intro, override]);
+
+  // `particles --explode` (6.5): a big push outward (uExplode) while the particles scatter, then
+  // back to whatever the page shows. Not under reduced motion (no shake, §10), nor mid-intro.
+  useEffect(
+    () =>
+      useStore.subscribe(
+        (s) => s.particles.explodes,
+        () => {
+          if (reduced || useStore.getState().ui.intro === "play") return;
+          const mesh = scene.getObjectByName("particles") as
+            ParticleMesh | undefined;
+          const scatter = getShape("scatter");
+          const uExplode = mesh?.material.uniforms.uExplode;
+          if (!mesh || !scatter || !uExplode) return;
+          explodeTimeline.current?.kill();
+          morphTo(mesh, scatter, { duration: EXPLODE.scatter, ease: "power2.out" });
+          roomTo({ room: 0 }, { duration: EXPLODE.scatter });
+          explodeTimeline.current = gsap
+            .timeline()
+            .to(uExplode, { value: 1, duration: EXPLODE.out, ease: "power2.out" })
+            .to(uExplode, { value: 0, duration: EXPLODE.settle, ease: "power2.inOut" })
+            .call(() => reapply.current?.(), [], EXPLODE.hold);
+        },
+      ),
+    [scene, reduced],
+  );
 
   useEffect(
     () => () => {
       introTimeline.current?.kill();
+      explodeTimeline.current?.kill();
       stopMorph();
       stopMood();
       stopRoom();

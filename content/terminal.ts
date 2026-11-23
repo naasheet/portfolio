@@ -69,6 +69,8 @@ export const terminalCopy = {
     /** help's groups, in this order (6.4). */
     categories: {
       navigate: "Getting around",
+      site: "The site",
+      music: "Music",
       about: "About me",
       shell: "Shell",
       fun: "Just for fun",
@@ -191,13 +193,142 @@ export const terminalCopy = {
         `${dirs} ${dirs === 1 ? "directory" : "directories"}, ${files} ${files === 1 ? "file" : "files"}`,
     },
     open: {
-      description: "Open a file: a page, the PDF, or a track to play",
-      usage: "open <path>",
+      description: "Open a file or a project: a page, the PDF, or a track to play",
+      usage: "open <path | project>",
       missing: "open: what should I open? Try: open resume.pdf",
       cannot: (p: string) => `open: ${p}: nothing to open here`,
       opening: (where: string) => `Opening ${where}…`,
       playing: (title: string, artist: string) =>
         `Playing ${title} — ${artist}`,
+      noPage: (slug: string) => `open: ${slug} has no page or link yet`,
+    },
+    // --- Site control (6.5) ---------------------------------------------------------------
+    /** Shared by the commands whose feature lands in a later phase. TODO(content): review. */
+    soon: (feature: string, phase: string) =>
+      `${feature} is on its way (${phase}). Watch this space.`,
+    /** Shared: a value that isn't one of the choices. */
+    oneOf: (command: string, got: string, choices: readonly string[]) =>
+      `${command}: "${got}" isn't one of: ${choices.join(", ")}`,
+    projects: {
+      description: "My projects as a table (--stack or --domain to filter)",
+      usage: "projects [--stack <tech>] [--domain <kind>]",
+      head: ["Slug", "Title", "Year", "Stack"],
+      count: (shown: number, total: number) =>
+        shown === total
+          ? `${total} ${total === 1 ? "project" : "projects"}. Open one: open <slug>`
+          : `${shown} of ${total} projects. Open one: open <slug>`,
+      none: (filter: string, options: string) =>
+        `No projects match ${filter}. Try one of: ${options}`,
+      flagValue: (flag: string) => `projects: --${flag} needs a value, e.g. --${flag}=react`,
+    },
+    goto: {
+      description: "Go to a page (by name or number)",
+      usage: "goto <page>",
+      missing: (pages: string) => `goto: where to? One of: ${pages}`,
+      unknown: (page: string, pages: string) =>
+        `goto: no page called "${page}". One of: ${pages}`,
+      going: (number: string, name: string) => `Going to ${number} ${name}…`,
+      here: (name: string) => `You're on ${name} already. Back to the top.`,
+    },
+    play: {
+      description: "Play music (a track number or name), or a game",
+      usage: "play [track | slice | stack]",
+      resuming: "Playing.",
+      playing: (title: string, artist: string) => `Playing ${title} — ${artist}`,
+      unknown: (what: string) =>
+        `play: no track called "${what}". Try: ls music/ or play 1`,
+      game: (name: string) => `The ${name} game`,
+      games: "phase 9",
+    },
+    pause: {
+      description: "Pause the music",
+      usage: "pause",
+      paused: "Paused. play picks it back up.",
+      nothing: "Nothing's playing. Try: play",
+    },
+    next: {
+      description: "Skip to the next track",
+      usage: "next",
+    },
+    prev: {
+      description: "Back to the previous track (or the start of this one)",
+      usage: "prev",
+    },
+    /** next / prev before the music ever started. */
+    noMusic: "The music isn't on yet. Try: play",
+    nowPlaying: (title: string, artist: string) => `Now playing ${title} — ${artist}`,
+    vol: {
+      description: "Show or set the volume, 0 to 100",
+      usage: "vol [0-100]",
+      level: (n: number) => `Volume ${n}%`,
+      bad: (v: string) => `vol: "${v}" isn't a number from 0 to 100`,
+    },
+    sound: {
+      description: "Turn sound on or off (music and UI sounds)",
+      usage: "sound [on | off]",
+      state: (on: boolean) => (on ? "Sound is on." : "Sound is off."),
+      already: (on: boolean) => (on ? "Sound's already on." : "Sound's already off."),
+    },
+    theme: {
+      description: "Switch the theme",
+      usage: "theme [dark | light | toggle]",
+      state: (mode: string) => `The theme is ${mode}.`,
+      already: (mode: string) => `Already ${mode}. Easy one.`,
+      switched: (mode: string) => `Switched to ${mode}.`,
+    },
+    particles: {
+      description: "Reshape the particles, or blow them up",
+      usage: "particles <shape> | --explode | --reset",
+      /** Names a visitor types → the canvas's shape ids (canvas/shapes/registry.ts). */
+      shapes: {
+        room: "home",
+        sphere: "about",
+        laptop: "work",
+        rings: "skills",
+        controller: "arcade",
+        envelope: "contact",
+        name: "name",
+        grid: "grid",
+        scatter: "scatter",
+      },
+      missing: (shapes: string) =>
+        `particles: which shape? One of: ${shapes}, or --explode / --reset`,
+      shaped: (shape: string) => `Particles: ${shape}. particles --reset puts them back.`,
+      exploded: "Boom. They'll find their way back.",
+      reset: "Particles back to this page's shape.",
+      still: "Reduced motion is on, so they stay put.",
+    },
+    ar: {
+      description: "Hand mode on or off (control the site with your hand)",
+      usage: "ar [on | off]",
+      state: (on: boolean) => (on ? "Hand mode is on." : "Hand mode is off."),
+      on: "Hand mode on.",
+      off: "Hand mode off. Back to the mouse.",
+      feature: "Hand tracking",
+      phase: "phase 8",
+    },
+    ask: {
+      description: "Ask the chatbot something about me",
+      usage: "ask <question>",
+      missing: "ask: what do you want to know? Try: ask what are you working on",
+      feature: "The chatbot",
+      phase: "phase 7",
+      meanwhile: "Meanwhile: cat about.md has the short version.",
+    },
+    contact: {
+      description: "Send me a message without leaving the terminal",
+      usage: "contact [--topic=project|collab|hi]",
+      intro: "Let's write a message. Ctrl+C cancels at any point.",
+      name: "Your name:",
+      email: "Your email (so I can reply):",
+      message: "Your message (one line):",
+      summary: "Here's what I'll send:",
+      labels: { topic: "Topic", name: "Name", email: "Email", message: "Message" },
+      confirm: "Send it? (y/n)",
+      yesNo: "Type y to send or n to cancel.",
+      sending: "Sending…",
+      sent: "Sent. I'll reply within a day.",
+      cancelled: "Not sent. Nothing left the terminal.",
     },
     /** Shared: a path that doesn't exist. */
     notFound: (command: string, p: string) =>

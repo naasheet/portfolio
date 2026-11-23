@@ -175,7 +175,8 @@ Put new code in the folder that owns it. Don't create new top-level folders with
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
    (progress), `page` (id: which of the six pages, or null), `room` (hot object; `view`, the
    canvas's projected object boxes, mutated in place), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
-   chat open, chat streaming, sound enabled), `theme`.
+   chat open, chat streaming, sound enabled), `theme`, `particles` (6.5: the terminal's shape override and
+   explode count, read by the canvas).
 3. **Fast values skip React.** Audio levels, hand position and scroll progress change every
    frame. Read them with `useStore.getState()` inside `useFrame` or the ticker, and keep them
    in refs. Never put them in `useState`, and never subscribe a component to them.
@@ -320,7 +321,7 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
   `uBass`, `uMid`, `uHigh`, `uPulse`, `uColorA`, `uColorB`, `uTheme`. Added since: `uPointerVelocity`,
   `uRipples` (3.4), `uDriftTime`, `uSpread`, `uFade` (3.5), `uRoom`, `uPhone`, `uLamp`, `uDeskY`,
   `uPool`, `uSteam` (R.3), `uHot[9]`, `uAnyHot`, `uFocus`, `uBurst` (R.4), `uLeaf`, `uLeafAxis`,
-  `uPlant` (R.5), `uType`, `uBulb` (R.6), plus `uPixelRatio` and
+  `uPlant` (R.5), `uType`, `uBulb` (R.6), `uExplode` (6.5), plus `uPixelRatio` and
   `uSize`. Attributes since: `aRoom` (R.3).
 - **Room attributes (R.7 naming vs. what's built):** the design names `aObject` and `aWarm`. As
   built (approved in R.3): `aObject` is `aRoom.x` (object 0–8, −1 elsewhere, plus kind, tint and
@@ -533,7 +534,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal** (6.1–6.4 done; 6.5, the site and music commands, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal** (6.1–6.5 done; 6.6, the mobile /terminal page, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -555,7 +556,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -608,7 +609,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1036,6 +1037,53 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Site-control commands (6.5):** `lib/commands/{projects,goto,play,pause,next,prev,vol,sound,
+  theme,particles,ar,ask,contact,helpers}.ts`, `open.ts` (project slugs), the store's `particles`
+  slice, `canvas/RouteMorph.tsx` (override + explode), `uExplode` in `Particles.tsx` and the vertex
+  shader. Strings in `content/terminal.ts`; help's groups are now Getting around, The site, Music,
+  About me, Shell, Just for fun (`Category` gained `site` and `music`).
+  - **Same paths as the UI:** `sound` → `toggleSound()`, `theme` → `toggleTheme()` (reveal + alert),
+    `ar` → `setHandMode()` (the A key's flag), all from `lib/shortcuts.ts`; music through
+    `getMusic()` / `startMusic({ track })`; pages through `navigate()`. No command touches a component.
+  - **projects:** a table (slug, title, year, stack) + count; one `--stack` / `--domain` (either
+    `--stack react` or `--stack=react`), compared by `slugify` like Work's filters.
+  - **goto:** id, name, number or route (`goto 3`, `goto /work`, `goto work#section`); closes the
+    terminal, page transition; the current page glides (Lenis) to the top or the section after the
+    drawer's scroll lock is released (`whenUnlocked`).
+  - **open <slug>:** case study, else live site, else repo (file paths still win over slugs).
+  - **play:** no arg = M's path when sound is off, else resume; a number (1-based, playlist order),
+    id or title prefix starts that track (`findTrack` in helpers.ts). `play slice|stack`, `ask` and
+    `ar on` print "… is on its way (phase n)": **replace those lines in 7.4 / 8.x / 9.x** (TODO
+    comments in ask.ts, ar.ts, play.ts). pause / next / prev before any music: "Try: play".
+    `vol` sets the engine (saved) or, before it exists, the store + the engine's `volume` key.
+  - **particles:** `particles <shape>` (room, sphere, laptop, rings, controller, envelope, name, grid,
+    scatter, or a page id / number) calls `particles.setShape(id, pathname)`; RouteMorph uses it
+    only while `particles.path` is the current path (any navigation drops it; nothing to clear),
+    with no focus morph; the room as an override is centred. `--reset` clears it. `--explode` bumps
+    `particles.explodes`: RouteMorph morphs to scatter (0.6 s) and tweens `uExplode` 0 → 1 (0.25 s)
+    → 0 (1.1 s; every particle pushed out from the shape's centre by up to 2.2 units), then at
+    1.2 s re-forms whatever the page shows (`EXPLODE` constants). Skipped under reduced motion (the
+    command says so) and during the intro.
+  - **contact:** `--topic` (default hi), then name / email / message prompts checked with the
+    sheet's `checkField` and its error words (`copy.contact.sheet.errors`), re-asked until valid;
+    a summary table; y/n (anything else re-asks); `fetch("/api/contact")` with `ctx.signal` and the
+    empty honeypot; 422 field errors, 429, 5xx and offline map to the sheet's lines. Ctrl+C at a
+    prompt rejects it (exec ends the line).
+- **Verified 6.5:** `npm run test` **122 tests** (+30: projects and filters, goto, particles store
+  writes, findTrack, vol, pause / next without music, the "on its way" lines, contact: re-ask a bad
+  email, y/n re-ask, payload, n sends nothing, Ctrl+C at a prompt, 429, a bad topic). In the
+  terminal (production build, headless): projects and `--stack tech`; theme dark; `particles
+  controller` on /about (screenshot: the controller where the sphere was); `--explode` (screenshot:
+  a wide scatter, then re-formed); sound on, vol 40, next ("Gehra — DARZI"), pause, play 2; ar on /
+  off; ask; play stack; **contact end to end with /api/contact intercepted** (payload: topic
+  project, the four fields, empty honeypot; "Sent."); `goto work` → /work with the terminal closed;
+  `goto home` → the room. Console clean.
+  - **[manual]** Send yourself a real message with `contact` (the route itself was verified in
+    4.7); the explode's size and timing by feel (`EXPLODE` in RouteMorph, 2.2 in the shader); the
+    contact prompts on a phone keyboard.
+  - **Follow-ups:** no terminal command yet for the queue sheet (`ui.queueOpen`), the mug's Now card
+    or the ? overlay (`ui.shortcutsOpen`); add `queue` / `now` / `keys` if wanted. `ask` should hand
+    the question to the chat in 7.4.
 - **Core commands (6.4):** `lib/commands/{whoami,skills,history,clear,date,exit,neofetch,sudo}.ts`,
   `help.ts` rewritten; strings in `content/terminal.ts` (approved: they stay out of `copy.ts`, which
   every page loads; §8 allows any content/ file).
@@ -1159,7 +1207,7 @@ Carry-over into later chunks:
     (`session.answer`); Ctrl+C rejects it. No command uses prompt yet (`sudo hire-me` will).
   - **Focus trap fix:** `useFocusTrap` ignores a Tab whose default was prevented by a control inside
     (the terminal's completion moved focus out to a link before).
-  - **`help | grep music` prints nothing until 6.5 registers the music commands:** check it then.
+  - **`help | grep music`** prints pause, play and sound since 6.5 (the test checks exactly that).
 - **Verified 6.2:** `npm run test`: **38 tests pass** (24 parser: quotes, escapes, flags, pipes,
   bad input; 14 exec / registry: pipes, chained and inverted pipes, marks, -n, grep without a pipe,
   suggestions, syntax errors, completion). In the terminal (production build): help lists 3;
@@ -1772,7 +1820,8 @@ Open TODO(content) items:
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 - Terminal (6.1–6.4): `content/terminal.ts` — the banner and chips, command descriptions and
   messages (6.4: the sudo steps and refusals, whoami's line, neofetch's labels), and the `~/.secrets` hints ("Something on the desk looks thirsty.", "Some files hide
-  behind a dot.") and footer: review the wording.
+  behind a dot.") and footer: review the wording. 6.5: the site / music commands' lines (`soon`,
+  theme's "Easy one.", particles' "Boom.", contact's prompts and "Sent. I'll reply within a day.").
 - About (5.5): `copy.about.nowPlaying` for review ("Paused" isn't from the frame).
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
   `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo

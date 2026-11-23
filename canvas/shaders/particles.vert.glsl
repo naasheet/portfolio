@@ -36,6 +36,8 @@ uniform float uAnyHot;
 // bursts outward (uBurst 0 -> 1 -> 0) and re-forms. uFocus -1 = none. Matches morph.ts.
 uniform float uFocus;
 uniform float uBurst;
+// 6.5: the terminal's `particles --explode`: every particle pushed out from the shape's centre.
+uniform float uExplode;          // 0 -> 1 -> 0
 // R.5: the watered plant grows a leaf: a few of its particles stretch up and out.
 uniform float uLeaf;             // 0 -> 1
 uniform vec4 uLeafAxis;          // plant box: centre x, base y, centre z, height
@@ -187,6 +189,12 @@ void main() {
     float len = max(length(world.xy), 0.3);
     world.xy += world.xy / len * uBurst * 1.6 * (0.6 + 0.4 * aRandom.w);
     world.z += uBurst * 0.5 * (aRandom.z - 0.5);
+  }
+  // The terminal's explode (6.5): a big, uneven push out from the shape's centre.
+  if (uExplode > 0.0) {
+    vec3 away = world.xyz - modelMatrix[3].xyz;
+    float reach = max(length(away), 0.3);
+    world.xyz += away / reach * uExplode * 2.2 * (0.4 + 0.6 * aRandom.w);
   }
   // The beat pulse (5.4): out from the shape's centre, a little uneven per particle.
   if (uPulse > 0.0) {

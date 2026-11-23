@@ -3,6 +3,19 @@
  * command means one file in lib/commands/ and one line below. Every command shows in `help`.
  * Also: lookup by name or alias, "did you mean" suggestions, and Tab completion.
  */
+import { ar } from "./ar";
+import { ask } from "./ask";
+import { contact } from "./contact";
+import { goto } from "./goto";
+import { next } from "./next";
+import { particles } from "./particles";
+import { pause } from "./pause";
+import { play } from "./play";
+import { prev } from "./prev";
+import { projects } from "./projects";
+import { sound } from "./sound";
+import { theme } from "./theme";
+import { vol } from "./vol";
 import { cat } from "./cat";
 import { cd } from "./cd";
 import { clear } from "./clear";
@@ -38,6 +51,21 @@ export const commands: readonly Command[] = [
   cat,
   tree,
   open,
+  goto,
+  projects,
+  // The site (6.5)
+  theme,
+  particles,
+  ar,
+  ask,
+  contact,
+  // Music (6.5)
+  play,
+  pause,
+  next,
+  prev,
+  vol,
+  sound,
   // About me
   whoami,
   skills,

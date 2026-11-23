@@ -59,11 +59,15 @@ describe("pipes", () => {
 });
 
 describe("help | grep music", () => {
-  // Honest until 6.5 registers the music commands: nothing in help mentions music yet, and the
-  // help header must never match by itself (it once did: "help | grep music" was in it).
+  // Only the music commands' own lines (6.5): the help header must never match by itself (it
+  // once did: "help | grep music" was in it).
   it("matches nothing but real command lines", async () => {
     await run("help | grep music");
-    expect(printed()).toEqual([]);
+    expect(printed().flat().map((l) => l.split(/\s+/)[0])).toEqual([
+      "pause",
+      "play",
+      "sound",
+    ]);
   });
 });
 
@@ -92,7 +96,7 @@ describe("Tab completion", () => {
     });
   });
   it("completes after a pipe", () => {
-    expect(complete("help | g", 8, ctx)).toEqual({
+    expect(complete("help | gr", 9, ctx)).toEqual({
       kind: "replace",
       input: "help | grep ",
       caret: 12,

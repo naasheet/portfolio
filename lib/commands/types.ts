@@ -42,8 +42,8 @@ export type CommandContext = {
   openUrl: (url: string) => void;
 };
 
-/** How `help` groups commands (6.4; 6.5 adds site and music). */
-export type Category = "navigate" | "about" | "shell" | "fun";
+/** How `help` groups commands (6.4; site and music since 6.5). */
+export type Category = "navigate" | "site" | "music" | "about" | "shell" | "fun";
 
 export type Command = {
   name: string;

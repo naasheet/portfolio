@@ -149,6 +149,21 @@ export type RoomSlice = {
   view: { shown: number; boxes: Float32Array; bulb: Float32Array };
 };
 
+/**
+ * Terminal control of the canvas (6.5, `particles`). The canvas (RouteMorph) reads it; the DOM
+ * never imports canvas/. `shape` is a shape registry id ("about", "name", "scatter" …) shown
+ * instead of the page's own while the visitor stays on `path`; any other page ignores it.
+ * `explodes` counts `particles --explode`: each new value is one burst + scatter, then back.
+ */
+export type ParticlesSlice = {
+  shape: string | null;
+  path: string | null;
+  explodes: number;
+  /** null = back to the page's own shape (`particles --reset`). */
+  setShape: (shape: string | null, path?: string | null) => void;
+  explode: () => void;
+};
+
 export type StoreState = {
   audio: AudioSlice;
   scroll: ScrollSlice;
@@ -157,6 +172,7 @@ export type StoreState = {
   ar: ArSlice;
   ui: UiSlice;
   theme: ThemeSlice;
+  particles: ParticlesSlice;
 };
 
 // --- Store ---------------------------------------------------------------------------------
@@ -266,6 +282,16 @@ export const useStore = create<StoreState>()(
         setQueueOpen: (queueOpen) => patch("ui", { queueOpen }),
         setContactSheetOpen: (contactSheetOpen) =>
           patch("ui", { contactSheetOpen }),
+      },
+
+      particles: {
+        shape: null,
+        path: null,
+        explodes: 0,
+        setShape: (shape, path = null) =>
+          patch("particles", { shape, path: shape ? path : null }),
+        explode: () =>
+          patch("particles", { explodes: get().particles.explodes + 1 }),
       },
 
       theme: {

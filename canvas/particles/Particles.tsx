@@ -162,6 +162,7 @@ export function Particles({
           uAnyHot: { value: 0 },
           uFocus: { value: -1 },
           uBurst: { value: 0 },
+          uExplode: { value: 0 },
           uLeaf: { value: 0 },
           uLeafAxis: { value: new Vector4() },
           uPlant: { value: PLANT },
