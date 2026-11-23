@@ -122,7 +122,7 @@ describe("music and features still to come", () => {
       terminalCopy.commands.noMusic,
     ]);
   });
-  it("play slice, ask and ar on say the feature is on its way", async () => {
+  it("play slice and ask say the feature is on its way", async () => {
     await run("play slice");
     await run("ask what are you working on?");
     expect(lines()[0]).toMatch(/Slice game is on its way \(phase 9\)/);

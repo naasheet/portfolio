@@ -1,11 +1,17 @@
 import { type Camera, Vector3, Vector4 } from "three";
+import { useStore } from "@/lib/store";
 
 /*
  * The pointer as the particles see it (CLAUDE.md §9.2, chunk 3.4). The canvas ignores pointer
  * events, so this listens on window and keeps the raw position in plain fields (no React, no
  * store: it changes every frame). Each frame, update() projects it onto the z = 0 plane, smooths
  * it, and derives a velocity and a strength that rises while the pointer moves and decays over
- * about 600 ms after it stops. AR (8.5) will feed the same uniforms.
+ * about 600 ms after it stops.
+ *
+ * Hand mode (8.3): while ar.enabled and a hand is in view, window pointer moves are ignored (both
+ * the real mouse and the hand's synthetic ones) and the position is read from ar.hand each frame,
+ * so the canvas never gets two inputs. The hand's pinch still ripples (its synthetic pointerdown).
+ * 8.5 tunes the hand's look on the canvas.
  *
  * Clicks and taps also start a ripple: a soft ring that runs out from the click point. Up to
  * RIPPLE_SLOTS overlap, so quick clicks never cut each other off (the oldest slot is reused).
@@ -87,7 +93,16 @@ export function createPointerTracker(): PointerTracker {
     seen = true;
     lastMove = performance.now();
   };
+  /** The hand drives the pointer (8.3): ignore window moves. */
+  const handActive = () => {
+    const ar = useStore.getState().ar;
+    return ar.enabled && ar.hand.visible;
+  };
+  let handX = NaN;
+  let handY = NaN;
+
   const onMove = (e: PointerEvent) => {
+    if (handActive()) return;
     // Touch: only while a finger is down (touch pointermove only fires then anyway).
     if (e.pointerType === "touch" && e.buttons === 0) return;
     record(e);
@@ -132,6 +147,21 @@ export function createPointerTracker(): PointerTracker {
         if (r.w === 0) continue;
         r.z = (now - rippleStart[i]!) / 1000;
         if (r.z > RIPPLE_LIFE_S) r.w = 0;
+      }
+
+      // Hand mode: the hand cursor is the pointer; it "moves" whenever its position changes.
+      if (handActive()) {
+        const { x, y } = useStore.getState().ar.hand;
+        const cx = x * window.innerWidth;
+        const cy = y * window.innerHeight;
+        if (cx !== handX || cy !== handY) {
+          handX = cx;
+          handY = cy;
+          clientX = cx;
+          clientY = cy;
+          seen = true;
+          lastMove = now;
+        }
       }
 
       if (!seen || dt === 0) return frame;

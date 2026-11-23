@@ -115,6 +115,7 @@ export function startTracker(
     if (video.readyState < 2 || video.videoWidth === 0) return;
     busy = true;
     lastSent = now;
+    landmarks.aspect = video.videoWidth / video.videoHeight;
     createImageBitmap(video).then(
       (bitmap) => {
         if (stopped) {

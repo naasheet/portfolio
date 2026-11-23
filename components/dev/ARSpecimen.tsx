@@ -5,6 +5,7 @@ import { CameraPreview } from "@/components/ar/CameraPreview";
 import { HandSkeleton } from "@/components/ar/HandSkeleton";
 import { Button } from "@/components/ui/Button";
 import { rememberAllowed } from "@/features/ar/camera";
+import { gestureDebug } from "@/features/ar/gestures";
 import { TRACKED, landmarks } from "@/features/ar/landmarks";
 import { gsap } from "@/lib/motion/gsap";
 import { useStore } from "@/lib/store";
@@ -86,13 +87,18 @@ export function ARSpecimen() {
 
   useEffect(() => () => fakePalm(false), []);
 
-  // 8.2: the live tracker's numbers (Hand on through the switch or A), written without renders.
+  // 8.2 / 8.3: the live tracker's and gestures' numbers (for tuning the thresholds) (Hand on through the switch or A), written without renders.
   useEffect(() => {
     const write = () => {
       const el = readout.current;
       if (!el) return;
       const text = `tracker ${landmarks.phase}${landmarks.delegate ? ` (${landmarks.delegate})` : ""} · ${landmarks.fps.toFixed(1)} fps · hand ${landmarks.visible ? "yes" : "no"}`;
-      if (el.textContent !== text) el.textContent = text;
+      const g = gestureDebug;
+      const tuning = landmarks.visible
+        ? ` · pinch ${g.ratio.toFixed(2)} · fingers ${g.fingers} · ${g.gesture} · last click moved ${g.lastCorrection.toFixed(1)} px`
+        : "";
+      const full = text + tuning;
+      if (el.textContent !== full) el.textContent = full;
     };
     gsap.ticker.add(write);
     return () => gsap.ticker.remove(write);

@@ -64,8 +64,11 @@ export type PageSlice = {
 
 export type ArStatus = "off" | "loading" | "ready" | "denied" | "error";
 
-/** Fingertip position in viewport space, each axis 0–1 (0,0 = top left). */
-export type Hand = { x: number; y: number; visible: boolean };
+/**
+ * The hand cursor (8.3): the filtered index fingertip in viewport space, each axis 0–1 (0,0 = top
+ * left); `palm` is the open-palm hold's progress (0–1) for the cursor's ring.
+ */
+export type Hand = { x: number; y: number; visible: boolean; palm: number };
 
 /** Whether this device has a camera (8.1, enumerateDevices): the switch hides with "none". */
 export type ArCamera = "unknown" | "yes" | "none";
@@ -251,7 +254,7 @@ export const useStore = create<StoreState>()(
         status: "off",
         explainerOpen: false,
         camera: "unknown",
-        hand: { x: 0.5, y: 0.5, visible: false },
+        hand: { x: 0.5, y: 0.5, visible: false, palm: 0 },
         pinching: false,
         setEnabled: (enabled) => patch("ar", { enabled }),
         toggle: () => patch("ar", { enabled: !get().ar.enabled }),

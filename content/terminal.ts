@@ -317,8 +317,6 @@ export const terminalCopy = {
       on: "Asking for your camera. The video never leaves your device.",
       already: "Hand mode is already on.",
       off: "Hand mode off. Camera off, back to the mouse.",
-      feature: "Hand tracking",
-      phase: "phase 8",
     },
     ask: {
       description: "Ask the chatbot something about me",

@@ -33,7 +33,7 @@ export function NavAutoHide() {
         isScrollLocked() ||
         alert !== null ||
         expandedId !== null ||
-        nav.matches(":hover, :focus-within")
+        nav.matches(":hover, [data-hand-hover], :focus-within")
       );
     };
 

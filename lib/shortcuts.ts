@@ -10,7 +10,7 @@ import { copy } from "@/content/copy";
 import { storage } from "./browser";
 import { island } from "./island";
 import { navigate, type PushRouter } from "./motion/pageTransition";
-import { startMusic } from "./music";
+import { getMusic, startMusic } from "./music";
 import { initSfx } from "./sfx";
 import { useStore } from "./store";
 import { revealTheme, type RevealOrigin } from "./theme";
@@ -33,6 +33,23 @@ export function toggleSound(): void {
     text: on ? copy.alerts.soundOn : copy.alerts.soundOff,
     detail: copy.alerts.switchBack("M"),
   });
+}
+
+/**
+ * Music play / pause (8.3: the open-palm hold). Sound off: turns it on (M's path), which starts
+ * or resumes the music. Sound on: pauses or plays, like the player's button.
+ */
+export function toggleMusic(): void {
+  const { ui, audio } = useStore.getState();
+  if (!ui.soundEnabled) {
+    toggleSound();
+    return;
+  }
+  if (audio.playing) {
+    getMusic()?.pause();
+    return;
+  }
+  void startMusic();
 }
 
 /** The nav's theme button, where T's reveal starts (R.5); null when it isn't on screen. */
@@ -144,7 +161,9 @@ export function openTerminal(): void {
   const { ui } = useStore.getState();
   if (window.location.pathname === TERMINAL_ROUTE) {
     document
-      .querySelector<HTMLInputElement>("[data-terminal-page] input[data-autofocus]")
+      .querySelector<HTMLInputElement>(
+        "[data-terminal-page] input[data-autofocus]",
+      )
       ?.focus();
     return;
   }
@@ -199,14 +218,7 @@ function openPageByNumber(key: string): boolean {
 export type ShortcutGroup = "everywhere" | "home";
 
 export type Shortcut = {
-  id:
-    | "terminal"
-    | "shortcuts"
-    | "theme"
-    | "sound"
-    | "ar"
-    | "escape"
-    | "pages";
+  id: "terminal" | "shortcuts" | "theme" | "sound" | "ar" | "escape" | "pages";
   group: ShortcutGroup;
   /** What the Kbd shows. */
   key: string;

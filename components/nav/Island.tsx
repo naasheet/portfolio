@@ -234,7 +234,7 @@ export function Island() {
     // An overlay opened from the card (the queue sheet, 5.3) keeps it open behind.
     if (expanded && next instanceof Element && !next.closest("[data-overlay]"))
       island.collapse();
-    if (root.current?.matches(":hover")) return;
+    if (root.current?.matches(":hover, [data-hand-hover]")) return;
     setNavOpen(false);
   };
 

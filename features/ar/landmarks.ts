@@ -34,6 +34,8 @@ export const landmarks = {
   fps: 0,
   /** The tracker: not running, loading the model, or detecting (the preview's status row). */
   phase: "off" as TrackerPhase,
+  /** The camera frame's width ÷ height (points are 0–1 per axis), for distances (8.3). */
+  aspect: 4 / 3,
   /** Where the model runs, once loaded (the GPU delegate, or the CPU fallback). */
   delegate: null as "GPU" | "CPU" | null,
 };

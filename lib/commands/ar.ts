@@ -1,6 +1,6 @@
 /*
  * ar (6.5): Hand mode on or off, through setHandMode like the A key and the nav's switch (8.1:
- * "on" opens the camera explainer). Until 8.2 tracks the hand, it also says that's on the way.
+ * "on" opens the camera explainer; 8.3: the hand then drives the cursor).
  */
 import { terminalCopy } from "@/content/terminal";
 import { setHandMode } from "@/lib/shortcuts";
@@ -39,12 +39,5 @@ export const ar: Command = {
       text: what === "on" ? t.on : t.off,
       tone: "accent",
     });
-    // TODO(8.3): drop this line once the hand drives the cursor (8.2 only tracks it).
-    if (what === "on")
-      ctx.print({
-        kind: "text",
-        text: terminalCopy.commands.soon(t.feature, t.phase),
-        tone: "muted",
-      });
   },
 };

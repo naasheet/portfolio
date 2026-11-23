@@ -1,15 +1,18 @@
 "use client";
 
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Pause, Play } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import { gsap } from "@/lib/motion/gsap";
+import { useStore } from "@/lib/store";
 
 type CursorState = "default" | "orbit" | "text" | "view";
 
-/** One dot and a pool of 14 specks; 3 orbit at rest (Orbit board). */
-const POOL = 14;
+/** One dot and a pool of 16 specks (the palm ring needs 16); 3 orbit at rest (Orbit board). */
+const POOL = 16;
+/** An element's ring uses at most 14 of them. */
+const RING_MAX = 14;
 const REST_SPECKS = 3;
 /** Every third speck is amber. */
 const isAmber = (i: number) => i % 3 === 2;
@@ -26,6 +29,11 @@ const DRIFT_SPEED = 20;
 /** Ring spacing: one speck per ~32 px of perimeter, between 8 and 14 specks. */
 const RING_SPACING = 32;
 const RING_MIN = 8;
+/** Hand mode (8.3, the Orbit board's amber states): the three specks sit at 18 px. */
+const HAND_ORBIT_RADIUS = 18;
+/** The palm hold: 16 specks in a ring this far out, lit one by one as the hold fills. */
+const PALM_SPECKS = 16;
+const PALM_RADIUS = 26;
 /** Easing time constants (s): onto the ring in ~250 ms (soft spring), snapping in when pressed. */
 const RING_TAU = 0.07;
 const PRESS_TAU = 0.035;
@@ -124,12 +132,22 @@ function ringAround(el: HTMLElement, radius: number, offset: number): Ring {
  * The dot is set straight from pointer events; the specks are plain spans moved with transforms
  * from one gsap.ticker callback (no loop of its own), which runs only while the cursor is
  * visible and the tab is in front. State lives in data attributes, never React state. Renders
- * nothing on touch / coarse pointers or with reduced motion. 8.3 adds the amber hand mode.
+ * nothing on touch / coarse pointers or with reduced motion.
+ *
+ * Hand mode (8.3, while ar.enabled): data-mode="hand", amber. The position comes from ar.hand
+ * (features/ar/gestures.ts) instead of mouse events, and the real mouse is ignored; the rings
+ * still follow the synthetic pointer's over events. Pointing: an 8 px dot with three specks at
+ * 18 px. Pinching (ar.pinching): the specks collapse into the dot, which grows to 14 px; release
+ * lets them burst back out (on a ring, the ring snaps in as with the mouse). Palm hold
+ * (ar.hand.palm): 16 specks ring a play / pause icon and light up one by one. Hand lost: it fades.
+ * It renders in hand mode even with reduced motion (it is the only pointer then): the specks are
+ * still (no spin, no easing) and the pinch snaps.
  */
 export function Cursor() {
   const reduced = useReducedMotion();
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
-  const active = finePointer && !reduced;
+  const handOn = useStore((s) => s.ar.enabled);
+  const active = finePointer && (!reduced || handOn);
 
   const root = useRef<HTMLDivElement>(null);
   const dot = useRef<HTMLDivElement>(null);
@@ -177,6 +195,9 @@ export function Cursor() {
     let placed = false;
     let orbitAngle = 0;
     let drift = 0;
+    /** Hand mode (8.3): position, press and palm come from the store. */
+    let hand = false;
+    let shown = false;
 
     // Per-speck position, scale and visibility.
     const pos = speckEls.map(() => ({ x: 0, y: 0, s: 1 }));
@@ -192,8 +213,35 @@ export function Cursor() {
 
     const tick = (_time: number, deltaMs: number) => {
       const dt = Math.min(deltaMs / 1000, 0.05);
-      orbitAngle += ORBIT_SPEED * dt;
-      drift += DRIFT_SPEED * dt;
+      if (!reduced) {
+        orbitAngle += ORBIT_SPEED * dt;
+        drift += DRIFT_SPEED * dt;
+      }
+
+      let palm = 0;
+      if (hand) {
+        const ar = useStore.getState().ar;
+        if (!ar.hand.visible) {
+          if (shown) hideVisual();
+          return;
+        }
+        placeAt(ar.hand.x * window.innerWidth, ar.hand.y * window.innerHeight);
+        if (!shown) showVisual();
+        if (pressed !== ar.pinching) {
+          pressed = ar.pinching;
+          if (pressed) rootEl.dataset.pressed = "";
+          else delete rootEl.dataset.pressed;
+        }
+        palm = ar.hand.palm;
+        if (palm > 0) rootEl.dataset.palm = "";
+        else delete rootEl.dataset.palm;
+        const playing = useStore.getState().audio.playing;
+        if (playing !== "playing" in rootEl.dataset) {
+          if (playing) rootEl.dataset.playing = "";
+          else delete rootEl.dataset.playing;
+        }
+      }
+      const lit = Math.floor(palm * PALM_SPECKS + 1e-6);
 
       if (target && !target.isConnected) target = null;
 
@@ -207,7 +255,7 @@ export function Cursor() {
       const ringCount = ring
         ? Math.max(
             RING_MIN,
-            Math.min(POOL, Math.round(perimeter(ring) / RING_SPACING)),
+            Math.min(RING_MAX, Math.round(perimeter(ring) / RING_SPACING)),
           )
         : 0;
 
@@ -218,7 +266,19 @@ export function Cursor() {
         let tau = LAGS[i % LAGS.length] ?? 0.14;
         let scale = 1;
 
-        if (ring) {
+        if (hand && palm > 0) {
+          // Palm hold: a ring of 16 around the icon, lit in order as the hold fills.
+          visible = i < PALM_SPECKS;
+          const a = -Math.PI / 2 + (i * Math.PI * 2) / PALM_SPECKS;
+          tx = pointer.x + PALM_RADIUS * Math.cos(a);
+          ty = pointer.y + PALM_RADIUS * Math.sin(a);
+          tau = RING_TAU;
+          const el = speckEls[i];
+          if (el && i < lit !== "lit" in el.dataset) {
+            if (i < lit) el.dataset.lit = "";
+            else delete el.dataset.lit;
+          }
+        } else if (ring) {
           visible = i < ringCount;
           if (visible) {
             const len = perimeter(ring);
@@ -231,19 +291,25 @@ export function Cursor() {
           visible = end !== -1;
           if (visible) ty = pointer.y + (end === 0 ? -CARET_HALF : CARET_HALF);
           tau = TEXT_TAU;
+        } else if (hand && pressed) {
+          // Pinch: the specks collapse into the dot.
+          visible = i < REST_SPECKS;
+          tau = PRESS_TAU;
         } else {
           visible = i < REST_SPECKS;
           if (visible) {
+            const radius = hand ? HAND_ORBIT_RADIUS : ORBIT_RADIUS;
             const a = orbitAngle + (i * Math.PI * 2) / REST_SPECKS;
-            tx = pointer.x + ORBIT_RADIUS * Math.cos(a);
-            ty = pointer.y + ORBIT_RADIUS * Math.sin(a);
+            tx = pointer.x + radius * Math.cos(a);
+            ty = pointer.y + radius * Math.sin(a);
           }
         }
 
         const p = pos[i];
         const el = speckEls[i];
         if (!p || !el) continue;
-        const k = 1 - Math.exp(-dt / tau);
+        // Reduced motion (hand mode only): no easing, everything snaps.
+        const k = reduced ? 1 : 1 - Math.exp(-dt / tau);
         p.x += (tx - p.x) * k;
         p.y += (ty - p.y) * k;
         p.s += (scale - p.s) * k;
@@ -264,44 +330,63 @@ export function Cursor() {
       ticking = false;
     };
 
-    const show = () => {
+    const showVisual = () => {
+      shown = true;
       rootEl.dataset.visible = "";
       html.classList.add("has-cursor");
+    };
+    const hideVisual = () => {
+      shown = false;
+      delete rootEl.dataset.visible;
+      delete rootEl.dataset.pressed;
+      delete rootEl.dataset.palm;
+      pressed = false;
+      // The next sighting starts under the pointer again (no sweep from the old spot).
+      placed = false;
+      html.classList.remove("has-cursor");
+    };
+    const show = () => {
+      showVisual();
       if (document.visibilityState === "visible") startTicker();
     };
     const hide = () => {
-      delete rootEl.dataset.visible;
-      delete rootEl.dataset.pressed;
-      pressed = false;
-      html.classList.remove("has-cursor");
-      stopTicker();
+      hideVisual();
+      // Hand mode keeps ticking: it watches the store for the hand coming back.
+      if (!hand) stopTicker();
+    };
+
+    const placeAt = (x: number, y: number) => {
+      pointer.x = x;
+      pointer.y = y;
+      setDotX(x);
+      setDotY(y);
+      pillX(x);
+      pillY(y);
+      if (!placed) {
+        // First sighting: start everything under the pointer, not at 0,0.
+        for (const p of pos) {
+          p.x = x;
+          p.y = y;
+        }
+        gsap.set(pillEl, { x, y });
+        placed = true;
+      }
     };
 
     const onMove = (e: PointerEvent) => {
+      if (hand) return;
       if (e.pointerType !== "mouse") {
         hide();
         return;
       }
-      pointer.x = e.clientX;
-      pointer.y = e.clientY;
-      setDotX(e.clientX);
-      setDotY(e.clientY);
-      pillX(e.clientX);
-      pillY(e.clientY);
-      if (!placed) {
-        // First sighting: start everything under the pointer, not at 0,0.
-        for (const p of pos) {
-          p.x = e.clientX;
-          p.y = e.clientY;
-        }
-        gsap.set(pillEl, { x: e.clientX, y: e.clientY });
-        placed = true;
-      }
+      placeAt(e.clientX, e.clientY);
       show();
     };
 
     const onOver = (e: PointerEvent) => {
       if (e.pointerType !== "mouse") return;
+      // Hand mode follows only the hand's synthetic pointer (untrusted), never the real mouse.
+      if (hand === e.isTrusted) return;
       const next = stateFor(e.target);
       state = next.state;
       rootEl.dataset.state = state;
@@ -316,22 +401,48 @@ export function Cursor() {
     };
 
     const onDown = (e: PointerEvent) => {
-      if (e.pointerType !== "mouse") return;
+      if (hand || e.pointerType !== "mouse") return;
       pressed = true;
       rootEl.dataset.pressed = "";
     };
     const onUp = () => {
+      if (hand) return;
       pressed = false;
       delete rootEl.dataset.pressed;
     };
     // relatedTarget is null when the pointer leaves the window.
     const onOut = (e: MouseEvent) => {
-      if (!e.relatedTarget) hide();
+      if (!hand && !e.relatedTarget) hide();
     };
     // Specks hide while the tab is in the background.
     const onVisibility = () => {
-      if (document.visibilityState !== "visible") hide();
+      if (document.visibilityState !== "visible") {
+        hideVisual();
+        stopTicker();
+      } else if (hand) {
+        startTicker();
+      }
     };
+    const onBlur = () => {
+      if (!hand) hide();
+    };
+
+    // Hand mode follows ar.enabled (no React state: the effect owns the switch).
+    const setHand = (on: boolean) => {
+      if (hand === on) return;
+      hand = on;
+      rootEl.dataset.mode = on ? "hand" : "mouse";
+      state = "default";
+      rootEl.dataset.state = state;
+      target = null;
+      hideVisual();
+      for (const el of speckEls) delete el.dataset.lit;
+      if (on && document.visibilityState === "visible") startTicker();
+      if (!on) stopTicker();
+    };
+    const unsubscribeHand = useStore.subscribe((s) => s.ar.enabled, setHand, {
+      fireImmediately: true,
+    });
 
     window.addEventListener("pointermove", onMove, { passive: true });
     document.addEventListener("pointerover", onOver);
@@ -339,20 +450,22 @@ export function Cursor() {
     window.addEventListener("pointerup", onUp);
     document.addEventListener("mouseout", onOut);
     document.addEventListener("visibilitychange", onVisibility);
-    window.addEventListener("blur", hide);
+    window.addEventListener("blur", onBlur);
 
     return () => {
+      unsubscribeHand();
       window.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerover", onOver);
       window.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointerup", onUp);
       document.removeEventListener("mouseout", onOut);
       document.removeEventListener("visibilitychange", onVisibility);
-      window.removeEventListener("blur", hide);
+      window.removeEventListener("blur", onBlur);
       gsap.killTweensOf(pillEl);
+      hand = false;
       hide();
     };
-  }, [active]);
+  }, [active, reduced]);
 
   if (!active) return null;
 
@@ -382,6 +495,10 @@ export function Cursor() {
       ))}
       <div ref={dot} className="cursor-pos">
         <span className="cursor-dot" />
+        <span className="cursor-palm-icon">
+          <Play aria-hidden className="cursor-palm-play" />
+          <Pause aria-hidden className="cursor-palm-pause" />
+        </span>
         <span className="cursor-caret" />
       </div>
     </div>

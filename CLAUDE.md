@@ -541,7 +541,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **8 — AR** (8.1–8.2 done; 8.3, gestures, is next). Phase 6 (Terminal, 6.1–6.6) is
+Current phase: **8 — AR** (8.1–8.3 done; 8.4, legend and coach, is next). Phase 6 (Terminal, 6.1–6.6) is
 complete. Build order changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
 Ask pill and the `/` shortcut are off (see "Chat off until Phase 7" below). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
@@ -565,7 +565,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker), 8.3 (hand cursor and gestures)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -582,10 +582,10 @@ Carry-over into later chunks:
   - **Phones:** the room has its own phone layout (R.3), but the other shapes still use `SHAPE_BOX`
     (4 wide) while a 390 px portrait view is only ~1.8 units wide at z = 0: the sphere, laptop etc.
     overflow on phones. Scale the mesh by aspect when the pages are built (4.x / 10.2).
-  - **8.5 AR pointer:** feed the fingertip into the same uniforms. `createPointerTracker()` in
-    `canvas/particles/pointer.ts` turns a client position into the smoothed z = 0 point, velocity
-    and strength; give it a second input (e.g. `feed(clientX, clientY)` from `ar.hand`) rather than
-    a second tracker, so mouse and hand never fight over `uPointer`.
+  - **8.5 AR pointer:** done in 8.3 for position: while `ar.enabled` and `ar.hand.visible`,
+    `createPointerTracker()` ignores window pointermove (real and synthetic) and reads `ar.hand` each
+    frame, so mouse and hand never fight over `uPointer`; the pinch's synthetic pointerdown still
+    ripples. 8.5 is left with the hand's look on the canvas.
   - **Scroll response constants** (top of `Particles.tsx`): from the current page's own scroll
     (`scroll.progress`, R.2): rotate up to 0.5 rad on Y, tilt 0.12 on X, lift up to 0.3 (parallax),
     smoothed with τ 0.35 s. A page that doesn't scroll leaves the mesh at rest. Tune by feel.
@@ -618,7 +618,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.3** (unchanged: gestures load with ARLayer, the hand cursor with the lazy Cursor), **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -684,14 +684,8 @@ Carry-over into later chunks:
   (games). Note that `caution` (161 ms), `notification` (300 ms) and `swipe_*` (150 ms) are
   longer than the 100 ms rule in §8. Ask before using them. IconButton has no `sound` prop
   yet (not in 1.7's scope).
-- **8.3 hand cursor:** same `Cursor` component (`data-mode` is already on the root). Add the amber
-  states from the Orbit board (`stuff/reference/Cursor — Orbit (chunks 1.7, 8.3)@2x.png`):
-  - **Pointing:** an 8 px amber dot with three specks at 18 px.
-  - **Pinching:** the specks collapse into the dot, which grows to 14 px; release clicks and the
-    specks burst back out.
-  - **Palm hold:** 16 specks form a ring around the action icon and light up one by one over 1 s.
-  - **Hand lost:** fades after 500 ms; a hint after 3 s.
-  - The specks still ring whatever the hand points at.
+- **8.3 hand cursor:** built (see "Hand cursor and gestures (8.3)"). Still open from the Orbit
+  board: the "hint after 3 s" when the hand is lost (8.4's coach).
 - **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus (ffmpeg is
   installed since 5.1; extend `scripts/compress-media.mjs`).
 - **10.x:** Tooltip has no automatic collision handling. 2.4 added `align="end"` (bubble lined up
@@ -1158,6 +1152,88 @@ Carry-over into later chunks:
     (`arCopy.tracker.error`), `ar.status = "error"`, Hand off (camera light off).
   - **Terminal:** `ar on` still prints "on its way (phase 8)" until 8.3 makes the hand do something
     (TODO(8.3) in `lib/commands/ar.ts`).
+- **Hand cursor and gestures (8.3):** `features/ar/oneEuro.ts`, `features/ar/gestures.ts`,
+  `features/ar/synthetic.ts`, `components/cursor/Cursor.tsx` (hand mode), `app/globals.css` (the
+  hover variant, `[data-hand-hover]` on plain :hover rules, the hand cursor), `canvas/particles/pointer.ts`,
+  `toggleMusic()` in `lib/shortcuts.ts`, `ar.hand.palm` in the store, `landmarks.aspect`.
+  - **Driver** (`startGestures()`, started by ARLayer on the tracker's `ready`, stopped with it): one
+    `gsap.ticker` callback. Per new result: the index fingertip, mirrored, inner 70 % of the frame →
+    the whole screen (`mapToScreen`), One Euro per axis **in screen px** (min cutoff 1.0, beta 0.007,
+    d cutoff 1.0; beta assumes px), pushed into a 16-entry history. Per frame: the displayed cursor
+    eases toward it (τ 30 ms, smoothing the ~30 Hz results at 60 Hz), `ar.hand` (x, y 0–1, visible,
+    palm) written when it changes, `ar.pinching` only on change. Hand gone 0.15 s → a held pinch is
+    released without a click; 0.5 s (`LOST_S`) → cursor hidden, filters and hover chain reset.
+  - **Pinch:** ratio = thumb tip–index tip ÷ hand size (wrist–middle knuckle; x scaled by the
+    frame's aspect); on < 0.25, off > 0.35. The press lands where the cursor was **120 ms before**
+    (`CLICK_LOOKBACK_S`, from the history; the fingers closing drag the tip), the visible cursor is
+    frozen there for 80 ms (`PINCH_FREEZE_S`). The correction is logged in dev
+    (`[hand] pinch: click moved back n px`) and shown on /dev. Release without a drag → up + click
+    on the pressed element.
+  - **Drag:** 24 px of vertical travel from the press point (`DRAG_START_PX`) → pointercancel on the
+    pressed element, then scroll `-Δy × 2` (`DRAG_GAIN`) per frame: the nearest scrollable ancestor
+    under the press point (overflow auto / scroll with overflow), else Lenis
+    (`scrollTo(targetScroll + dy, { immediate })`; Lenis 1.3 has no scrollBy), else `window.scrollBy`;
+    nothing while a scroll lock holds. Release → mouseup (no click) and the speed carries on,
+    decaying with τ 0.12 s (gone in ~0.4 s).
+  - **Palm:** every finger extended (tip ≥ 1.5 × its knuckle's distance from the wrist; the ring
+    finger's knuckle = halfway between middle and little; thumb tip ≥ 0.6 hand sizes from the index
+    knuckle; 0.6 after a test hand at 0.75 failed) and not pinching, held 1 s → `toggleMusic()` once
+    per hold (sound off → `toggleSound()`; playing → pause; else `startMusic()`). Turning Hand on was a
+    click or key, so the AudioContext has sticky activation.
+  - **Synthetic events** (`createSynthetic()`), all `pointerType: "mouse"`, pointerId 1: on a target
+    change pointerout + mouseout on the old one, pointerleave + mouseleave on each element left
+    (deepest first), pointerover + mouseover on the new one, pointerenter + mouseenter on each
+    element entered (outermost first, dispatched one by one: they don't bubble). **Every frame a
+    fresh `elementFromPoint`** (a page changing under a still hand still gets over / out, as browsers
+    do for a still mouse); pointermove + mousemove only when the cursor moved > 0.1 px. Pinch:
+    pointerdown + mousedown, then focus the closest focusable unless a handler prevented the default.
+  - **CSS :hover:** the hovered chain (target + ancestors) carries `data-hand-hover`.
+    `@custom-variant hover` in globals.css = `@media (hover: hover) { &:hover }` or
+    `&[data-hand-hover]`, so every `hover:` and `group-hover:` utility matches the hand (checked in
+    the built CSS). **Plain :hover selectors list `[data-hand-hover]` by hand** — done for the card
+    hover (border, shadow, spotlight, lift), `.marquee`, `.scrubber`'s thumb; and the JS
+    `matches(":hover")` checks in `Island.tsx` (retract on blur) and `NavAutoHide.tsx`. **Any new
+    plain :hover rule or `matches(":hover")` must add it too.** No component uses Framer's
+    `whileHover` today.
+  - **Cursor hand mode** (subscribed to `ar.enabled` inside the effect, no re-render): the position
+    comes from `ar.hand`, real mouse events and window blur / leave are ignored, the rings follow
+    only untrusted over events. Amber: 8 px dot, three specks at 18 px; pinch: specks collapse,
+    dot × 1.75 (14 px), or the ring snaps in if over a control; palm: 16 specks at 26 px around a
+    play / pause icon (`data-playing` from `audio.playing`), dim at 25 % until lit (`data-lit`), lit
+    by `floor(palm × 16)`; hand lost: fades. The speck pool is 16 (element rings still max 14).
+  - **Reduced motion:** the cursor renders in Hand mode anyway (`active = finePointer && (!reduced
+    || ar.enabled)`), no orbit spin or drift, every speck snaps (k = 1), CSS transitions off, the
+    palm ring still lights speck by speck.
+  - **Terminal:** `ar on` no longer prints "on its way"; `terminalCopy.commands.ar.feature / phase`
+    removed.
+- **Verified 8.3 (headless Chromium 1248, production build; a main-world fake replaced the hand
+  worker and answered each frame with a pose from `html[data-pose]`: point / pinch / open palm at
+  a chosen screen point, so the real tracker → gestures → synthetic → cursor path ran):**
+  - **/work:** over a project card `data-hand-hover` on its 15-element chain, the card's computed
+    `translate` 0px -2px, the hover border, the spotlight's `--x` written; cursor `orbit`, amber
+    ring (screenshot). The island's links opened on the centre and were gone 0.9 s after leaving;
+    the theme button's tooltip showed. Pinch over the card → `/work/project-1`.
+  - **/about:** pinch at y 600 and drag to 300 over 0.4 s → scrolled 473 px, inertia to 669.
+  - **Palm:** 7 of 16 specks lit at 0.5 s; after 1.4 s the music played (sound turned on).
+  - **Lost:** cursor still shown at 250 ms, hidden at 850 ms. **Home:** a steady hover over the
+    frame shows the "Open ↗" pill; pinch → `/about` (the room's hit element got the click).
+  - **Hand off (A):** mouse mode, the worker terminated, 0 elements left with `data-hand-hover`.
+  - **Frames while the hand moved (3 s):** p50 6.1 / p95 6.2 ms, max 7.9–12.2, 0 over 20 ms.
+  - **Reduced motion:** the same passes (the card's lift is `none`, as designed); console clean.
+  - `npm run test`: 142 (+8: mapping, pinch ratio and hysteresis, palm / fist / pointing, the
+    history look-back, One Euro). First-load JS on `/` 214.2 KB (unchanged).
+  - **Bug found and fixed in QA:** the first build never sent moves (`lastSent` started at NaN, and
+    every comparison with NaN is false), and a page changing under a still hand left a stale hover.
+  - **[manual]** The Done-when **with your webcam**: browse every page, open a project, play music
+    without the mouse. Tune on /dev (Hand on): the readout shows the pinch ratio, the fingers
+    (`TIMRL`), the gesture and "last click moved n px" (also logged on `npm run dev`). Knobs at the
+    top of `features/ar/gestures.ts`: `PINCH_ON / OFF`, `FINGER_EXTENDED`, `THUMB_EXTENDED`,
+    `CLICK_LOOKBACK_S` (120 ms: check the logged correction is the closing-finger drift, a few px),
+    `PINCH_FREEZE_S`, `DRAG_GAIN`, `INERTIA_TAU`, `INNER`; One Euro in `oneEuro.ts`.
+  - **Known limits:** links that open a new tab (GitHub, LinkedIn) are blocked as popups (synthetic
+    clicks aren't user activation); sliders (scrubber, volume) can't be dragged by hand.
+  - **Follow-ups:** 8.4's "can't see your hand" hint after 3 s; keyboard-like activation for
+    sliders (e.g. pinch-drag sideways on a range) if wanted; the canvas look for the hand (8.5).
 - **Verified 8.2 (headless Chromium 1248 on the Iris Xe, production build with the /dev flag,
   `--use-fake-device-for-media-stream`):**
   - **Rate:** model ready ~1.0 s after Hand on (localhost), **GPU delegate**, detection a steady

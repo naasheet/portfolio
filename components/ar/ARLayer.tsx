@@ -8,6 +8,7 @@ import {
   rememberAllowed,
   stopCamera,
 } from "@/features/ar/camera";
+import { startGestures } from "@/features/ar/gestures";
 import { startTracker } from "@/features/ar/tracker";
 import { arCopy } from "@/content/ar";
 import { island } from "@/lib/island";
@@ -42,8 +43,8 @@ function cameraAlert(kind: "denied" | "lost" | "error") {
  *
  * Detection (8.2): once the camera is live, features/ar/tracker.ts runs the hand model in a
  * worker on the same stream and fills `landmarks`; it stops with the camera. If it fails, an
- * error toast, ar.status "error", and back to Mouse (the camera light goes off). The hand cursor
- * (8.3) hangs off the same landmarks later.
+ * error toast, ar.status "error", and back to Mouse (the camera light goes off). Once the model
+ * is ready, features/ar/gestures.ts (8.3) turns the landmarks into the hand cursor and gestures.
  */
 export default function ARLayer() {
   const enabled = useStore((s) => s.ar.enabled);
@@ -109,14 +110,25 @@ export default function ARLayer() {
 
   useEffect(() => {
     if (!stream) return;
-    return startTracker(stream, {
+    // 8.3: the cursor and gestures start once the model answers, and stop with the tracker.
+    let stopGestures: (() => void) | null = null;
+    const stopTracker = startTracker(stream, {
+      onReady: () => {
+        stopGestures ??= startGestures();
+      },
       onError: (message) => {
+        stopGestures?.();
+        stopGestures = null;
         console.error("[hand tracker]", message);
         toast(arCopy.tracker.error, { kind: "error" });
         useStore.getState().ar.setStatus("error");
         useStore.getState().ar.setEnabled(false);
       },
     });
+    return () => {
+      stopGestures?.();
+      stopTracker();
+    };
   }, [stream]);
 
   return stream ? <CameraPreview stream={stream} /> : null;
