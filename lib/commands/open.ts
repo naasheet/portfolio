@@ -18,7 +18,7 @@ export const open: Command = {
   category: "navigate",
   description: t.description,
   usage: t.usage,
-  examples: ["open resume.pdf", "open project-1", "open music/gehra.mp3"],
+  examples: ["open resume.pdf", "open filmly", "open music/gehra.mp3"],
   complete: (args, { fs, cwd }) => {
     const word = args[args.length - 1] ?? "";
     return [

@@ -32,35 +32,110 @@ export type UsedIn = {
   items: readonly { label: string; project?: string }[];
 };
 
-// TODO(content): your real areas, skills, levels and years.
-export const skillAreas: readonly SkillArea[] = [1, 2, 3].map((n) => ({
-  name: `[Area ${n}]`,
-  summary: "[One line about this area]",
-  skills: [1, 2, 3, 4, 5, 6].map((k) => ({ name: `[Skill ${n}.${k}]` })),
-}));
+// From Nasheet's resume (public/resume.pdf), Nov 2026.
+// TODO(content): levels (1–5) and years: the resume doesn't rate anything, so the dots stay empty
+// until you choose (never a made-up rating).
+export const skillAreas: readonly SkillArea[] = [
+  {
+    name: "Web",
+    summary: "Full-stack: the interface, the API and the database behind it.",
+    skills: [
+      { name: "JavaScript" },
+      { name: "React" },
+      { name: "Node.js" },
+      { name: "Express" },
+      { name: "FastAPI" },
+      { name: "PostgreSQL" },
+      { name: "Prisma" },
+      { name: "Redis" },
+    ],
+  },
+  {
+    name: "Mobile",
+    summary: "Flutter apps with offline sync, alerts and an admin side.",
+    skills: [
+      { name: "Flutter" },
+      { name: "Dart" },
+      { name: "Riverpod" },
+      { name: "Firebase" },
+      { name: "Isar DB" },
+      { name: "Supabase" },
+    ],
+  },
+  {
+    name: "AI and data",
+    summary:
+      "Training models, evaluating LLMs and charting what the data says.",
+    skills: [
+      { name: "Python" },
+      { name: "PyTorch" },
+      { name: "Scikit-learn" },
+      { name: "NumPy" },
+      { name: "Pandas" },
+      { name: "LLM evaluation" },
+      { name: "Tableau" },
+      { name: "Power BI" },
+    ],
+  },
+  {
+    name: "Foundations",
+    summary: "The computer engineering underneath it all.",
+    skills: [
+      { name: "Java" },
+      { name: "MySQL" },
+      { name: "HTML & CSS" },
+      { name: "Data structures & algorithms" },
+      { name: "OOP" },
+      { name: "Computer networks" },
+    ],
+  },
+];
 
 // TODO(content): what you're learning now (and how far along, 0–100, if you want to show it).
+// The resume doesn't say, so these stay placeholders.
 export const learning: readonly Learning[] = [
   { name: "[Thing you're learning]" },
   { name: "[Another one]" },
   { name: "[A third]" },
 ];
 
-// TODO(content): the tools you open every day.
+// The resume's software list.
 export const tools: readonly string[] = [
-  "[Tool 1]",
-  "[Tool 2]",
-  "[Tool 3]",
-  "[Tool 4]",
-  "[Tool 5]",
-  "[Tool 6]",
+  "VS Code",
+  "Git",
+  "GitHub",
+  "Google Colab",
+  "Firebase",
+  "Supabase",
+  "Tableau",
+  "Power BI",
+  "Adobe Photoshop",
+  "Adobe Premiere Pro",
+  "AutoCAD",
+  "Cisco Packet Tracer",
 ];
 
-// TODO(content): where your main skills show up (project slugs from content/projects.ts).
-export const usedIn: readonly UsedIn[] = [1, 2, 3].map((n) => ({
-  title: `[Skill or pairing ${n}]`,
-  items: [
-    { label: "[Project 1]", project: "project-1" },
-    { label: "[Where else]" },
-  ],
-}));
+// Where the main skills show up (project slugs from content/projects.ts).
+export const usedIn: readonly UsedIn[] = [
+  {
+    title: "React",
+    items: [
+      { label: "Filmly", project: "filmly" },
+      { label: "Eco Waste Analyzer", project: "eco-waste-analyzer" },
+    ],
+  },
+  {
+    title: "Flutter",
+    items: [
+      { label: "Bunk Alert", project: "bunk-alert" },
+      { label: "NMIMS Hostel App", project: "nmims-hostel-app" },
+    ],
+  },
+  {
+    title: "Python and ML",
+    items: [
+      { label: "Eco Waste Analyzer", project: "eco-waste-analyzer" },
+      { label: "Outlier AI · LLM evaluation" },
+    ],
+  },
+];

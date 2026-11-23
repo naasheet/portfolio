@@ -214,7 +214,7 @@ export default function DevPage() {
       <DevSection
         id="case-study"
         title="Case study"
-        note="The MDX components (4.5) outside a case study. The whole template, with every component in place, is /work/project-1 (the sample)."
+        note="The MDX components (4.5) outside a case study. A real case study: /work/eco-waste-analyzer."
       >
         <CaseStudySpecimen />
       </DevSection>

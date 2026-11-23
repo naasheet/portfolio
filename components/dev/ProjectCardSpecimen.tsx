@@ -16,7 +16,7 @@ const labels: ProjectCardLabels = {
 };
 
 const base = {
-  href: "/work/project-1",
+  href: "/work/eco-waste-analyzer",
   title: "[Project title]",
   role: "[Design + build]",
   year: 2026,
@@ -28,7 +28,7 @@ const base = {
 /**
  * ProjectCard (4.4): featured + regular in Work's spans, and each state. The preview card uses
  * the dev loop: hover it (mouse) or scroll it into view (touch) to play; the pill shows the
- * clip's length once its metadata has loaded. Links point at /work/project-1 (4.5 builds it).
+ * clip's length once its metadata has loaded. Links point at /work/eco-waste-analyzer.
  */
 export function ProjectCardSpecimen() {
   return (

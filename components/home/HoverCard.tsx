@@ -1,6 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { Kbd } from "@/components/ui/Kbd";
 import { copy } from "@/content/copy";
+import { projects } from "@/content/projects";
 import type { RoomInfo } from "./roomInfo";
 
 /** Placeholder tile fills (Work's three projects) until content/projects.ts exists (4.1). */
@@ -13,13 +14,13 @@ const TILE_FILLS = [
 /**
  * The card above a hovered or focused room object (R.4, "Home — hovering the laptop"): 320 px
  * of glass with the number, name and subtitle (or, for the headphones, mug and lamp, their
- * action line), Work's three project tiles, and "Click, or [3]" with the route. Presentational:
+ * action line), Work's first three projects, and "Click, or [3]" with the route. Presentational:
  * RoomOverlay positions it.
  */
 export function HoverCard({ info }: { info: RoomInfo }) {
   const t = copy.home.room;
   return (
-    <div className="glass flex w-80 flex-col gap-4 rounded-card p-6 shadow-lift">
+    <div className="flex w-80 flex-col gap-4 rounded-card glass p-6 shadow-lift">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="flex items-baseline gap-2">
@@ -31,7 +32,10 @@ export function HoverCard({ info }: { info: RoomInfo }) {
           <p className="text-subhead text-text-secondary">{info.line}</p>
         </div>
         {info.route ? (
-          <ArrowUpRight aria-hidden className="size-4 shrink-0 text-text-secondary" />
+          <ArrowUpRight
+            aria-hidden
+            className="size-4 shrink-0 text-text-secondary"
+          />
         ) : null}
       </div>
       {info.id === "work" ? (
@@ -39,10 +43,10 @@ export function HoverCard({ info }: { info: RoomInfo }) {
           {TILE_FILLS.map((fill, i) => (
             <div
               key={fill}
-              className={`flex h-16 items-end rounded-control border border-border-default p-2 ${fill}`}
+              className={`flex h-16 min-w-0 items-end rounded-control border border-border-default p-2 ${fill}`}
             >
-              <span className="text-caption-2 font-mono whitespace-nowrap text-text-secondary">
-                {t.projectTile(i + 1)}
+              <span className="truncate text-caption-2 font-mono text-text-secondary">
+                {projects[i]?.title ?? ""}
               </span>
             </div>
           ))}
@@ -60,7 +64,9 @@ export function HoverCard({ info }: { info: RoomInfo }) {
           )}
         </span>
         {info.route ? (
-          <span className="text-caption-1 font-mono text-text-tertiary">{info.route}</span>
+          <span className="text-caption-1 font-mono text-text-tertiary">
+            {info.route}
+          </span>
         ) : null}
       </div>
     </div>

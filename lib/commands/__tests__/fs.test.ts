@@ -134,8 +134,9 @@ describe("Tab completes paths at any depth", () => {
     // Tab fills in what the names share (bash-style), then the next Tab lists them.
     let inside = tab("cat projects/");
     if (inside.kind === "replace") inside = tab(inside.input.trimEnd());
-    expect(inside.kind === "list" && inside.candidates).toEqual(
-      projects.map((p) => `projects/${p.slug}.md`),
+    // Completion lists names sorted; projects.ts has its own (Work) order.
+    expect(inside.kind === "list" && [...inside.candidates].sort()).toEqual(
+      projects.map((p) => `projects/${p.slug}.md`).sort(),
     );
     const slug = projects[0]!.slug;
     expect(tab(`cat projects/${slug}`)).toEqual({

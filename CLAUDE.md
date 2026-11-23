@@ -2175,6 +2175,19 @@ Carry-over into later chunks:
   then (4.2).
   A styled `app/not-found.tsx` belongs to 4.x / 10.x.
 Open TODO(content) items:
+- **Filled from the resume (after 8.5, Nasheet's request):** `public/resume.pdf` was read and
+  `content/profile.ts` (title "Full-stack and AI developer", degree, tagline, bio, offScreen, 12
+  interests), `content/projects.ts` (the 4 real projects: Eco Waste Analyzer, Bunk Alert, NMIMS
+  Hostel App, Filmly; no more placeholders), `content/skills.ts` (4 areas, tools, "Where I used
+  it"), `content/case-studies/eco-waste-analyzer.mdx` (resume facts only; the sample
+  `project-1.mdx` is gone), `content/knowledge.md` (new: the chatbot's facts, everything on the
+  resume except the phone number and the college email), and `copy.home` / `copy.contact.timeNote`
+  / the About terminal peek now say so. Nothing beyond the resume was invented. **Still open:**
+  photos (and their captions), "Learning now", skill levels and years (the resume rates nothing:
+  the dots stay empty), each project's repo / live link, covers and preview loops (all use
+  `placeholder-cover.svg`), the roles (inferred from "Built…" / "Developed…") and `team`,
+  `resumeUpdated`, and a read-through of every line in the bio, tagline, case study and
+  `knowledge.md` (written in your voice from the resume: fact-check before Phase 7).
 - **Music (5.1): licensed tracks.** Replace the six local-only tracks in `content/music.ts` with music
   you can stream, fill each `license`, and commit the files on purpose (they're gitignored now).
   A deploy build fails until then.
@@ -2183,23 +2196,19 @@ Open TODO(content) items:
 - `public/models/*.glb`: record each model's source and licence for `/credits` (11.2). Weights = their size in KB as the Network tab shows it.
 - `public/sfx/SND01_sine/`: Nasheet says it's open source. Record the exact source and licence
   name for `/credits` (11.2).
-- `content/copy.ts` `home` (R.1) — "Open to work" and "Designer and frontend developer." come from
-  the Home board: Nasheet to confirm the wording.
+- `content/copy.ts` `home` (R.1) — "Open to work": Nasheet to confirm (the role line is now
+  "Full-stack and AI developer.", his choice).
 - `content/copy.ts` — the island alert lines for theme, sound and mode ("Light theme · T to switch
   back" is the board's; "Dark theme", "Sound on/off", "Hand/Mouse mode" follow its pattern) and
   the nav's accessible names ("Navigation", "Pointer", "Open the menu"): Nasheet to review.
-- `content/profile.ts` — tagline, bio, offScreen, photos (files in `public/photos/`); confirm title
-  and the "Open to work" label.
-- `content/projects.ts` — three placeholder projects (`placeholder: true`, not counted in stats)
-  until the real ones; each real one needs a cover in `public/`, and a case study in
-  `content/case-studies/<slug>.mdx` if `hasCaseStudy`.
-- `content/skills.ts` — real areas (name, summary), skills with level 1–5 and years, what you're
-  learning (with progress if you want), tools, and "Where I used it" (project slugs). Review
-  `copy.skills` (lede, legend lines). `content/socials.ts` — done (GitHub, LinkedIn, Instagram;
-  the Instagram icon comes with 4.7).
-- `content/copy.ts` `contact.timeNote` (4.7) — the time card's line, in your words (placeholder
-  now). `contact.success` uses the frame's "I'll reply within a day." (approved). Review the rest
-  of `copy.contact` (lede, card lines, form errors).
+- `content/profile.ts` — photos (files in `public/photos/`); review the resume-based bio, tagline
+  and off-screen line; confirm the "Open to work" label.
+- `content/projects.ts` — covers and previews in `public/projects/`, repo / live links, confirm
+  roles, add `team`. A second case study needs `hasCaseStudy` and its MDX.
+- `content/skills.ts` — levels 1–5 and years, what you're learning (with progress if you want).
+  Review `copy.skills` (lede, legend lines). `content/socials.ts` — done.
+- `content/copy.ts` `contact.timeNote` — "Indore, on IST. Write any time; I reply within a day."
+  (written for you: review). Review the rest of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
 - Hand mode (8.1, 8.2, 8.4, 8.5): `content/ar.ts` (the explainer, the preview, 8.2's status
@@ -2212,15 +2221,12 @@ Open TODO(content) items:
   behind a dot.") and footer: review the wording. 6.5: the site / music commands' lines (`soon`,
   theme's "Easy one.", particles' "Boom.", contact's prompts and "Sent. I'll reply within a day.").
 - About (5.5): `copy.about.nowPlaying` for review ("Paused" isn't from the frame).
-- About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and
-  `profile.tagline` (both from the About frame); `profile.interests` (12 placeholders); photo
-  captions come with `profile.photos` (`copy.about.photoCaptions` are placeholders); the About
-  copy in `copy.about` (lede, AR lines, terminal peek) for review.
-- Work (4.4): real projects with covers and short WebM previews (`public/projects/`); the Work copy
-  in `copy.work` (lede, empty line) for review. The frame's mock covers are placeholders only.
-- Case studies (4.5): your write-ups in `content/case-studies/<slug>.mdx` (set `hasCaseStudy` and
-  `team` on the project); delete the sample `project-1.mdx` and the placeholder before / after SVGs
-  when the real ones exist; review `copy.caseStudy`.
+- About (4.3): photo captions come with `profile.photos` (`copy.about.photoCaptions` are
+  placeholders); the About copy in `copy.about` (lede, AR lines) for review.
+- Work (4.4): the Work copy in `copy.work` (lede, empty line) for review.
+- Case studies (4.5): expand `eco-waste-analyzer.mdx` in your own words (why, training, what you'd
+  change, screenshots); review `copy.caseStudy`. `public/projects/placeholder-before.svg` /
+  `-after.svg` are only used by /dev's case-study specimen now.
 Known issues:
 - An unknown `/work/<slug>` shows the not-found page (noindex) with status **200**, not 404:
   `dynamicParams = false` is rejected with `cacheComponents`, and `notFound()` runs after the shell

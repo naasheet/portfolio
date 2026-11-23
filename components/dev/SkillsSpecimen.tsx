@@ -93,7 +93,7 @@ export function SkillsSpecimen() {
             eyebrow="Where I used it"
             title="[Skill pairing]"
             items={[
-              { label: "[Case study]", href: "/work/project-1" },
+              { label: "[Case study]", href: "/work/eco-waste-analyzer" },
               { label: "[External]", href: "https://example.com" },
               { label: "[Plain text]" },
             ]}
@@ -108,7 +108,7 @@ export function SkillsSpecimen() {
             title="[Skill pairing]"
             compact
             items={[
-              { label: "[Case study]", href: "/work/project-1" },
+              { label: "[Case study]", href: "/work/eco-waste-analyzer" },
               { label: "[Plain text]" },
             ]}
           />

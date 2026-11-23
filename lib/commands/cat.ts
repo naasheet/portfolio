@@ -15,7 +15,7 @@ export const cat: Command = {
   usage: t.usage,
   examples: [
     "cat about.md",
-    "cat projects/project-1.md",
+    "cat projects/filmly.md",
     "cat skills.txt | grep Area",
   ],
   complete: (args, { fs, cwd }) =>

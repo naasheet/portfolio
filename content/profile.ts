@@ -41,22 +41,36 @@ export type Profile = {
 };
 
 // Typed as Profile (not `as const`), so readers see the declared shape, e.g. photos: Photo[].
+// Filled from Nasheet's resume (public/resume.pdf), Nov 2026. TODO(content): review the wording.
 export const profile: Profile = {
   name: "Nasheet Khan",
-  // TODO(content): confirm the title and the availability line (both from the Home board).
-  title: "Designer and frontend developer",
-  // TODO(content): confirm the degree line (from the About frame).
-  degree: "Final-year B.Tech, Computer Engineering",
+  title: "Full-stack and AI developer",
+  degree: "Final-year B.Tech, Computer Engineering · NMIMS Indore",
   location: { city: "Indore", timeZone: "Asia/Kolkata", zoneLabel: "IST" },
+  // TODO(content): confirm the availability label.
   availability: { open: true, label: "Open to work" },
-  // TODO(content): confirm the tagline (from the About frame); write the bio and off-screen line.
   tagline:
-    "I design interfaces, then build them — with motion, 3D and an unhealthy interest in easing curves.",
-  bio: ["[A short paragraph about you]", "[A second paragraph]"],
+    "I build full-stack web apps, Flutter apps and the ML models behind them, from the database to the drag-and-drop.",
+  bio: [
+    "I'm a computer engineering student at NMIMS's School of Technology, Management and Engineering in Indore, graduating in 2027. I like building whole products: the API, the database, the interface, and more and more often the model in the middle.",
+    "Lately that's been Filmly, a social platform for film reviews and watchlists; Bunk Alert and a hostel app for NMIMS, both in Flutter; and Eco Waste Analyzer, which sorts waste from a photo with a MobileNetV2 model at about 91% accuracy. I've also worked as a freelance AI trainer with Outlier AI, grading how language models reason through maths and conversation.",
+  ],
   offScreen:
-    "[A paragraph about life outside code: what you watch, play, make or obsess over.]",
-  // TODO(content): your interests.
-  interests: Array.from({ length: 12 }, (_, i) => `[Interest ${i + 1}]`),
+    "Off the screen I swim, play badminton and watch movies. The rest of the time goes into music: production and sound design are my other rabbit hole.",
+  interests: [
+    "Full-stack web",
+    "Mobile apps",
+    "Machine learning",
+    "NLP",
+    "LLM evaluation",
+    "Data visualization",
+    "Image & video processing",
+    "Music production",
+    "Sound design",
+    "Movies",
+    "Swimming",
+    "Badminton",
+  ],
   // TODO(content): photos (files in public/photos/), each with alt text and a caption.
   photos: [],
   resume: "/resume.pdf",

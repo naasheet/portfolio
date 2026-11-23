@@ -13,8 +13,8 @@ import { DevState } from "./DevState";
 const cover = "/projects/placeholder-cover.svg";
 
 /**
- * The case-study MDX components (4.5) outside an MDX file. The full page with every component
- * is /work/project-1 (the sample, content/case-studies/project-1.mdx).
+ * The case-study MDX components (4.5) outside an MDX file. A full page using some of them
+ * is a real one: /work/eco-waste-analyzer (content/case-studies/eco-waste-analyzer.mdx).
  */
 export function CaseStudySpecimen() {
   return (
@@ -78,13 +78,13 @@ export function CaseStudySpecimen() {
       <DevState label="ProjectNav (prev hidden on phones)">
         <ProjectNav
           prev={{
-            href: "/work/project-1",
+            href: "/work/eco-waste-analyzer",
             slug: "dev-prev",
             title: "[Previous project]",
             cover: "/projects/placeholder-before.svg",
           }}
           next={{
-            href: "/work/project-1",
+            href: "/work/eco-waste-analyzer",
             slug: "dev-next",
             title: "[Next project]",
             cover: "/projects/placeholder-after.svg",

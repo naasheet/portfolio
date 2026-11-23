@@ -1,0 +1,33 @@
+{/*
+  Eco Waste Analyzer, written from Nasheet's resume (public/resume.pdf), Nov 2026: every claim
+  below is in it. TODO(content): make it yours: why you built it, how the training went, what
+  you'd change, screenshots (<Figure src=… />) and a before / after if you have one. Title, role,
+  year, stack and links come from content/projects.ts; this file holds only the body.
+*/}
+
+<Section title="What it does">
+
+Eco Waste Analyzer is a full-stack AI system that classifies waste from a photo. You drop an image into the web app, the model says what kind of waste it is, and an environmental impact calculator estimates the CO2 saved by disposing of it properly.
+
+</Section>
+
+<Section title="The model">
+
+The classifier is a MobileNetV2 network, trained in PyTorch on roughly 23,000 waste images. It reaches about 91% accuracy.
+
+</Section>
+
+<Section title="The app">
+
+A FastAPI backend serves the model through REST APIs: one for predictions, and one for the impact calculator. The React front end takes images by drag and drop and shows the prediction as soon as it comes back.
+
+</Section>
+
+<Section title="Results">
+
+<Metrics>
+  <Metric value="~23k" label="training images" />
+  <Metric value="~91%" label="classification accuracy" />
+</Metrics>
+
+</Section>

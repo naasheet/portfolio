@@ -143,7 +143,7 @@ export const copy = {
       eyebrow: "terminal",
       action: "Open the terminal",
       /** The card's peek: `whoami`, then `ls ./about`. */
-      whoami: "nasheet · designs, then builds",
+      whoami: "nasheet · full-stack and AI",
       ls: "ls ./about",
       files: "bio.md photos/ now.md",
     },
@@ -207,8 +207,8 @@ export const copy = {
     /** After the message is sent (the frame's line, approved). */
     success: "I'll reply within a day.",
     sent: "Message sent",
-    /** TODO(content): the line on the local-time card, in your words. */
-    timeNote: "[Night owl. Usually replies by noon.]",
+    /** The line on the local-time card. TODO(content): review. */
+    timeNote: "Indore, on IST. Write any time; I reply within a day.",
     messages: {
       eyebrow: "Messages",
       title: "Say hello",
@@ -384,12 +384,12 @@ Reply to this email to answer them.`,
   },
   /** Home (R.1, Home board): the intro and the hint row. The room arrives in R.3. */
   home: {
-    // TODO(content): confirm "Open to work" and the role line (from the Home board).
+    // TODO(content): confirm "Open to work" (the role line follows profile.title).
     status: "Open to work",
     /** Desktop title (the teal full stop is drawn separately). */
     title: "Hi, I'm Nasheet",
     lines: [
-      "Designer and frontend developer.",
+      "Full-stack and AI developer.",
       "This is my desk. Pick something up.",
     ],
     /** The phone's eyebrow and title (Home — phone 390). */
@@ -411,8 +411,6 @@ Reply to this email to answer them.`,
       clickOr: "Click, or",
       /** Accessible name of the visually hidden list of the room's links. */
       links: "Things on the desk",
-      /** TODO(content): Work's three project tiles until content/projects.ts exists (4.1). */
-      projectTile: (n: number) => `Project ${n}`,
       /** Hover card footer for objects without a key. */
       click: "Click",
       /** Phone sheet (R.5, Home — phone 390). */
