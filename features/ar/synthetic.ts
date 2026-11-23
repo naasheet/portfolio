@@ -10,8 +10,8 @@
  *                    bubble, so each element gets its own.
  *   every move       pointermove, mousemove (and every frame, a fresh hit test: a page that
  *                    changes under a still hand still gets its over / out events).
- *   pinch            pointerdown, mousedown, and focus (unless a handler prevented the default).
- *   release          pointerup, mouseup, click (no click after a drag).
+ *   click (dwell)    pointerdown, mousedown, focus (unless a handler prevented the default),
+ *                    pointerup, mouseup, click.
  *
  * CSS :hover can't be set from script, so the same chain :hover would cover (the target and its
  * ancestors) gets `data-hand-hover`; globals.css makes Tailwind's hover variant match it
@@ -32,20 +32,21 @@ export type Synthetic = {
   /**
    * Every frame while the hand is in view: re-checks what's under (x, y) (the page can change
    * under a still hand, as browsers notice for a still mouse) and, when `moved`, sends the moves.
-   * `pressed` while a pinch is held.
+   * `pressed` sets `buttons` (unused since the pinch went; kept for a future press).
    */
   move(x: number, y: number, pressed: boolean, moved: boolean): void;
-  /** Pinch: press at (x, y). */
-  down(x: number, y: number): void;
-  /** Pinch released; `click` false after a drag or when the hand was lost. */
-  up(x: number, y: number, click: boolean): void;
-  /** The pinch became a drag: release the press without a click (pointercancel). */
-  cancelPress(x: number, y: number): void;
+  /** The element the hand is over (the innermost of the hovered chain), or null. */
+  hovered(): Element | null;
+  /**
+   * A full click on `el` at (x, y): pointerdown, mousedown, focus (unless a handler prevented
+   * the default), pointerup, mouseup, click. The dwell click.
+   */
+  clickElement(el: Element, x: number, y: number): void;
   /** Scroll by `dy` px whatever is under (x, y): an inner scroll area, else the page. */
   scroll(x: number, y: number, dy: number): void;
   /** The hand left: leave the hovered chain. */
   leave(): void;
-  /** 8.4: a full click at (x, y) without a pinch (the palm hold opening a desk object). */
+  /** 8.4: a full click on whatever is at (x, y) (the palm hold opening a desk object). */
   click(x: number, y: number): void;
 };
 
@@ -66,7 +67,6 @@ function isScrollable(el: Element): el is HTMLElement {
 
 export function createSynthetic(): Synthetic {
   let chain: Element[] = [];
-  let pressTarget: Element | null = null;
 
   const init = (
     x: number,
@@ -149,32 +149,21 @@ export function createSynthetic(): Synthetic {
       if (el && moved)
         fire(el, "pointermove", "mousemove", init(x, y, buttons));
     },
-    down(x, y) {
-      const el = at(x, y);
+    hovered() {
+      return chain[0] ?? null;
+    },
+    clickElement(el, x, y) {
+      if (!el.isConnected) return;
       hoverTo(el, x, y, 0);
-      pressTarget = el;
-      if (!el) return;
       const allowed = fire(el, "pointerdown", "mousedown", init(x, y, 1));
       if (allowed) {
         const focusable = el.closest<HTMLElement>(FOCUSABLE);
         focusable?.focus({ preventScroll: true });
       }
-    },
-    up(x, y, click) {
-      const el = pressTarget;
-      pressTarget = null;
-      if (!el || !el.isConnected) return;
       fire(el, "pointerup", "mouseup", init(x, y, 0));
-      if (click) {
-        el.dispatchEvent(
-          new MouseEvent("click", { ...init(x, y, 0), detail: 1 }),
-        );
-      }
-    },
-    cancelPress(x, y) {
-      if (pressTarget?.isConnected) {
-        fire(pressTarget, "pointercancel", null, init(x, y, 0));
-      }
+      el.dispatchEvent(
+        new MouseEvent("click", { ...init(x, y, 0), detail: 1 }),
+      );
     },
     scroll(x, y, dy) {
       for (let el = at(x, y); el; el = el.parentElement) {
@@ -190,13 +179,7 @@ export function createSynthetic(): Synthetic {
     },
     click(x, y) {
       const el = at(x, y);
-      if (!el) return;
-      hoverTo(el, x, y, 0);
-      fire(el, "pointerdown", "mousedown", init(x, y, 1));
-      fire(el, "pointerup", "mouseup", init(x, y, 0));
-      el.dispatchEvent(
-        new MouseEvent("click", { ...init(x, y, 0), detail: 1 }),
-      );
+      if (el) this.clickElement(el, x, y);
     },
     leave() {
       const old = chain[0];

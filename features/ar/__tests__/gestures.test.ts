@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   coachStepDone,
-  createHistory,
+  createDwell,
+  createLatch,
   extendedFingers,
   isOpenPalm,
+  isTwoFingers,
   mapToScreen,
-  nextPinch,
   palmTarget,
-  pinchRatio,
 } from "../gestures";
 import { SLOT, TRACKED_COUNT } from "../landmarks";
 import { createOneEuro } from "../oneEuro";
@@ -58,16 +58,59 @@ describe("mapToScreen", () => {
   });
 });
 
-describe("pinch", () => {
-  it("ratio is thumb-to-index over hand size", () => {
-    const p = hand({ ...open, thumbTip: [0.42, 0.45], indexTip: [0.42, 0.42] });
-    expect(pinchRatio(p, 1)).toBeCloseTo(0.03 / 0.2, 2);
+describe("two fingers (scroll)", () => {
+  it("index and middle up, ring and little down", () => {
+    const two = hand({
+      ...fist,
+      indexTip: open.indexTip,
+      middleTip: open.middleTip,
+    });
+    expect(isTwoFingers(extendedFingers(two, 1))).toBe(true);
   });
-  it("starts below 0.25 and releases above 0.35", () => {
-    expect(nextPinch(false, 0.3)).toBe(false);
-    expect(nextPinch(false, 0.24)).toBe(true);
-    expect(nextPinch(true, 0.3)).toBe(true);
-    expect(nextPinch(true, 0.36)).toBe(false);
+  it("is not pointing, a fist or an open palm", () => {
+    const point = hand({ ...fist, indexTip: open.indexTip });
+    expect(isTwoFingers(extendedFingers(point, 1))).toBe(false);
+    expect(isTwoFingers(extendedFingers(hand(fist), 1))).toBe(false);
+    expect(isTwoFingers(extendedFingers(hand(open), 1))).toBe(false);
+  });
+});
+
+describe("dwell to click", () => {
+  it("fills over 0.8 s on one target and fires once", () => {
+    const d = createDwell<string>(0.8);
+    expect(d.update("button", 0)).toEqual({ progress: 0, fire: false });
+    expect(d.update("button", 0.4).progress).toBeCloseTo(0.5);
+    expect(d.update("button", 0.8)).toEqual({ progress: 0, fire: true });
+    // Staying on it doesn't click again.
+    expect(d.update("button", 2).fire).toBe(false);
+  });
+  it("moving off cancels; coming back starts over", () => {
+    const d = createDwell<string>(0.8);
+    d.update("a", 0);
+    expect(d.update("a", 0.6).progress).toBeCloseTo(0.75);
+    expect(d.update(null, 0.7)).toEqual({ progress: 0, fire: false });
+    expect(d.update("a", 1).progress).toBe(0);
+    expect(d.update("a", 1.8).fire).toBe(true);
+  });
+  it("after a click, leaving and returning allows another", () => {
+    const d = createDwell<string>(0.8);
+    d.update("a", 0);
+    expect(d.update("a", 0.8).fire).toBe(true);
+    d.update("b", 1);
+    d.update("a", 1.1);
+    expect(d.update("a", 2).fire).toBe(true);
+  });
+});
+
+describe("pose latch", () => {
+  it("switches on after holding, off after being gone, ignoring one-frame flickers", () => {
+    const l = createLatch(0.12, 0.15);
+    expect(l.update(true, 0)).toBe(false);
+    expect(l.update(true, 0.12)).toBe(true);
+    expect(l.update(false, 0.2)).toBe(true); // a flicker
+    expect(l.update(true, 0.25)).toBe(true);
+    expect(l.update(false, 0.3)).toBe(true);
+    expect(l.update(false, 0.45)).toBe(false);
   });
 });
 
@@ -83,20 +126,6 @@ describe("open palm", () => {
     const f = extendedFingers(hand({ ...fist, indexTip: open.indexTip }), 1);
     expect(f.index).toBe(true);
     expect(isOpenPalm(f)).toBe(false);
-  });
-});
-
-describe("history", () => {
-  it("looks back to the newest position at or before a time", () => {
-    const h = createHistory(4);
-    h.push(1.0, 10, 10);
-    h.push(1.05, 20, 20);
-    h.push(1.1, 30, 30);
-    expect(h.at(1.06)).toEqual([20, 20]);
-    expect(h.at(0.5)).toEqual([10, 10]); // older than kept: the oldest
-    h.push(1.15, 40, 40);
-    h.push(1.2, 50, 50); // overwrites 1.0
-    expect(h.at(0.5)).toEqual([20, 20]);
   });
 });
 
@@ -131,12 +160,12 @@ describe("palm target (8.4)", () => {
   });
 });
 
-describe("coach steps (8.4)", () => {
+describe("coach steps (8.4, reworked)", () => {
   it("each step waits for its own gesture", () => {
     expect(coachStepDone(0, "point")).toBe(true);
     expect(coachStepDone(0, "click")).toBe(false);
     expect(coachStepDone(1, "click")).toBe(true);
-    expect(coachStepDone(2, "drag")).toBe(true);
+    expect(coachStepDone(2, "scroll")).toBe(true);
     expect(coachStepDone(2, "click")).toBe(false);
   });
 });

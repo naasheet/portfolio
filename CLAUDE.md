@@ -174,7 +174,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
    three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
    (progress), `page` (id: which of the six pages, or null), `room` (hot object; `view`, the
-   canvas's projected object boxes, mutated in place), `ar` (enabled, status, explainer open and camera found (8.1), hand x/y, pinching), `ui` (terminal open,
+   canvas's projected object boxes, mutated in place), `ar` (enabled, status, explainer open and camera found (8.1), hand: x/y, dwell, scrolling, palm hold), `ui` (terminal open,
    chat open, chat streaming, sound enabled), `theme`, `particles` (6.5: the terminal's shape override and
    explode count, read by the canvas).
 3. **Fast values skip React.** Audio levels, hand position and scroll progress change every
@@ -375,10 +375,13 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
 - Show a small mirrored preview with the hand skeleton. Handle a denied or revoked camera gracefully.
 - Run detection in a worker, in `VIDEO` running mode, with `ImageBitmap` frames. Send back
   only the landmarks that are used.
-- Gestures: the index fingertip moves the cursor (smoothed with a One Euro filter). A pinch,
-  measured as thumb-to-index distance divided by hand size, is a click, with separate press and
-  release thresholds. A pinch-drag scrolls through Lenis. An open palm held for 1 s plays or
-  pauses the music. Show a legend of the gestures while AR is on.
+- Gestures (reworked after 8.5, Nasheet's decision; the pinch is gone): the index fingertip moves
+  the cursor (smoothed with a One Euro filter). **Dwell to click:** resting on anything clickable
+  for 0.8 s clicks it (a ring fills first; moving off cancels; it won't repeat until the cursor
+  leaves). **Two fingers** (index and middle up) is scroll mode: the cursor holds still and the
+  hand's vertical travel scrolls like grabbing the page, gliding on after. An open palm held for
+  1 s plays or pauses the music; on Home, 0.8 s over a desk object opens it. Show a legend of the
+  gestures while AR is on.
 - The fingertip writes to the same `uPointer` as the mouse.
 
 ### 9.7 Games
@@ -1156,6 +1159,38 @@ Carry-over into later chunks:
     (`arCopy.tracker.error`), `ar.status = "error"`, Hand off (camera light off).
   - **Terminal:** `ar on` still prints "on its way (phase 8)" until 8.3 makes the hand do something
     (TODO(8.3) in `lib/commands/ar.ts`).
+- **Gesture rework (after 8.5, Nasheet's call):** pinch-to-click and pinch-drag are gone.
+  `features/ar/gestures.ts` (rewritten), `synthetic.ts` (`hovered()`, `clickElement()`; `down` /
+  `up` / `cancelPress` removed), the store's `ar.hand` (+ `dwell`, `scrolling`, `clicks`; `ar.pinching`
+  removed), `Cursor.tsx`, HandSkeleton (`two` pose replaces `pinch`), the legend, the coach, and the
+  copy in `content/ar.ts` / `copy.ts` ("hold still to click").
+  - **Decisions (Nasheet):** dwell 0.8 s (`DWELL_S`); pinch removed; two-finger scroll "like grabbing
+    the page" (hand up = further down); palm-to-open on the desk kept alongside dwell.
+  - **Dwell:** `createDwell()` (pure): each frame the clickable element under the cursor
+    (`synthetic.hovered()?.closest(CLICKABLE)`: links, buttons, roles, form fields, labels,
+    `[data-cursor]`; not `disabled` / `aria-disabled`) or null; it fills over 0.8 s and fires once,
+    then waits for the target to change. Off while scrolling or holding a palm. The click is
+    `clickElement()` (pointerdown, mousedown, focus, pointerup, mouseup, click); the gesture event
+    goes out before it (the coach). `ar.hand.clicks` counts clicks for the cursor's flash.
+  - **Two fingers:** `isTwoFingers()` (index + middle extended, ring + little not; thumb ignored),
+    through `createLatch(0.12, 0.15)` so one misread frame neither starts nor ends it. In scroll
+    mode the displayed cursor holds still; each frame scrolls `-Δ(hand y) × 2` (`SCROLL_GAIN`) at the
+    cursor (inner scroll area, else Lenis); leaving glides with the measured speed (τ 0.12 s).
+  - **Cursor:** dwell lights the ring around the target in order (`data-dwell`, dim unlit specks;
+    16 specks around the dot when the target has no ring of its own); a click flashes the pressed
+    look for 160 ms (collapse, then burst); scroll mode lines four specks above and below the dot
+    (`data-scroll`, the view pill hides).
+  - **Coach:** Point · Hold still to click · Two fingers to scroll. The click step's Next is
+    enabled from the start (dwell skips disabled buttons): dwelling on it is the click.
+  - **Verified (headless Chromium, production build, the fake-worker harness with a two-finger
+    pose):** the coach end to end (step 1 Next enabled after pointing; dwell on Next → step 2; dwell
+    on Next → step 3, disabled; a two-finger scroll of 474 px, gliding on to 502; Done → saved);
+    the dwell ring (8 specks, lit in order); a dwell on a project card opened its case study;
+    gliding over four filter chips at 250 ms each clicked nothing; a palm on Home still opened
+    `/about`. `npm run test`: 153.
+  - **[manual]** On your webcam: the 0.8 s by feel (too eager while reading? `DWELL_S`); whether the
+    two-finger pose is recognised reliably (the /dev readout's fingers, e.g. `·IM··`); the scroll
+    gain and glide; text fields (a dwell focuses them, but typing still needs the keyboard).
 - **Canvas link and fallbacks (8.5):** `canvas/particles/pointer.ts` + `Particles.tsx` (the hand's
   reach), `features/ar/tracker.ts` (hidden tab, slow fallback, warm worker), `lib/island.ts` +
   `components/nav/IslandAlert.tsx` (alert actions), `components/ar/ARLayer.tsx` (the slow alert),

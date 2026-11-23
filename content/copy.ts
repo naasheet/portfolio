@@ -124,13 +124,13 @@ export const copy = {
     interests: "Interests",
     ar: {
       title: "Steer it with your hand",
-      body: "Point to push the particles, pinch to click. The camera never leaves your device.",
+      body: "Point to push the particles, hold still to click. The camera never leaves your device.",
       bodyShort: "Front camera. Nothing leaves your phone.",
       action: "Switch to Hand",
       /** Not shown on About yet (Hand mode arrives in phase 8). */
       on: {
         chip: "Hand on",
-        body: "Point to push, pinch to click.",
+        body: "Point to push, hold still to click.",
         action: "Back to mouse",
       },
       blocked: {
@@ -398,7 +398,7 @@ Reply to this email to answer them.`,
     hints: {
       look: "Hover to look, click to open",
       or: "or",
-      hand: "Pinch in Hand mode",
+      hand: "Hold still in Hand mode",
       phone: "Tap something on the desk. Or jump straight there:",
       /** Accessible name of the phone's chip row. */
       pages: "Pages",

@@ -77,6 +77,12 @@ export type Hand = {
   holdKind: "open" | "music" | null;
   /** The desk object a hold will open (a room object id), else null. */
   holdTarget: string | null;
+  /** How far the dwell-to-click is on what the cursor rests on (0–1; 0 = none). */
+  dwell: number;
+  /** Two-finger scroll mode is on (the cursor holds still). */
+  scrolling: boolean;
+  /** Counts dwell clicks, so the cursor can flash on each one. */
+  clicks: number;
 };
 
 /** Whether this device has a camera (8.1, enumerateDevices): the switch hides with "none". */
@@ -91,12 +97,10 @@ export type ArSlice = {
   camera: ArCamera;
   /** FAST. */
   hand: Hand;
-  pinching: boolean;
   setEnabled: (enabled: boolean) => void;
   toggle: () => void;
   setStatus: (status: ArStatus) => void;
   setHand: (hand: Hand) => void;
-  setPinching: (pinching: boolean) => void;
   setExplainerOpen: (open: boolean) => void;
   setCamera: (camera: ArCamera) => void;
 };
@@ -270,13 +274,14 @@ export const useStore = create<StoreState>()(
           palm: 0,
           holdKind: null,
           holdTarget: null,
+          dwell: 0,
+          scrolling: false,
+          clicks: 0,
         },
-        pinching: false,
         setEnabled: (enabled) => patch("ar", { enabled }),
         toggle: () => patch("ar", { enabled: !get().ar.enabled }),
         setStatus: (status) => patch("ar", { status }),
         setHand: (hand) => patch("ar", { hand }),
-        setPinching: (pinching) => patch("ar", { pinching }),
         setExplainerOpen: (explainerOpen) => {
           if (get().ar.explainerOpen !== explainerOpen)
             patch("ar", { explainerOpen });

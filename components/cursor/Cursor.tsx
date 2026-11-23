@@ -40,6 +40,11 @@ const PALM_RADIUS = 26;
  * your hand" where it was last seen (AR board edge state, "Hand lost").
  */
 const LOST_HINT_MS = 2500;
+/** A dwell click flashes the pressed look this long. */
+const CLICK_FLASH_MS = 160;
+/** Two-finger scroll: four specks above and below the dot (px). */
+const SCROLL_SPECKS = [0, 1, 2, 3];
+const SCROLL_OFFSETS = [-24, -14, 14, 24];
 /** Easing time constants (s): onto the ring in ~250 ms (soft spring), snapping in when pressed. */
 const RING_TAU = 0.07;
 const PRESS_TAU = 0.035;
@@ -143,11 +148,13 @@ function ringAround(el: HTMLElement, radius: number, offset: number): Ring {
  * Hand mode (8.3, while ar.enabled): data-mode="hand", amber. The position comes from ar.hand
  * (features/ar/gestures.ts) instead of mouse events, and the real mouse is ignored; the rings
  * still follow the synthetic pointer's over events. Pointing: an 8 px dot with three specks at
- * 18 px. Pinching (ar.pinching): the specks collapse into the dot, which grows to 14 px; release
- * lets them burst back out (on a ring, the ring snaps in as with the mouse). Palm hold
- * (ar.hand.palm): 16 specks ring a play / pause icon and light up one by one. Hand lost: it fades.
+ * 18 px. Dwell (ar.hand.dwell): the ring around what it rests on (or 16 specks around the dot)
+ * lights up one by one; the click (ar.hand.clicks) flashes the pressed look: the specks collapse
+ * into the 14 px dot and burst back out. Two-finger scroll (ar.hand.scrolling): four specks line
+ * up above and below the dot. Palm hold (ar.hand.palm): 16 specks ring a play / pause icon and
+ * light up one by one. Hand lost: it fades.
  * It renders in hand mode even with reduced motion (it is the only pointer then): the specks are
- * still (no spin, no easing) and the pinch snaps.
+ * still (no spin, no easing) and the click snaps.
  */
 export function Cursor() {
   const reduced = useReducedMotion();
@@ -207,6 +214,9 @@ export function Cursor() {
     /** Hand mode (8.3): position, press and palm come from the store. */
     let hand = false;
     let shown = false;
+    /** Dwell clicks seen (ar.hand.clicks) and the end of the click flash (ms). */
+    let seenClicks = useStore.getState().ar.hand.clicks;
+    let flashUntil = 0;
     /** When the hand went out of view (ms), for the lost hint; 0 while it's in view. */
     let lostSince = 0;
     const setLost = (on: boolean) => {
@@ -238,6 +248,8 @@ export function Cursor() {
       }
 
       let palm = 0;
+      let dwell = 0;
+      let scrolling = false;
       if (hand) {
         const ar = useStore.getState().ar;
         if (!ar.hand.visible) {
@@ -251,11 +263,24 @@ export function Cursor() {
         setLost(false);
         placeAt(ar.hand.x * window.innerWidth, ar.hand.y * window.innerHeight);
         if (!shown) showVisual();
-        if (pressed !== ar.pinching) {
-          pressed = ar.pinching;
+        // A dwell click: a short press flash (the specks snap in, then burst back out).
+        const nowMs = performance.now();
+        if (ar.hand.clicks !== seenClicks) {
+          seenClicks = ar.hand.clicks;
+          flashUntil = nowMs + CLICK_FLASH_MS;
+        }
+        const flashing = nowMs < flashUntil;
+        if (pressed !== flashing) {
+          pressed = flashing;
           if (pressed) rootEl.dataset.pressed = "";
           else delete rootEl.dataset.pressed;
         }
+        dwell = ar.hand.dwell;
+        if (dwell > 0) rootEl.dataset.dwell = "";
+        else delete rootEl.dataset.dwell;
+        scrolling = ar.hand.scrolling;
+        if (scrolling) rootEl.dataset.scroll = "";
+        else delete rootEl.dataset.scroll;
         palm = ar.hand.palm;
         if (palm > 0) rootEl.dataset.palm = "";
         else delete rootEl.dataset.palm;
@@ -269,6 +294,14 @@ export function Cursor() {
         }
       }
       const lit = Math.floor(palm * PALM_SPECKS + 1e-6);
+      /** Mark speck i lit or not (the palm ring and the dwell ring light up in order). */
+      const setLit = (i: number, on: boolean) => {
+        const el = speckEls[i];
+        if (el && on !== "lit" in el.dataset) {
+          if (on) el.dataset.lit = "";
+          else delete el.dataset.lit;
+        }
+      };
 
       if (target && !target.isConnected) target = null;
 
@@ -300,11 +333,14 @@ export function Cursor() {
           tx = pointer.x + PALM_RADIUS * Math.cos(a);
           ty = pointer.y + PALM_RADIUS * Math.sin(a);
           tau = RING_TAU;
-          const el = speckEls[i];
-          if (el && i < lit !== "lit" in el.dataset) {
-            if (i < lit) el.dataset.lit = "";
-            else delete el.dataset.lit;
-          }
+          setLit(i, i < lit);
+        } else if (hand && scrolling) {
+          // Two-finger scroll: the specks line up above and below the dot, like a scroll track.
+          const slot = SCROLL_SPECKS.indexOf(i);
+          visible = slot !== -1;
+          if (visible) ty = pointer.y + (SCROLL_OFFSETS[slot] ?? 0);
+          tau = TEXT_TAU;
+          setLit(i, false);
         } else if (ring) {
           visible = i < ringCount;
           if (visible) {
@@ -313,16 +349,28 @@ export function Cursor() {
           }
           tau = pressed ? PRESS_TAU : RING_TAU;
           scale = pressed && state === "orbit" ? PRESSED_SCALE : 1;
+          // Dwell: the ring around the target lights up in order as the click comes.
+          setLit(i, hand && i < Math.floor(dwell * ringCount + 1e-6));
+        } else if (hand && dwell > 0) {
+          // Dwell on something without its own ring: 16 specks ring the dot instead.
+          visible = i < PALM_SPECKS;
+          const a = -Math.PI / 2 + (i * Math.PI * 2) / PALM_SPECKS;
+          tx = pointer.x + PALM_RADIUS * Math.cos(a);
+          ty = pointer.y + PALM_RADIUS * Math.sin(a);
+          tau = RING_TAU;
+          setLit(i, i < Math.floor(dwell * PALM_SPECKS + 1e-6));
         } else if (state === "text") {
           const end = CARET_SPECKS.indexOf(i);
           visible = end !== -1;
           if (visible) ty = pointer.y + (end === 0 ? -CARET_HALF : CARET_HALF);
           tau = TEXT_TAU;
         } else if (hand && pressed) {
-          // Pinch: the specks collapse into the dot.
+          // A dwell click: the specks collapse into the dot, then burst back out.
           visible = i < REST_SPECKS;
           tau = PRESS_TAU;
+          setLit(i, false);
         } else {
+          setLit(i, false);
           visible = i < REST_SPECKS;
           if (visible) {
             const radius = hand ? HAND_ORBIT_RADIUS : ORBIT_RADIUS;

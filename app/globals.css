@@ -648,6 +648,19 @@ html.has-cursor * {
 .cursor-root[data-action="open"] .cursor-palm-open {
   display: block;
 }
+/*
+ * Dwell to click (after 8.5): the ring around the target (or around the dot) is dim until the
+ * dwell lights it speck by speck. Two-finger scroll: the pill steps aside (data-scroll).
+ */
+.cursor-root[data-mode="hand"][data-dwell] .cursor-speck[data-on] {
+  opacity: 0.25;
+}
+.cursor-root[data-mode="hand"][data-dwell] .cursor-speck[data-on][data-lit] {
+  opacity: 1;
+}
+.cursor-root[data-mode="hand"][data-scroll] .cursor-pill {
+  opacity: 0;
+}
 /* The ring is the feedback during a hold: the room's "Open ↗" pill steps aside. */
 .cursor-root[data-mode="hand"][data-palm] .cursor-pill {
   opacity: 0;

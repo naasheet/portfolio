@@ -16,30 +16,33 @@ export const COACH_KEY = "ar-coach";
 
 export const coachSeen = () => storage.get(COACH_KEY) === "1";
 
-/** The step's drawing: the pose, plus the amber pinch ring or the drag arrow (AR board, Coach). */
-function CoachDrawing({ pose }: { pose: "point" | "pinch" | "drag" }) {
+/** The step's drawing: the pose, plus the amber dwell ring or the scroll arrow (AR board, Coach). */
+function CoachDrawing({ pose }: { pose: "point" | "dwell" | "two" }) {
   return (
     <span className="relative flex h-32 items-center justify-center rounded-control border border-island-border bg-island-bg">
       <span className="relative size-24">
-        <HandSkeleton pose={pose === "point" ? "point" : "pinch"} />
+        <HandSkeleton pose={pose === "two" ? "two" : "point"} />
         {pose !== "point" ? (
           <svg
             aria-hidden
             viewBox="0 0 100 100"
             className="absolute inset-0 size-full overflow-visible"
           >
-            {pose === "pinch" ? (
+            {pose === "dwell" ? (
+              // The ring that fills around what the fingertip rests on.
               <circle
-                cx={30}
-                cy={36}
-                r={13}
+                cx={42}
+                cy={24}
+                r={11}
                 fill="none"
-                strokeWidth={2}
+                strokeWidth={2.5}
+                strokeLinecap="round"
+                strokeDasharray="3 4"
                 className="stroke-accent-secondary"
               />
             ) : (
               <path
-                d="M 84 70 Q 104 46 86 18 M 86 18 l -7 3 M 86 18 l 2 7"
+                d="M 80 70 Q 98 46 82 18 M 82 18 l -7 3 M 82 18 l 2 7"
                 fill="none"
                 strokeWidth={2.5}
                 strokeLinecap="round"
@@ -57,15 +60,18 @@ function CoachDrawing({ pose }: { pose: "point" | "pinch" | "drag" }) {
 /**
  * The first-time tour of Hand mode (8.4, AR board "Coach: three steps the first time"): a solid
  * card centred near the bottom. Each step waits until the visitor does its gesture once (the
- * gesture driver's onGesture: point, pinch-click, pinch-drag), then Next lights up. Skip ends it;
+ * gesture driver's onGesture: point, a dwell click, a two-finger scroll), then Next lights up. Skip ends it;
  * finishing or skipping saves `ar-coach`, so it shows once. Not modal: the page works underneath,
- * which is how the visitor practises (pinching Next works too).
+ * which is how the visitor practises (holding still on Next clicks it).
  */
 export function ARCoach({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const last = step === t.steps.length - 1;
   const current = t.steps[step]!;
+  // The click step ("Try Next") practises on Next itself: holding still on it is the click, so
+  // it can't wait disabled (dwell skips disabled buttons).
+  const ready = done || current.pose === "dwell";
 
   useEffect(
     () =>
@@ -134,7 +140,7 @@ export function ARCoach({ onClose }: { onClose: () => void }) {
                 {t.waiting}
               </span>
             )}
-            <Button size="sm" disabled={!done} onClick={next}>
+            <Button size="sm" disabled={!ready} onClick={next}>
               {last ? t.done : t.next}
             </Button>
           </span>

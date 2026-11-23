@@ -7,11 +7,11 @@
 export const arCopy = {
   explainer: {
     title: "Steer it with your hand",
-    body: "Your webcam turns your hand into the cursor. Point to move, pinch to click, and push the particles around like water.",
+    body: "Your webcam turns your hand into the cursor. Point to move, hold still on something to click it, and push the particles around like water.",
     close: "Close",
     gestures: [
-      { pose: "point", name: "Point", hint: "moves the cursor" },
-      { pose: "pinch", name: "Pinch", hint: "clicks · pinch and drag scrolls" },
+      { pose: "point", name: "Point", hint: "moves · hold still to click" },
+      { pose: "two", name: "Two fingers", hint: "scroll up and down" },
       { pose: "palm", name: "Open palm", hint: "hold 1 s: music" },
     ],
     privacy:
@@ -48,8 +48,8 @@ export const arCopy = {
   legend: {
     title: "Gestures",
     rows: [
-      { pose: "point", name: "Point", hint: "move" },
-      { pose: "pinch", name: "Pinch", hint: "click · drag to scroll" },
+      { pose: "point", name: "Point", hint: "move · hold still to click" },
+      { pose: "two", name: "Two fingers", hint: "scroll" },
       {
         pose: "palm",
         name: "Open palm, hold",
@@ -87,14 +87,14 @@ export const arCopy = {
         body: "Raise one hand and point at the screen. The amber dot follows your index finger. Try touching the laptop.",
       },
       {
-        pose: "pinch",
-        title: "Pinch to click",
-        body: "Tap your thumb and index finger together. The specks snap into one dot, and whatever you're pointing at clicks.",
+        pose: "dwell",
+        title: "Hold still to click",
+        body: "Rest the dot on a button or link. The ring around it fills up, and when it's full, it clicks. Try Next.",
       },
       {
-        pose: "drag",
-        title: "Pinch and drag to scroll",
-        body: "Hold the pinch and move your hand up or down. Let go to stop, with a little glide.",
+        pose: "two",
+        title: "Two fingers to scroll",
+        body: "Raise your index and middle fingers and move your hand up or down: the page follows, like dragging it. Drop a finger to stop, with a little glide.",
       },
     ],
   },

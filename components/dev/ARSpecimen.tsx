@@ -97,7 +97,7 @@ export function ARSpecimen() {
       const text = `tracker ${landmarks.phase}${landmarks.delegate ? ` (${landmarks.delegate})` : ""} · ${landmarks.frameWidth}×${landmarks.frameHeight} · ${landmarks.fps.toFixed(1)} fps · hand ${landmarks.visible ? "yes" : "no"}`;
       const g = gestureDebug;
       const tuning = landmarks.visible
-        ? ` · pinch ${g.ratio.toFixed(2)} · fingers ${g.fingers} · ${g.gesture} · last click moved ${g.lastCorrection.toFixed(1)} px`
+        ? ` · fingers ${g.fingers} · ${g.gesture}`
         : "";
       const full = text + tuning;
       if (el.textContent !== full) el.textContent = full;
@@ -154,7 +154,7 @@ export function ARSpecimen() {
         />
       </div>
       <div className="flex flex-wrap gap-4">
-        {(["point", "pinch", "palm"] as const).map((pose) => (
+        {(["point", "two", "palm"] as const).map((pose) => (
           <DevState key={pose} label={pose}>
             <span className="flex size-28 items-center justify-center rounded-control border border-island-border bg-island-bg p-2">
               <HandSkeleton pose={pose} />

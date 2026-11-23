@@ -1,13 +1,21 @@
 /*
- * Hand gestures (8.3): the landmarks from the tracker (8.2) become a cursor, a pinch click, a
- * pinch-drag scroll and an open-palm hold that plays or pauses the music.
+ * Hand gestures (8.3, reworked after 8.5 with Nasheet): the landmarks from the tracker (8.2)
+ * become a cursor and three gestures.
  *
- * The top half is pure maths (tested in __tests__/gestures.test.ts). startGestures() is the
- * driver: one gsap.ticker callback (the shared clock) that reads `landmarks`, filters the
- * fingertip (One Euro), writes ar.hand / ar.pinching to the store and drives the synthetic
- * pointer (synthetic.ts). Started by components/ar/ARLayer.tsx once tracking is ready.
+ *   point        the index fingertip moves the cursor.
+ *   dwell        rest the cursor on something clickable for 0.8 s: it clicks (a ring of specks
+ *                fills around it). Moving off cancels; after a click the same target won't
+ *                click again until the cursor leaves it.
+ *   two fingers  index and middle up, ring and little down: scroll mode. The cursor holds still
+ *                and moving the hand scrolls like grabbing the page (hand up = further down),
+ *                gliding on when the pose ends.
+ *   open palm    held 1 s: play / pause the music; on Home over a desk object, 0.8 s opens it.
  *
- * Thresholds are constants below: tune them on a real webcam with /dev's readout (`gestureDebug`).
+ * The top half is pure (tested in __tests__/gestures.test.ts). startGestures() is the driver:
+ * one gsap.ticker callback (the shared clock) that reads `landmarks`, filters the fingertip (One
+ * Euro), writes ar.hand to the store and drives the synthetic pointer (synthetic.ts). Started by
+ * components/ar/ARLayer.tsx once tracking is ready. Tune the constants below on a real webcam
+ * with /dev's readout (`gestureDebug`).
  */
 import { gsap } from "@/lib/motion/gsap";
 import { toggleMusic } from "@/lib/shortcuts";
@@ -20,33 +28,35 @@ import { createSynthetic, type Synthetic } from "./synthetic";
 
 /** The inner part of the camera frame mapped to the whole screen (nobody reaches the edges). */
 export const INNER = 0.7;
-/** Pinch ratio (thumb tip to index tip ÷ hand size): press below, release above. */
-export const PINCH_ON = 0.25;
-export const PINCH_OFF = 0.35;
 /** A finger is extended when its tip is this many times further from the wrist than its knuckle. */
 export const FINGER_EXTENDED = 1.5;
 /** The thumb is out when its tip is this far from the index knuckle, in hand sizes. */
 export const THUMB_EXTENDED = 0.6;
+/** Rest on something clickable this long to click it (Nasheet: 0.8 s). */
+export const DWELL_S = 0.8;
 /** The palm must be held this long to toggle the music. */
 export const PALM_HOLD_S = 1;
 /** 8.4: on Home, a palm held over a desk object this long opens it. */
 export const PALM_OPEN_S = 0.8;
+/** Two fingers must hold this long to enter scroll mode, and be gone this long to leave it. */
+export const SCROLL_ENTER_S = 0.12;
+export const SCROLL_EXIT_S = 0.15;
+/** Page px scrolled per px of hand travel in scroll mode. */
+export const SCROLL_GAIN = 2;
+/** Travel (px) that makes a scroll count for the coach. */
+export const SCROLL_COUNTS_PX = 24;
+/** Inertia after scrolling: the speed decays with this time constant (s), gone in ~0.4 s. */
+export const INERTIA_TAU = 0.12;
 /** 8.4: the coach's "point" step counts once the cursor has travelled this far (px). */
 export const POINT_TRAVEL_PX = 120;
-/** The click lands where the cursor was this long before the pinch (fingers closing drag it). */
-export const CLICK_LOOKBACK_S = 0.12;
-/** The visible cursor holds still this long after a pinch starts. */
-export const PINCH_FREEZE_S = 0.08;
-/** Vertical travel (px) that turns a pinch into a drag (scroll, no click). */
-export const DRAG_START_PX = 24;
-/** Page px scrolled per px of cursor travel while pinch-dragging. */
-export const DRAG_GAIN = 2;
-/** Inertia after a drag: the speed decays with this time constant (s), gone in ~0.4 s. */
-export const INERTIA_TAU = 0.12;
 /** The cursor fades this long after the hand leaves the frame. */
 export const LOST_S = 0.5;
 /** The displayed cursor eases toward the filtered point (s): smooths the ~30 Hz results at 60 Hz. */
 const DISPLAY_TAU = 0.03;
+
+/** What dwell can click: links, buttons and anything the cursor rings (data-cursor). */
+export const CLICKABLE =
+  'a[href], button, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="option"], summary, label, select, input:not([type="hidden"]), textarea, [data-cursor="orbit"], [data-cursor="view"]';
 
 // --- Pure helpers ------------------------------------------------------------------------------
 
@@ -82,17 +92,6 @@ export function slotDistance(
 /** Hand size: wrist to middle knuckle. */
 export const handSize = (p: Points, aspect: number) =>
   slotDistance(p, SLOT.wrist, SLOT.middleKnuckle, aspect);
-
-/** Thumb tip to index tip ÷ hand size (Infinity when the hand is degenerate). */
-export function pinchRatio(p: Points, aspect: number): number {
-  const size = handSize(p, aspect);
-  if (size < 1e-4) return Infinity;
-  return slotDistance(p, SLOT.thumbTip, SLOT.indexTip, aspect) / size;
-}
-
-/** Pinch with hysteresis: starts below PINCH_ON, ends above PINCH_OFF. */
-export const nextPinch = (pinching: boolean, ratio: number) =>
-  pinching ? ratio < PINCH_OFF : ratio < PINCH_ON;
 
 export type Fingers = {
   thumb: boolean;
@@ -132,10 +131,14 @@ export function extendedFingers(p: Points, aspect: number): Fingers {
 export const isOpenPalm = (f: Fingers) =>
   f.thumb && f.index && f.middle && f.ring && f.little;
 
+/** Two fingers (scroll): index and middle up, ring and little down; the thumb doesn't matter. */
+export const isTwoFingers = (f: Fingers) =>
+  f.index && f.middle && !f.ring && !f.little;
+
 /**
  * What an open-palm hold does (8.4): on Home with a desk object highlighted (room.hot) it opens
  * that object after 0.8 s; anywhere else it toggles the music after 1 s. The plant is never
- * highlighted (only a pinch waters it), so a palm over it toggles the music.
+ * highlighted, so a palm over it toggles the music.
  */
 export function palmTarget(
   pageId: string | null,
@@ -146,12 +149,69 @@ export function palmTarget(
     : { kind: "music", target: null, duration: PALM_HOLD_S };
 }
 
+/**
+ * Dwell to click: feed it the clickable element under the cursor (or null) each frame. It returns
+ * how far the dwell is (0–1) and fires once when it fills. After firing it waits until the target
+ * changes (the cursor leaves it) before it can fire again.
+ */
+export function createDwell<T>(durationS = DWELL_S) {
+  let target: T | null = null;
+  let since = 0;
+  let fired = false;
+  return {
+    update(next: T | null, nowS: number): { progress: number; fire: boolean } {
+      if (next !== target) {
+        target = next;
+        since = nowS;
+        fired = false;
+      }
+      if (target === null || fired) return { progress: 0, fire: false };
+      const progress = Math.min(1, (nowS - since) / durationS);
+      if (progress < 1) return { progress, fire: false };
+      fired = true;
+      return { progress: 0, fire: true };
+    },
+    /** Start over (scroll mode, palm hold, hand lost): the same target needs a fresh dwell. */
+    reset() {
+      target = null;
+      fired = false;
+    },
+  };
+}
+
+/**
+ * A pose that must hold for `enterS` to switch on and be gone for `exitS` to switch off, so one
+ * misread frame neither starts nor ends it.
+ */
+export function createLatch(enterS: number, exitS: number) {
+  let on = false;
+  let since = -1;
+  return {
+    update(seen: boolean, nowS: number): boolean {
+      if (seen === on) {
+        since = -1;
+        return on;
+      }
+      if (since < 0) since = nowS;
+      if (nowS - since >= (on ? exitS : enterS)) {
+        on = seen;
+        since = -1;
+      }
+      return on;
+    },
+    reset() {
+      on = false;
+      since = -1;
+    },
+  };
+}
+
 // --- Events (8.4: the coach waits for each gesture once) -------------------------------------
 
-export type GestureEvent = "point" | "click" | "drag";
+export type GestureEvent = "point" | "click" | "scroll";
 const listeners = new Set<(event: GestureEvent) => void>();
 
-/** Called when the visitor points (moves the cursor a little), pinch-clicks or pinch-drags. */
+/** Called when the visitor points (moves the cursor a little), dwell-clicks or scrolls. */
 export function onGesture(listener: (event: GestureEvent) => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
@@ -160,48 +220,13 @@ const emit = (event: GestureEvent) => {
   for (const listener of listeners) listener(event);
 };
 
-/** A short history of filtered cursor positions, to look back to before a pinch. */
-export function createHistory(size = 16) {
-  const t = new Float64Array(size);
-  const x = new Float64Array(size);
-  const y = new Float64Array(size);
-  let count = 0;
-  let head = 0;
-  return {
-    push(time: number, px: number, py: number) {
-      t[head] = time;
-      x[head] = px;
-      y[head] = py;
-      head = (head + 1) % size;
-      count = Math.min(count + 1, size);
-    },
-    /** The newest position at or before `time`; the oldest kept one if none is that old. */
-    at(time: number): [number, number] | null {
-      if (count === 0) return null;
-      let oldest: [number, number] = [0, 0];
-      for (let i = 1; i <= count; i++) {
-        const j = (head - i + size) % size;
-        if (t[j]! <= time) return [x[j]!, y[j]!];
-        oldest = [x[j]!, y[j]!];
-      }
-      return oldest;
-    },
-    clear() {
-      count = 0;
-    },
-  };
-}
-
 // --- Debug (tuning) ----------------------------------------------------------------------------
 
 /** Live numbers for /dev's readout and tuning; nothing reads them in the app. */
 export const gestureDebug = {
-  ratio: 0,
   fingers: "",
-  /** idle | point | pinch | drag | palm */
+  /** idle | point | dwell | scroll | palm */
   gesture: "idle",
-  /** How far (px) the last pinch's click point was moved back from the cursor at pinch time. */
-  lastCorrection: 0,
 };
 
 // --- Driver ------------------------------------------------------------------------------------
@@ -212,8 +237,8 @@ export function startGestures(): () => void {
   const synthetic: Synthetic = createSynthetic();
   const fx = createOneEuro();
   const fy = createOneEuro();
-  const history = createHistory();
-  const dev = process.env.NODE_ENV !== "production";
+  const dwell = createDwell<Element>();
+  const scrollPose = createLatch(SCROLL_ENTER_S, SCROLL_EXIT_S);
 
   let seenVersion = -1;
   let lastSeen = -Infinity;
@@ -227,20 +252,27 @@ export function startGestures(): () => void {
   let lastSentX = -Infinity;
   let lastSentY = -Infinity;
 
-  let pinching = false;
-  let pinchStart = 0;
-  let downX = 0;
-  let downY = 0;
-  let dragging = false;
-  let prevDragY = 0;
-  let dragVelocity = 0;
+  // Scroll mode.
+  let scrolling = false;
+  let prevHandY = 0;
+  let scrollTravel = 0;
+  let scrollVelocity = 0;
   let inertia = 0;
+  // The pose of the latest result.
+  let twoFingers = false;
+  let palmPose = false;
 
+  // Palm hold.
   let palmStart = -1;
   let palmLatched = false;
   let palm = 0;
   let holdKind: "open" | "music" | null = null;
   let holdTarget: string | null = null;
+
+  // Dwell.
+  let dwellProgress = 0;
+  let clicks = 0;
+
   /** Cursor travel while the hand is in view, for the coach's "point" step. */
   let travel = 0;
   let pointed = false;
@@ -254,25 +286,11 @@ export function startGestures(): () => void {
     holdTarget = null;
   };
 
-  const setPinching = (on: boolean) => {
-    if (store().ar.pinching !== on) store().ar.setPinching(on);
-  };
-
-  const release = (cancelled: boolean) => {
-    if (!pinching) return;
-    pinching = false;
-    setPinching(false);
-    // Events go out before the click: a click on the coach's Next moves it to the next step,
-    // which must not count this same pinch.
-    if (dragging) {
-      if (!cancelled) emit("drag");
-      synthetic.up(downX, downY, false);
-      inertia = cancelled ? 0 : dragVelocity;
-    } else {
-      if (!cancelled) emit("click");
-      synthetic.up(downX, downY, !cancelled);
-    }
-    dragging = false;
+  const endScroll = (glide: boolean) => {
+    if (!scrolling) return;
+    scrolling = false;
+    inertia = glide ? scrollVelocity : 0;
+    if (glide && scrollTravel > SCROLL_COUNTS_PX) emit("scroll");
   };
 
   const tick = (_time: number, deltaMs: number) => {
@@ -295,7 +313,6 @@ export function startGestures(): () => void {
         );
         tx = fx.filter(mx, now);
         ty = fy.filter(my, now);
-        history.push(now, tx, ty);
         lastSeen = now;
         if (!placed) {
           dx = tx;
@@ -304,9 +321,9 @@ export function startGestures(): () => void {
         }
         visible = true;
 
-        const ratio = pinchRatio(p, aspect);
         const fingers = extendedFingers(p, aspect);
-        gestureDebug.ratio = ratio;
+        twoFingers = isTwoFingers(fingers);
+        palmPose = isOpenPalm(fingers);
         gestureDebug.fingers = (
           [
             ["T", fingers.thumb],
@@ -319,32 +336,9 @@ export function startGestures(): () => void {
           .map(([k, on]) => (on ? k : "·"))
           .join("");
 
-        // Pinch.
-        const pinchNow = nextPinch(pinching, ratio);
-        if (pinchNow && !pinching) {
-          const back = history.at(now - CLICK_LOOKBACK_S) ?? [tx, ty];
-          [downX, downY] = back;
-          gestureDebug.lastCorrection = Math.hypot(tx - downX, ty - downY);
-          if (dev) {
-            console.info(
-              `[hand] pinch: click moved back ${gestureDebug.lastCorrection.toFixed(1)} px (${CLICK_LOOKBACK_S * 1000} ms)`,
-            );
-          }
-          pinching = true;
-          pinchStart = now;
-          dragging = false;
-          inertia = 0;
-          dx = downX;
-          dy = downY;
-          setPinching(true);
-          synthetic.down(downX, downY);
-        } else if (!pinchNow && pinching) {
-          release(false);
-        }
-
         // Open palm, held: open the desk object under it (Home), else toggle the music; once
         // per hold. Moving onto another object restarts the hold.
-        if (!pinching && isOpenPalm(fingers)) {
+        if (!scrolling && palmPose) {
           const { page, room } = store();
           const goal = palmTarget(page.id, room.hot);
           if (palmLatched) {
@@ -378,50 +372,61 @@ export function startGestures(): () => void {
       }
     }
 
-    // 2. Hand lost: let go of a pinch at once, fade the cursor after LOST_S.
-    if (visible && now - lastSeen > 0.15 && pinching) release(true);
+    // 2. Hand lost: stop scrolling at once, fade the cursor after LOST_S.
+    if (visible && now - lastSeen > 0.15 && scrolling) {
+      scrollPose.reset();
+      endScroll(false);
+    }
     if (visible && now - lastSeen > LOST_S) {
       visible = false;
       endHold();
+      dwell.reset();
+      dwellProgress = 0;
+      scrollPose.reset();
       travel = 0;
       pointed = false;
       fx.reset();
       fy.reset();
-      history.clear();
       placed = false;
       synthetic.leave();
       lastSentX = -Infinity;
     }
 
-    // 3. The displayed cursor: held still for the first moments of a pinch, else easing.
-    if (visible) {
-      const frozen = pinching && now - pinchStart < PINCH_FREEZE_S;
-      if (!frozen) {
-        const k = 1 - Math.exp(-dt / DISPLAY_TAU);
-        dx += (tx - dx) * k;
-        dy += (ty - dy) * k;
-      }
+    // 3. Scroll mode: two fingers held. The cursor holds still; the hand's vertical travel
+    //    scrolls whatever is under the cursor, like grabbing the page.
+    const wantScroll = visible && scrollPose.update(twoFingers, now);
+    if (wantScroll && !scrolling) {
+      scrolling = true;
+      prevHandY = ty;
+      scrollTravel = 0;
+      scrollVelocity = 0;
+      inertia = 0;
+      endHold();
+      dwell.reset();
+      dwellProgress = 0;
+    } else if (!wantScroll && scrolling) {
+      endScroll(true);
     }
-
-    // 4. Pinch-drag scrolls; after release the speed carries on and decays.
-    if (pinching && !dragging && Math.abs(dy - downY) > DRAG_START_PX) {
-      dragging = true;
-      prevDragY = dy;
-      dragVelocity = 0;
-      synthetic.cancelPress(downX, downY);
-    }
-    if (dragging) {
-      const step = -(dy - prevDragY) * DRAG_GAIN;
-      prevDragY = dy;
-      if (step !== 0) synthetic.scroll(downX, downY, step);
+    if (scrolling) {
+      const step = -(ty - prevHandY) * SCROLL_GAIN;
+      prevHandY = ty;
+      scrollTravel += Math.abs(step) / SCROLL_GAIN;
+      if (step !== 0) synthetic.scroll(dx, dy, step);
       if (dt > 0) {
         const v = step / dt;
-        dragVelocity += (v - dragVelocity) * (1 - Math.exp(-dt / 0.05));
+        scrollVelocity += (v - scrollVelocity) * (1 - Math.exp(-dt / 0.05));
       }
     } else if (inertia !== 0) {
-      synthetic.scroll(downX, downY, inertia * dt);
+      synthetic.scroll(dx, dy, inertia * dt);
       inertia *= Math.exp(-dt / INERTIA_TAU);
       if (Math.abs(inertia) < 20) inertia = 0;
+    }
+
+    // 4. The displayed cursor eases toward the hand (held still while scrolling).
+    if (visible && !scrolling) {
+      const k = 1 - Math.exp(-dt / DISPLAY_TAU);
+      dx += (tx - dx) * k;
+      dy += (ty - dy) * k;
     }
 
     // The coach's "point": the hand moved the cursor a little.
@@ -435,15 +440,47 @@ export function startGestures(): () => void {
     prevX = visible ? dx : NaN;
     prevY = visible ? dy : NaN;
 
-    // 5. Store and synthetic pointer.
+    // 5. Synthetic pointer (hover chain every frame, moves when moved), then dwell on what's
+    //    under it: only clickable things, never while scrolling or holding a palm.
+    if (visible) {
+      const moved =
+        Math.abs(dx - lastSentX) > 0.1 || Math.abs(dy - lastSentY) > 0.1;
+      if (moved) {
+        lastSentX = dx;
+        lastSentY = dy;
+      }
+      synthetic.move(dx, dy, false, moved);
+
+      const canDwell = !scrolling && !palmPose && palm === 0;
+      const target = canDwell
+        ? (synthetic.hovered()?.closest(CLICKABLE) ?? null)
+        : null;
+      const usable =
+        target &&
+        !(target as HTMLButtonElement).disabled &&
+        target.getAttribute("aria-disabled") !== "true"
+          ? target
+          : null;
+      const d = dwell.update(usable, now);
+      dwellProgress = d.progress;
+      if (d.fire && usable) {
+        clicks++;
+        // Events before the click: a click on the coach's Next moves it on, which must not
+        // count this same dwell for the next step.
+        emit("click");
+        synthetic.clickElement(usable, dx, dy);
+      }
+    }
+
+    // 6. Store (fast values; only when something changed).
     gestureDebug.gesture = !visible
       ? "idle"
-      : dragging
-        ? "drag"
-        : pinching
-          ? "pinch"
-          : palm > 0
-            ? "palm"
+      : scrolling
+        ? "scroll"
+        : palm > 0
+          ? "palm"
+          : dwellProgress > 0
+            ? "dwell"
             : "point";
     const hand = store().ar.hand;
     const x = w > 0 ? dx / w : 0.5;
@@ -454,27 +491,29 @@ export function startGestures(): () => void {
       hand.y !== y ||
       hand.palm !== palm ||
       hand.holdKind !== holdKind ||
-      hand.holdTarget !== holdTarget
+      hand.holdTarget !== holdTarget ||
+      hand.dwell !== dwellProgress ||
+      hand.scrolling !== scrolling ||
+      hand.clicks !== clicks
     ) {
-      store().ar.setHand({ x, y, visible, palm, holdKind, holdTarget });
-    }
-    if (visible) {
-      const moved =
-        Math.abs(dx - lastSentX) > 0.1 || Math.abs(dy - lastSentY) > 0.1;
-      if (moved) {
-        lastSentX = dx;
-        lastSentY = dy;
-      }
-      synthetic.move(dx, dy, pinching, moved);
+      store().ar.setHand({
+        x,
+        y,
+        visible,
+        palm,
+        holdKind,
+        holdTarget,
+        dwell: dwellProgress,
+        scrolling,
+        clicks,
+      });
     }
   };
 
   gsap.ticker.add(tick);
   return () => {
     gsap.ticker.remove(tick);
-    if (pinching) release(true);
     synthetic.leave();
-    setPinching(false);
     store().ar.setHand({
       x: 0.5,
       y: 0.5,
@@ -482,6 +521,9 @@ export function startGestures(): () => void {
       palm: 0,
       holdKind: null,
       holdTarget: null,
+      dwell: 0,
+      scrolling: false,
+      clicks: 0,
     });
     gestureDebug.gesture = "idle";
   };
@@ -489,8 +531,12 @@ export function startGestures(): () => void {
 
 // --- Coach (8.4) ------------------------------------------------------------------------------
 
-/** The gesture each coach step waits for: Point, Pinch to click, Pinch and drag to scroll. */
-export const COACH_EVENTS: readonly GestureEvent[] = ["point", "click", "drag"];
+/** The gesture each coach step waits for: Point, Hold to click, Two fingers to scroll. */
+export const COACH_EVENTS: readonly GestureEvent[] = [
+  "point",
+  "click",
+  "scroll",
+];
 
 /** Whether `event` completes coach step `step` (0-based). */
 export const coachStepDone = (step: number, event: GestureEvent) =>

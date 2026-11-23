@@ -4,7 +4,7 @@ import { FINGERTIPS, HAND_CONNECTIONS } from "@/features/ar/landmarks";
 import { cn } from "@/lib/utils";
 
 /**
- * The three gestures as drawn on the AR board: MediaPipe's 21-point skeleton, teal bones, white
+ * The gestures as drawn on the AR board (point, two fingers, open palm): MediaPipe's 21-point skeleton, teal bones, white
  * joints, and amber on the fingertips that matter. 100 × 100 view box, wrist at the bottom.
  */
 const POSES: Record<HandPose, readonly (readonly [number, number])[]> = {
@@ -31,28 +31,29 @@ const POSES: Record<HandPose, readonly (readonly [number, number])[]> = {
     [72, 73],
     [70, 76],
   ],
-  pinch: [
-    [54, 88],
-    [44, 80],
-    [36, 72],
-    [32, 62],
-    [34, 53],
-    [46, 60],
-    [40, 52],
-    [36, 50],
-    [35, 53],
-    [54, 58],
-    [58, 60],
-    [60, 66],
-    [58, 70],
-    [62, 60],
-    [66, 62],
-    [67, 68],
-    [65, 72],
-    [68, 64],
-    [72, 66],
-    [72, 71],
-    [70, 74],
+  // Two fingers (scroll, after 8.5): the point pose with the middle finger up beside the index.
+  two: [
+    [52, 88],
+    [42, 82],
+    [34, 76],
+    [30, 70],
+    [36, 66],
+    [46, 62],
+    [44, 48],
+    [43, 36],
+    [42, 24],
+    [54, 60],
+    [55, 46],
+    [56, 35],
+    [57, 24],
+    [62, 62],
+    [66, 64],
+    [67, 70],
+    [65, 74],
+    [68, 66],
+    [72, 68],
+    [72, 73],
+    [70, 76],
   ],
   palm: [
     [52, 90],
@@ -82,7 +83,7 @@ const POSES: Record<HandPose, readonly (readonly [number, number])[]> = {
 /** Which fingertips glow amber in each pose. */
 const LIT: Record<HandPose, readonly number[]> = {
   point: [8],
-  pinch: [4, 8],
+  two: [8, 12],
   palm: FINGERTIPS,
 };
 
