@@ -67,9 +67,16 @@ export type ArStatus = "off" | "loading" | "ready" | "denied" | "error";
 /** Fingertip position in viewport space, each axis 0–1 (0,0 = top left). */
 export type Hand = { x: number; y: number; visible: boolean };
 
+/** Whether this device has a camera (8.1, enumerateDevices): the switch hides with "none". */
+export type ArCamera = "unknown" | "yes" | "none";
+
 export type ArSlice = {
+  /** Hand mode is on: the camera runs (8.1, components/ar/ARLayer.tsx). */
   enabled: boolean;
   status: ArStatus;
+  /** The explainer (8.1) asking for the camera is open. */
+  explainerOpen: boolean;
+  camera: ArCamera;
   /** FAST. */
   hand: Hand;
   pinching: boolean;
@@ -78,6 +85,8 @@ export type ArSlice = {
   setStatus: (status: ArStatus) => void;
   setHand: (hand: Hand) => void;
   setPinching: (pinching: boolean) => void;
+  setExplainerOpen: (open: boolean) => void;
+  setCamera: (camera: ArCamera) => void;
 };
 
 export type UiSlice = {
@@ -240,6 +249,8 @@ export const useStore = create<StoreState>()(
       ar: {
         enabled: false,
         status: "off",
+        explainerOpen: false,
+        camera: "unknown",
         hand: { x: 0.5, y: 0.5, visible: false },
         pinching: false,
         setEnabled: (enabled) => patch("ar", { enabled }),
@@ -247,6 +258,13 @@ export const useStore = create<StoreState>()(
         setStatus: (status) => patch("ar", { status }),
         setHand: (hand) => patch("ar", { hand }),
         setPinching: (pinching) => patch("ar", { pinching }),
+        setExplainerOpen: (explainerOpen) => {
+          if (get().ar.explainerOpen !== explainerOpen)
+            patch("ar", { explainerOpen });
+        },
+        setCamera: (camera) => {
+          if (get().ar.camera !== camera) patch("ar", { camera });
+        },
       },
 
       ui: {

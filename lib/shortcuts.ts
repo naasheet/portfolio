@@ -7,6 +7,7 @@
  */
 import { chapters } from "@/content/chapters";
 import { copy } from "@/content/copy";
+import { storage } from "./browser";
 import { island } from "./island";
 import { navigate, type PushRouter } from "./motion/pageTransition";
 import { startMusic } from "./music";
@@ -61,17 +62,55 @@ export function toggleTheme(origin?: RevealOrigin | null): void {
   });
 }
 
-/** Mouse | Hand. Hand = AR on (the camera and gestures arrive in phase 8). */
+/** Phones and tablets (no hover, coarse pointer): Hand mode is a laptop thing (AR board, 8.1). */
+const TOUCH_QUERY = "(hover: none) and (pointer: coarse)";
+/** features/ar/camera.ts's key: set once the visitor has allowed the camera. */
+const AR_ALLOWED_KEY = "ar-allowed";
+
+/**
+ * Mouse | Hand (the switch, A, the About card, `ar on`). Hand (8.1): on a phone it says it's best
+ * on a laptop; with no camera it says so; otherwise the explainer asks for the camera, or, once
+ * the visitor has allowed it before, Hand turns on straight away. ar.enabled only turns true
+ * from here or the explainer's Allow; components/ar/ARLayer.tsx starts the camera from it and
+ * raises the "Hand mode" alert once it's live. Mouse stops the camera at once.
+ */
 export function setHandMode(hand: boolean): void {
   const { ar } = useStore.getState();
-  if (ar.enabled === hand) return;
-  ar.setEnabled(hand);
-  island.alert({
-    icon: hand ? "hand" : "mouse",
-    tone: "neutral",
-    text: hand ? copy.alerts.handMode : copy.alerts.mouseMode,
-    detail: copy.alerts.switchBack("A"),
-  });
+  if (!hand) {
+    ar.setExplainerOpen(false);
+    if (!ar.enabled) return;
+    ar.setEnabled(false);
+    island.alert({
+      icon: "mouse",
+      tone: "neutral",
+      text: copy.alerts.mouseMode,
+      detail: copy.alerts.switchBack("A"),
+    });
+    return;
+  }
+  if (ar.enabled) return;
+  if (window.matchMedia(TOUCH_QUERY).matches) {
+    island.alert({
+      icon: "hand",
+      tone: "neutral",
+      text: copy.alerts.bestOnLaptop,
+      detail: copy.alerts.bestOnLaptopDetail,
+      long: true,
+    });
+    return;
+  }
+  if (ar.camera === "none") {
+    island.alert({
+      icon: "hand",
+      tone: "neutral",
+      text: copy.alerts.noCamera,
+      detail: copy.alerts.noCameraDetail,
+      long: true,
+    });
+    return;
+  }
+  if (storage.get(AR_ALLOWED_KEY) === "1") ar.setEnabled(true);
+  else ar.setExplainerOpen(true);
 }
 
 /** Close the most recent thing that's open and isn't an overlay (overlays handle Esc). */

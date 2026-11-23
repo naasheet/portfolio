@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ARSpecimen } from "@/components/dev/ARSpecimen";
 import { BentoSpecimen } from "@/components/dev/BentoSpecimen";
 import { ButtonSpecimen } from "@/components/dev/ButtonSpecimen";
 import { CardKitSpecimen } from "@/components/dev/CardKitSpecimen";
@@ -240,6 +241,14 @@ export default function DevPage() {
         note="5.1: the audio engine without a player (5.2). Tracks crossfade over 1.2 s; the first start fades in over 2 s; the level bar is the analyser (5.4 feeds the canvas from it)."
       >
         <MusicSpecimen />
+      </DevSection>
+
+      <DevSection
+        id="ar"
+        title="Hand mode (AR)"
+        note="8.1: the camera explainer (opened through ar.explainerOpen, as the Hand switch does), the gesture drawings, and the camera preview on a test pattern instead of the webcam (drag it; it springs to the nearest corner). The real flow is the Hand switch or A; Forget clears the remembered permission so the explainer shows again."
+      >
+        <ARSpecimen />
       </DevSection>
 
       <DevSection

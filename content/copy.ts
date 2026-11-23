@@ -352,6 +352,19 @@ Reply to this email to answer them.`,
     handMode: "Hand mode",
     mouseMode: "Mouse mode",
     switchBack: (key: string) => `${key} to switch back`,
+    /** Hand mode (8.1, AR board edge states). TODO(content): review. */
+    cameraDenied: "Camera's shy?",
+    cameraDeniedDetail:
+      "AR needs it, and nothing leaves your device. Allow it in the address bar.",
+    cameraLost: "Camera's gone quiet",
+    cameraLostDetail: "It disconnected, so I switched back to Mouse.",
+    cameraError: "Can't start the camera",
+    cameraErrorDetail:
+      "Another app might be using it. Close that one and try Hand again.",
+    noCamera: "No camera here",
+    noCameraDetail: "Hand mode needs a webcam. Mouse it is.",
+    bestOnLaptop: "Best on a laptop",
+    bestOnLaptopDetail: "Hand mode needs a webcam and a bigger screen.",
   },
   /** The ? overlay (Navigation board). */
   shortcuts: {

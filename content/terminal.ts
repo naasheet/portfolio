@@ -313,8 +313,10 @@ export const terminalCopy = {
       description: "Hand mode on or off (control the site with your hand)",
       usage: "ar [on | off]",
       state: (on: boolean) => (on ? "Hand mode is on." : "Hand mode is off."),
-      on: "Hand mode on.",
-      off: "Hand mode off. Back to the mouse.",
+      /** 8.1: Hand asks for the camera first (the explainer opens over the terminal). */
+      on: "Asking for your camera. The video never leaves your device.",
+      already: "Hand mode is already on.",
+      off: "Hand mode off. Camera off, back to the mouse.",
       feature: "Hand tracking",
       phase: "phase 8",
     },

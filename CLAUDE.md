@@ -121,7 +121,7 @@ app/
   api/contact/route.ts
 canvas/                 # CanvasRoot.tsx, Scene.tsx, RouteMorph.tsx, particles/, shaders/*.glsl, shapes/
   room/                 # the particle room's hit areas and hover highlight (R.4)
-features/ar/            # camera.ts, tracker.ts, hand.worker.ts, gestures.ts, oneEuro.ts, synthetic.ts
+features/ar/            # camera.ts, landmarks.ts (8.1), tracker.ts, hand.worker.ts, gestures.ts, oneEuro.ts, synthetic.ts
 games/                  # shared/, slice/, stack/ — each game self-contained
 components/
   ui/                   # primitives: Button, Chip, Kbd, Card, BentoGrid, Tooltip …
@@ -174,7 +174,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
    three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
    (progress), `page` (id: which of the six pages, or null), `room` (hot object; `view`, the
-   canvas's projected object boxes, mutated in place), `ar` (enabled, status, hand x/y, pinching), `ui` (terminal open,
+   canvas's projected object boxes, mutated in place), `ar` (enabled, status, explainer open and camera found (8.1), hand x/y, pinching), `ui` (terminal open,
    chat open, chat streaming, sound enabled), `theme`, `particles` (6.5: the terminal's shape override and
    explode count, read by the canvas).
 3. **Fast values skip React.** Audio levels, hand position and scroll progress change every
@@ -540,8 +540,8 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal is complete** (6.1–6.6); **Phase 8 (AR, 8.1) is next.** Build order
-changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
+Current phase: **8 — AR** (8.1 done; 8.2, worker tracking, is next). Phase 6 (Terminal, 6.1–6.6) is
+complete. Build order changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
 Ask pill and the `/` shortcut are off (see "Chat off until Phase 7" below). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
@@ -564,7 +564,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -617,7 +617,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -631,8 +631,8 @@ Carry-over into later chunks:
   `next/dynamic`, and server components ship no JS: prefer them for static markup.
 - **6.1 / 7.4 / 8.x slots:** replace the placeholder inside its slot file and keep the slot's
   position in `PersistentLayer`: `components/chat/ChatBubbleSlot.tsx` (the bottom-right "Ask" pill),
-  `components/terminal/TerminalDrawerSlot.tsx` and `components/ar/ARLayerSlot.tsx` (camera preview
-  and hand cursor; both render `null` now).
+  `components/terminal/TerminalDrawerSlot.tsx` and `components/ar/ARLayerSlot.tsx` (8.1: loads the
+  explainer and `ARLayer`; 8.2 / 8.3 hang tracking and the hand cursor off `ARLayer`).
 - **Music in the island:** built in 5.2 (see "Music in the island (5.2)" below). The sound circle
   and the idle island still show the CSS `EqBars` loop while `audio.playing`; the island's music
   activity uses the analyser-driven `components/player/Bars.tsx`.
@@ -1054,6 +1054,71 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Permission flow and camera preview (8.1):** `features/ar/camera.ts`, `features/ar/landmarks.ts`,
+  `components/ar/` (ARLayerSlot, ARLayer, ARExplainer, CameraPreview, HandSkeleton,
+  useCameraDetection), `content/ar.ts`, `setHandMode` in `lib/shortcuts.ts`, ModeSwitch, Modal `icon` /
+  `titleClassName`, the island's `danger` tone and `long` alerts, `components/dev/ARSpecimen.tsx`
+  (/dev "Hand mode"). From the AR board (`stuff/reference/AR hand control (Phase 8)@2x.png`).
+  - **The chunk's `ARToggle.tsx` is `ModeSwitch`** (the board's Mouse | Hand switch; approved).
+  - **Flow (store only):** `setHandMode(true)` (switch, A, About card, `ar on`): touch device → long
+    alert "Best on a laptop"; `ar.camera` "none" → "No camera here"; `ar-allowed` saved → `ar.enabled`
+    at once (Nasheet: skip the explainer once allowed); else `ar.explainerOpen`. Allow → `ar.enabled`.
+    `setHandMode(false)` closes the explainer, clears `ar.enabled`, "Mouse mode" alert.
+  - **ARLayer** (lazy, first time Hand is on) follows `ar.enabled`: status "loading", `openCamera()`
+    (`{ video: { facingMode: "user", width / height / frameRate: { ideal: 640 / 480 / 30 } }, audio:
+    false }`). Live → "ready", "Hand mode" alert, `ar-allowed` saved, the preview. Refused
+    (NotAllowed / Security) → "denied", "Camera's shy?" (danger, long), `ar-allowed` forgotten; other
+    errors (busy, not found) → "error", "Can't start the camera". Both clear `ar.enabled`. Off: every
+    track stopped (light off), status "off" (a failed attempt's status stays). A track's `ended`
+    (revoked, unplugged; `stop()` doesn't fire it) → "Camera's gone quiet", stop, back to Mouse.
+    A camera that answers after Hand was switched off is stopped at once.
+  - **Explainer:** Modal at 520 (`w-130`), backdrop closes. Gesture tiles draw `HandSkeleton` (an SVG
+    of MediaPipe's 21 points per pose; 8.4's legend and coach reuse it). After Allow: "Starting
+    camera…" with a spinner until ready (closes), or Hand going off (refused / failed / Mouse:
+    closes). Closing while the browser asks cancels Hand. It only reacts to the status after its
+    own Allow (a stale "denied" from before must not close it).
+  - **CameraPreview:** a 176 px glass card: the mirrored 160 × 120 video (`-scale-x-100`), the red
+    live dot, "mirrored", "● Camera on" (8.2: "Tracking") and an X (Mouse). Framer `drag`; on release
+    it springs (`spring.soft`) to the nearest corner by the pointer's half of the screen, then the
+    corner class is applied and the offset zeroed in a layout effect (no flash). Corners: 16 px from
+    the sides / bottom, 84 px from the top (under the nav), plain numbers so the snap target matches;
+    saved under `ar-preview-corner`, default bottom-left. The landmark canvas (DPR ≤ 2) draws
+    `landmarks` (mirrored, teal bones, white joints, amber tips) on the gsap ticker only while the
+    tab is visible and only when `landmarks.version` changed: one comparison a frame until 8.2.
+  - **landmarks.ts:** `points` (Float32Array, 21 × x / y in 0–1 of the camera frame, not mirrored),
+    `visible`, `version` (bump on write), `HAND_CONNECTIONS`, `FINGERTIPS`. **8.2 writes here.**
+  - **Switch:** `useCameraDetection()` (once per page, enumerateDevices + `devicechange`) →
+    `ar.camera`; "none" hides the whole switch. Touch (`(hover: none) and (pointer: coarse)`): Hand
+    is `aria-disabled` (40 %), a tap shows "Best on a laptop" for 2.5 s (under the switch in the nav,
+    above it in the phone menu, where Get in touch sits below).
+  - **Island:** `alert({ …, long: true })` stacks the detail under the text (max 18 rem), stays 5 s
+    (`LONG_ALERT_DURATION`); tone `danger` = `island-danger` at 15 %.
+  - **Terminal:** `ar on` prints "Asking for your camera…" (the explainer opens over the drawer),
+    `ar on` when on → "already on"; the "on its way (phase 8)" line stays until 8.2.
+  - **React Compiler lint (again):** writing to a canvas reached through a ref inside a hook fails
+    `react-hooks/immutability`; the landmark drawer is a plain function (`startLandmarkCanvas(el)`)
+    called from the component's effect.
+- **Verified 8.1 (headless Chromium 1248 with `--use-fake-device-for-media-stream`, production
+  build; a main-world probe counted live camera tracks through `data-` attributes):**
+  - **Allow:** Hand → the explainer; Allow → exactly one getUserMedia call with the constraints above,
+    1 live track, "Hand mode" alert, the preview (screenshot: the fake camera's picture, mirrored),
+    `ar-allowed` = 1. Drag to the top right → lands at (1088, 84) = 1280 − 16 − 176, corner "tr" saved.
+  - **Off (A):** 0 live tracks, preview gone, "Mouse mode". **On again (A):** no explainer, camera
+    straight on. **Revoke** (the track's `ended`): 0 live tracks, "Camera's gone quiet", Hand off.
+  - **Not now:** nothing asked, Hand off. **Deny** (no permission): "Camera's shy?" (red, two lines;
+    screenshot), 0 tracks, Hand off, `ar-allowed` not saved.
+  - **Phone (390, touch):** Hand `aria-disabled`, a tap shows "Best on a laptop" above the switch
+    (screenshot); no getUserMedia. Console clean in every run. `npm run test`: 128 (+6: classify,
+    stopCamera, setHandMode's four branches).
+  - **Not verified:** the landmark drawing (nothing writes `landmarks` in production until 8.2;
+    /dev's "Palm landmarks" button on the test-pattern preview shows it); a machine with no camera
+    at all (the switch hiding).
+  - **[manual]** **The real camera light** turning off on Mouse, A, the preview's X, and when you
+    revoke the permission in the address bar mid-session (Chrome, Safari, Firefox: each fires
+    `ended` differently); the browser's own prompt flow (Allow / Block / dismiss); the explainer
+    copy; the drag feel.
+  - **Follow-ups:** the preview can't be moved by keyboard (drag only); add arrow-key corners in
+    10.6. The About ARCard's on / blocked states aren't wired yet (see "6.1 / 8.x wiring").
 - **Mobile terminal and polish (6.6):** `app/terminal/page.tsx`, `components/terminal/TerminalPage.tsx`,
   `QuickChips.tsx`, `lib/terminal/run.ts`, `components/overlay/useDrawerResize.ts`, `Drawer`'s
   `resizable` / `resizeLabel`, `openTerminal()` / `leaveTerminal()` / `TERMINAL_ROUTE` in
@@ -1857,8 +1922,9 @@ Carry-over into later chunks:
 - **Bundle:** the card kit isn't on `/` yet. When 4.x puts it there, re-measure: SkillsCard
   brings AnimatePresence, and StatCard brings the count-up hook. There's only about 3 KB of
   headroom.
-- **6.1 / 8.x wiring:** (NowPlayingCard is live since 5.5) TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`, `onToggle` flips
-  `ar.enabled`) all take static props for now.
+- **6.1 / 8.x wiring:** (NowPlayingCard is live since 5.5) TerminalCard (`onOpen` opens the drawer) and ARCard (`state` from `ar.status`; its toggle calls
+  `setHandMode(true)` since 8.1, so it opens the explainer) all take static props for now. Wire the ARCard's
+  on / blocked states to `ar.enabled` / `ar.status` in 8.4 or 8.5.
 - **2.2 gate over the canvas:** the canvas is opaque now (3.5), so "make the gate's background
   transparent over it at 35%" means the gate's own bg at 35% over the canvas; delete `GateScatter`
   then (4.2).
@@ -1891,6 +1957,9 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
+- Hand mode (8.1): `content/ar.ts` (the explainer and the preview) and the camera alerts in
+  `copy.alerts` ("Camera's shy?", "Camera's gone quiet", "Can't start the camera", "No camera here",
+  "Best on a laptop"): review the wording.
 - Terminal (6.1–6.4): `content/terminal.ts` — the banner and chips, command descriptions and
   messages (6.4: the sudo steps and refusals, whoami's line, neofetch's labels), and the `~/.secrets` hints ("Something on the desk looks thirsty.", "Some files hide
   behind a dot.") and footer: review the wording. 6.5: the site / music commands' lines (`soon`,

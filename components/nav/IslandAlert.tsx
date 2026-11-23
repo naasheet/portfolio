@@ -30,20 +30,27 @@ const ICONS: Record<AlertIcon, LucideIcon> = {
 /** The alert shape's content: an icon in a tinted circle, the text, an optional short detail. */
 export function IslandAlertView({ alert }: { alert: IslandAlert }) {
   const Icon = ICONS[alert.icon];
+  // A long alert (8.1, AR board "Camera's shy?"): the detail is a sentence under the text.
+  if (alert.long) {
+    return (
+      <div className="flex h-full items-center gap-3 py-2 pr-5 pl-2">
+        <AlertIconBadge alert={alert} Icon={Icon} />
+        <span className="flex max-w-72 flex-col">
+          <span className="text-subhead font-semibold text-island-text">
+            {alert.text}
+          </span>
+          {alert.detail ? (
+            <span className="text-footnote text-island-text-secondary">
+              {alert.detail}
+            </span>
+          ) : null}
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="flex h-full items-center gap-3 pr-5 pl-2">
-      <span
-        aria-hidden
-        className={cn(
-          "flex size-9 items-center justify-center rounded-chip [&_svg]:size-4",
-          alert.tone === "teal" && "bg-island-accent/15 text-island-accent",
-          alert.tone === "amber" &&
-            "bg-accent-secondary/15 text-accent-secondary",
-          alert.tone === "neutral" && "bg-island-text/10 text-island-text",
-        )}
-      >
-        <Icon />
-      </span>
+      <AlertIconBadge alert={alert} Icon={Icon} />
       <span className="text-subhead font-semibold whitespace-nowrap text-island-text">
         {alert.text}
       </span>
@@ -53,5 +60,29 @@ export function IslandAlertView({ alert }: { alert: IslandAlert }) {
         </span>
       ) : null}
     </div>
+  );
+}
+
+/** The icon in its tinted circle. */
+function AlertIconBadge({
+  alert,
+  Icon,
+}: {
+  alert: IslandAlert;
+  Icon: LucideIcon;
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "flex size-9 shrink-0 items-center justify-center rounded-chip [&_svg]:size-4",
+        alert.tone === "teal" && "bg-island-accent/15 text-island-accent",
+        alert.tone === "amber" && "bg-accent-secondary/15 text-accent-secondary",
+        alert.tone === "neutral" && "bg-island-text/10 text-island-text",
+        alert.tone === "danger" && "bg-island-danger/15 text-island-danger",
+      )}
+    >
+      <Icon />
+    </span>
   );
 }

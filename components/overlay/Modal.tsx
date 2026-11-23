@@ -1,7 +1,9 @@
 "use client";
 
+import { X } from "lucide-react";
 import { m } from "framer-motion";
 import { useId, type ReactNode } from "react";
+import { IconButton } from "@/components/ui/IconButton";
 import { cn } from "@/lib/utils";
 import { OverlayHeader } from "./OverlayHeader";
 import { OverlayRoot } from "./OverlayRoot";
@@ -26,6 +28,12 @@ export type ModalProps = OverlayProps & {
   footer?: ReactNode;
   /** A backdrop click closes it. Off by default: modals ask to confirm. Esc still closes. */
   dismissOnBackdrop?: boolean;
+  /**
+   * 8.1 (AR board, the explainer): an icon tile on top with the close button beside it, and a
+   * larger title (`titleClassName`) under them.
+   */
+  icon?: ReactNode;
+  titleClassName?: string;
 };
 
 /**
@@ -41,6 +49,8 @@ export function Modal({
   description,
   footer,
   dismissOnBackdrop = false,
+  icon,
+  titleClassName,
   children,
   className,
 }: ModalProps) {
@@ -69,14 +79,46 @@ export function Modal({
           )}
           {...motion}
         >
-          <OverlayHeader
-            title={title}
-            titleId={titleId}
-            description={description}
-            descriptionId={descriptionId}
-            closeLabel={closeLabel}
-            onClose={onClose}
-          />
+          {icon ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-4">
+                <span aria-hidden className="inline-flex">
+                  {icon}
+                </span>
+                <IconButton
+                  aria-label={closeLabel}
+                  icon={<X />}
+                  onClick={onClose}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <h2
+                  id={titleId}
+                  className={cn("text-title-3 font-semibold", titleClassName)}
+                >
+                  {title}
+                </h2>
+                {description ? (
+                  <p
+                    id={descriptionId}
+                    className="text-subhead text-text-secondary"
+                  >
+                    {description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <OverlayHeader
+              title={title}
+              titleId={titleId}
+              description={description}
+              descriptionId={descriptionId}
+              closeLabel={closeLabel}
+              onClose={onClose}
+              titleClassName={titleClassName}
+            />
+          )}
           {children ? (
             <div
               data-lenis-prevent

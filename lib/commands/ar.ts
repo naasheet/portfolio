@@ -1,6 +1,6 @@
 /*
- * ar (6.5): Hand mode on or off, the same store flag as the A key and the nav's switch
- * (setHandMode). Until phase 8 builds the camera and gestures, it also says they're on the way.
+ * ar (6.5): Hand mode on or off, through setHandMode like the A key and the nav's switch (8.1:
+ * "on" opens the camera explainer). Until 8.2 tracks the hand, it also says that's on the way.
  */
 import { terminalCopy } from "@/content/terminal";
 import { setHandMode } from "@/lib/shortcuts";
@@ -27,13 +27,19 @@ export const ar: Command = {
       ctx.printError(terminalCopy.commands.oneOf("ar", what, CHOICES));
       return;
     }
+    if (what === "on" && on) {
+      ctx.print({ kind: "text", text: t.already, tone: "muted" });
+      return;
+    }
+    // On: the explainer (or, once allowed, the camera); phones and camera-less devices get an
+    // island alert instead (setHandMode, 8.1).
     setHandMode(what === "on");
     ctx.print({
       kind: "text",
       text: what === "on" ? t.on : t.off,
       tone: "accent",
     });
-    // TODO(8.x): drop this line once the camera and gestures exist.
+    // TODO(8.2): drop this line once the hand is tracked.
     if (what === "on")
       ctx.print({
         kind: "text",

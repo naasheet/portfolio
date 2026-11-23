@@ -44,7 +44,8 @@ export type AlertIcon =
   | "star"
   | "music";
 
-export type AlertTone = "teal" | "neutral" | "amber";
+/** `danger` (8.1): the camera was refused or lost (AR board, "Camera's shy?"). */
+export type AlertTone = "teal" | "neutral" | "amber" | "danger";
 
 export type IslandAlert = {
   id: number;
@@ -52,6 +53,8 @@ export type IslandAlert = {
   tone: AlertTone;
   text: string;
   detail?: string;
+  /** 8.1: the detail is a sentence: it wraps under the text and the alert stays 5 s. */
+  long?: boolean;
 };
 
 export type IslandState = {
@@ -61,6 +64,8 @@ export type IslandState = {
 };
 
 export const ALERT_DURATION = 2500;
+/** A `long` alert (8.1): a sentence to read, not a glance. */
+export const LONG_ALERT_DURATION = 5000;
 
 const KIND_ORDER: Record<ActivityKind, number> = {
   music: 0,
@@ -98,12 +103,13 @@ export const island = {
       expandedId: state.expandedId === id ? null : state.expandedId,
     });
   },
-  /** Show a confirmation for 2.5 s. A new alert replaces the current one. */
+  /** Show a confirmation for 2.5 s (5 s when `long`). A new alert replaces the current one. */
   alert(input: {
     icon?: AlertIcon;
     tone?: AlertTone;
     text: string;
     detail?: string;
+    long?: boolean;
   }): void {
     clearTimeout(alertTimer);
     set({
@@ -113,9 +119,13 @@ export const island = {
         tone: input.tone ?? "teal",
         text: input.text,
         detail: input.detail,
+        long: input.long,
       },
     });
-    alertTimer = setTimeout(() => set({ alert: null }), ALERT_DURATION);
+    alertTimer = setTimeout(
+      () => set({ alert: null }),
+      input.long ? LONG_ALERT_DURATION : ALERT_DURATION,
+    );
   },
   dismissAlert(): void {
     clearTimeout(alertTimer);

@@ -385,7 +385,9 @@ export function Island() {
     shape === "nav"
       ? "h-12"
       : shape === "alert"
-        ? "h-13"
+        ? state.alert?.long
+          ? "min-h-13"
+          : "h-13"
         : shape === "expanded"
           ? ""
           : "h-11";
