@@ -1035,6 +1035,14 @@ Carry-over into later chunks:
     deck's loadedmetadata / seeked / play / pause; the browser extrapolates between). Handlers:
     play (turns sound on if it was off), pause, nexttrack, previoustrack, seekto, seekbackward /
     seekforward (±10 s). Each `setActionHandler` is in try/catch.
+- **Music on the canvas, calmed (after 8.5, Nasheet: "very dizzy"):** the music no longer moves
+  any particle. Gone: the beat push (`AUDIO_PUSH`, `uPulse` is no longer uploaded) and the mid
+  stirring the drift (`AUDIO_DRIFT`, `uMid` not uploaded). Left: a breath. Particles.tsx smooths
+  bass and high again with τ 0.5 s (`MUSIC_TAU`), and the shader grows points by up to 10 %
+  (`AUDIO_SIZE` 0.1) and tints up to 15 % toward the accent (`AUDIO_TINT` 0.15), half in the room.
+  Verified with real music: bass reached the canvas as a slow level (0 → ~0.5 over ~2 s, then
+  steady); pulse and mid never uploaded. The 5.4 notes below describe the old, livelier version.
+  **[manual]** Whether it's now calm enough, or too subtle (raise `AUDIO_SIZE`, never add motion).
 - **Audio-reactive canvas (5.4):** `lib/audio/levels.ts`, the music block in
   `canvas/particles/Particles.tsx`'s `useFrame`, and the "Music (5.4)" block in
   `particles.vert.glsl`.

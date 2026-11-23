@@ -50,8 +50,8 @@ const PARALLAX_Y = 0.3;
 const SCROLL_TAU = 0.35;
 /** Base point size (CSS px at depth 1); the mood scales it. */
 const BASE_SIZE = 16;
-/** The beat pulse's decay (5.4). */
-const PULSE_S = 0.3;
+/** The music's slow smoothing on the canvas (s): a breath, not a flicker (after 8.5). */
+const MUSIC_TAU = 0.5;
 /**
  * The room (R.3): seen from about 25° above the desk (40° on phones, so the three rows separate
  * on a tall screen); the pointer tilts it up to 3°.
@@ -284,8 +284,8 @@ export function Particles({
   }, [colors]);
   // Smoothed scroll progress, kept in a ref (fast values skip React, CLAUDE.md §5.3).
   const scroll = useRef(0);
-  // The beat pulse (5.4): 1 on a beat, back to 0 over PULSE_S.
-  const pulse = useRef(0);
+  // The music levels, smoothed again for the canvas (calmed after 8.5).
+  const music = useRef({ bass: 0, high: 0 });
   useFrame((state, delta) => {
     const mesh = points.current;
     if (!mesh) return;
@@ -323,17 +323,16 @@ export function Particles({
     if (reflection.current) reflection.current.visible = r.room > 0.001;
     if (u.uAnyHot) u.uAnyHot.value = Math.max(...liveHot);
 
-    // Music (5.4): lib/audio/levels.ts writes smoothed bands and a beat flag every tick, before
-    // this frame (ticker priority). Read, never subscribed.
+    // Music (5.4, calmed after 8.5): lib/audio/levels.ts writes the bands every tick, before
+    // this frame (ticker priority). Read, never subscribed. The canvas smooths them again, slowly
+    // (MUSIC_TAU), so the points breathe with the music instead of flickering on every hit; the
+    // beat no longer does anything here.
     const audio = useStore.getState().audio;
-    if (u.uBass) u.uBass.value = audio.levels.bass;
-    if (u.uMid) u.uMid.value = audio.levels.mid;
-    if (u.uHigh) u.uHigh.value = audio.levels.high;
-    pulse.current = audio.beat
-      ? 1
-      : Math.max(0, pulse.current - Math.max(delta, 0) / PULSE_S);
-    // Squared: a quick kick that eases out.
-    if (u.uPulse) u.uPulse.value = pulse.current * pulse.current;
+    const km = 1 - Math.exp(-Math.max(delta, 0) / MUSIC_TAU);
+    music.current.bass += (audio.levels.bass - music.current.bass) * km;
+    music.current.high += (audio.levels.high - music.current.high) * km;
+    if (u.uBass) u.uBass.value = music.current.bass;
+    if (u.uHigh) u.uHigh.value = music.current.high;
 
     // Rotation and parallax, scrubbed to the page's scroll and separate from the morphs.
     const k = 1 - Math.exp(-Math.max(delta, 0) / SCROLL_TAU);
