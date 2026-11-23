@@ -11,7 +11,8 @@ import {
   VolumeX,
   type LucideIcon,
 } from "lucide-react";
-import type { AlertIcon, IslandAlert } from "@/lib/island";
+import { focusRing } from "@/components/ui/controlStyles";
+import { island, type AlertIcon, type IslandAlert } from "@/lib/island";
 import { cn } from "@/lib/utils";
 
 const ICONS: Record<AlertIcon, LucideIcon> = {
@@ -45,6 +46,7 @@ export function IslandAlertView({ alert }: { alert: IslandAlert }) {
             </span>
           ) : null}
         </span>
+        {alert.action ? <AlertAction action={alert.action} /> : null}
       </div>
     );
   }
@@ -63,6 +65,37 @@ export function IslandAlertView({ alert }: { alert: IslandAlert }) {
   );
 }
 
+/**
+ * 8.5: the alert's button (AR board, "Turn off"). Runs the action and closes the alert; the alert
+ * waits while the pointer or focus is on it.
+ */
+function AlertAction({
+  action,
+}: {
+  action: NonNullable<IslandAlert["action"]>;
+}) {
+  return (
+    <button
+      type="button"
+      data-cursor="orbit"
+      onClick={() => {
+        action.onClick();
+        island.dismissAlert();
+      }}
+      onPointerEnter={() => island.holdAlert(true)}
+      onPointerLeave={() => island.holdAlert(false)}
+      onFocus={() => island.holdAlert(true)}
+      onBlur={() => island.holdAlert(false)}
+      className={cn(
+        "flex h-8 shrink-0 cursor-pointer items-center rounded-chip bg-island-accent px-4 text-footnote font-semibold text-island-bg transition-opacity duration-150 ease-out hover:opacity-90 active:scale-[0.97]",
+        focusRing,
+      )}
+    >
+      {action.label}
+    </button>
+  );
+}
+
 /** The icon in its tinted circle. */
 function AlertIconBadge({
   alert,
@@ -77,7 +110,8 @@ function AlertIconBadge({
       className={cn(
         "flex size-9 shrink-0 items-center justify-center rounded-chip [&_svg]:size-4",
         alert.tone === "teal" && "bg-island-accent/15 text-island-accent",
-        alert.tone === "amber" && "bg-accent-secondary/15 text-accent-secondary",
+        alert.tone === "amber" &&
+          "bg-accent-secondary/15 text-accent-secondary",
         alert.tone === "neutral" && "bg-island-text/10 text-island-text",
         alert.tone === "danger" && "bg-island-danger/15 text-island-danger",
       )}

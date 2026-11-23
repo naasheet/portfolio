@@ -12,6 +12,7 @@ import { startGestures } from "@/features/ar/gestures";
 import { startTracker } from "@/features/ar/tracker";
 import { arCopy } from "@/content/ar";
 import { island } from "@/lib/island";
+import { setHandMode } from "@/lib/shortcuts";
 import { useStore } from "@/lib/store";
 import { toast } from "@/lib/toast";
 import { ARCoach, coachSeen } from "./ARCoach";
@@ -124,6 +125,18 @@ export default function ARLayer() {
         stopGestures ??= startGestures();
         if (!coachSeen()) setCoach(true);
       },
+      // 8.5: still slow at 320 × 240: suggest Mouse mode (the island alert's button).
+      onSlow: () =>
+        island.alert({
+          icon: "hand",
+          tone: "neutral",
+          text: arCopy.slow.text,
+          detail: arCopy.slow.detail,
+          action: {
+            label: arCopy.slow.action,
+            onClick: () => setHandMode(false),
+          },
+        }),
       onError: (message) => {
         stopGestures?.();
         stopGestures = null;

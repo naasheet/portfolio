@@ -55,6 +55,11 @@ export type IslandAlert = {
   detail?: string;
   /** 8.1: the detail is a sentence: it wraps under the text and the alert stays 5 s. */
   long?: boolean;
+  /**
+   * 8.5 (AR board, "Tracking is slow" with "Turn off"): a small button in the alert. Such an
+   * alert is long (5 s) and doesn't time out while the pointer or focus is on it.
+   */
+  action?: { label: string; onClick: () => void };
 };
 
 export type IslandState = {
@@ -110,8 +115,10 @@ export const island = {
     text: string;
     detail?: string;
     long?: boolean;
+    action?: { label: string; onClick: () => void };
   }): void {
     clearTimeout(alertTimer);
+    const long = input.long || Boolean(input.action);
     set({
       alert: {
         id: nextAlertId++,
@@ -119,13 +126,23 @@ export const island = {
         tone: input.tone ?? "teal",
         text: input.text,
         detail: input.detail,
-        long: input.long,
+        long,
+        action: input.action,
       },
     });
     alertTimer = setTimeout(
       () => set({ alert: null }),
-      input.long ? LONG_ALERT_DURATION : ALERT_DURATION,
+      long ? LONG_ALERT_DURATION : ALERT_DURATION,
     );
+  },
+  /**
+   * 8.5: hold the current alert while the visitor is on its button (true), or give it the rest
+   * of a long alert's time again (false).
+   */
+  holdAlert(held: boolean): void {
+    clearTimeout(alertTimer);
+    if (!state.alert || held) return;
+    alertTimer = setTimeout(() => set({ alert: null }), LONG_ALERT_DURATION);
   },
   dismissAlert(): void {
     clearTimeout(alertTimer);

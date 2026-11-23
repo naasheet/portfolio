@@ -36,6 +36,9 @@ export const landmarks = {
   phase: "off" as TrackerPhase,
   /** The camera frame's width ÷ height (points are 0–1 per axis), for distances (8.3). */
   aspect: 4 / 3,
+  /** 8.5: the camera frame's size as sent (the slow fallback drops it to 320 × 240). */
+  frameWidth: 0,
+  frameHeight: 0,
   /** 8.4: which hand (the subject's own), for the island's "Tracking · right hand". */
   hand: null as "left" | "right" | null,
   /** Where the model runs, once loaded (the GPU delegate, or the CPU fallback). */

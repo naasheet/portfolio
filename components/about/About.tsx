@@ -3,7 +3,11 @@
 import { ArrowUpRight, ChevronDown, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
-import { ARCard, type ARCardCopy } from "@/components/cards/ARCard";
+import {
+  ARCard,
+  type ARCardCopy,
+  type ARState,
+} from "@/components/cards/ARCard";
 import { NowPlayingCard } from "@/components/cards/NowPlayingCard";
 import { PhotoCard } from "@/components/cards/PhotoCard";
 import { ProfileCard } from "@/components/cards/ProfileCard";
@@ -77,6 +81,11 @@ export function About() {
   const router = useRouter();
   const stats = getStats();
   const openTerminal = () => useStore.getState().ui.setTerminalOpen(true);
+  // 8.5: the Hand card follows Hand mode: on, blocked (the camera was refused), else off.
+  const arState: ARState = useStore((s) =>
+    s.ar.enabled ? "on" : s.ar.status === "denied" ? "blocked" : "off",
+  );
+  const toggleHand = () => setHandMode(arState !== "on");
 
   // Button links go through the page transition (CLAUDE.md: every in-site navigation).
   const go = (href: string) => (e: MouseEvent<HTMLAnchorElement>) => {
@@ -219,18 +228,18 @@ export function About() {
             <ARCard
               hoverable
               className="hidden h-full md:flex"
-              state="off"
+              state={arState}
               copy={arCopy}
               helpHref="/about"
-              onToggle={() => setHandMode(true)}
+              onToggle={toggleHand}
             />
             <ARCard
               className="md:hidden"
-              state="off"
+              state={arState}
               copy={arCopy}
               helpHref="/about"
               compact={{ body: t.ar.bodyShort }}
-              onToggle={() => setHandMode(true)}
+              onToggle={toggleHand}
             />
           </BentoItem>
 

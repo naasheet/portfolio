@@ -38,6 +38,12 @@ export const arCopy = {
   tracker: {
     error: "Hand tracking didn't start, so I switched back to Mouse.",
   },
+  /** 8.5: still slow after dropping to 320 × 240 (AR board edge state, "Too slow"). */
+  slow: {
+    text: "Tracking is slow here",
+    detail: "Dropped to low resolution. Still slow?",
+    action: "Turn off",
+  },
   /** 8.4: the legend beside the preview (AR board, "Gestures"). */
   legend: {
     title: "Gestures",

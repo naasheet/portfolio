@@ -29,6 +29,17 @@ const SPEED_GAIN = 0.15;
 const VELOCITY_TAU = 0.1;
 /** A move counts as "moving" for this long after the last event. */
 const MOVING_MS = 60;
+/** The mouse's reach, world units at z = 0 (3.4: 0.8 first, "too large", then 0.45). */
+export const POINTER_RADIUS = 0.45;
+/**
+ * 8.5: the hand parts the particles wider and harder than the mouse: multipliers of the mouse's
+ * radius and strength (the plan's "radius 1.2, strength 1.3", read as multipliers: Nasheet, 8.5).
+ * Strength x 1.3 keeps the lens push (1.6 x strength in the shader) under ~2.2, where a rim forms.
+ */
+export const HAND_RADIUS_SCALE = 1.2;
+export const HAND_STRENGTH_SCALE = 1.3;
+/** The switch between mouse and hand eases over ~300 ms (τ 0.1 s), so the field never pops. */
+const HAND_EASE_TAU = 0.1;
 /** Ripples: how many can overlap, and how long one lives (its amplitude is ~2% by then). */
 export const RIPPLE_SLOTS = 4;
 const RIPPLE_LIFE_S = 1.6;
@@ -42,6 +53,10 @@ export type PointerFrame = {
   vy: number;
   /** 0–1. */
   strength: number;
+  /** uPointerRadius: the mouse's, or the hand's while one is in view (eased). */
+  radius: number;
+  /** Multiplies `strength` for uPointerStrength: 1 for the mouse, up to 1.3 for the hand. */
+  gain: number;
   /** One per slot: x, y (z = 0 plane), age in seconds, amplitude (0 = idle). */
   ripples: Vector4[];
 };
@@ -63,6 +78,8 @@ export function createPointerTracker(): PointerTracker {
     vx: 0,
     vy: 0,
     strength: 0,
+    radius: POINTER_RADIUS,
+    gain: 1,
     ripples: Array.from({ length: RIPPLE_SLOTS }, () => new Vector4()),
   };
   const ray = new Vector3();
@@ -163,6 +180,14 @@ export function createPointerTracker(): PointerTracker {
           lastMove = now;
         }
       }
+
+      // 8.5: the hand's wider, stronger reach, eased in and out.
+      const handOn = handActive();
+      const kh = 1 - Math.exp(-dt / HAND_EASE_TAU);
+      const radius = POINTER_RADIUS * (handOn ? HAND_RADIUS_SCALE : 1);
+      const gain = handOn ? HAND_STRENGTH_SCALE : 1;
+      frame.radius += (radius - frame.radius) * kh;
+      frame.gain += (gain - frame.gain) * kh;
 
       if (!seen || dt === 0) return frame;
 

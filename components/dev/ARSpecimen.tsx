@@ -94,7 +94,7 @@ export function ARSpecimen() {
     const write = () => {
       const el = readout.current;
       if (!el) return;
-      const text = `tracker ${landmarks.phase}${landmarks.delegate ? ` (${landmarks.delegate})` : ""} · ${landmarks.fps.toFixed(1)} fps · hand ${landmarks.visible ? "yes" : "no"}`;
+      const text = `tracker ${landmarks.phase}${landmarks.delegate ? ` (${landmarks.delegate})` : ""} · ${landmarks.frameWidth}×${landmarks.frameHeight} · ${landmarks.fps.toFixed(1)} fps · hand ${landmarks.visible ? "yes" : "no"}`;
       const g = gestureDebug;
       const tuning = landmarks.visible
         ? ` · pinch ${g.ratio.toFixed(2)} · fingers ${g.fingers} · ${g.gesture} · last click moved ${g.lastCorrection.toFixed(1)} px`

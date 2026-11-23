@@ -22,6 +22,7 @@ import { DEFAULT_PARTICLES, MAX_PARTICLES } from "../shapes/constants";
 import { readCanvasColors, watchTheme } from "./colors";
 import { liveMood, liveRoom } from "./mood";
 import {
+  POINTER_RADIUS,
   RIPPLE_SLOTS,
   createPointerTracker,
   type PointerTracker,
@@ -133,7 +134,7 @@ export function Particles({
           uMorph: { value: 0 },
           uScroll: { value: 0 },
           uPointer: { value: new Vector2(0, 0) },
-          uPointerRadius: { value: 0.45 },
+          uPointerRadius: { value: POINTER_RADIUS },
           uPointerStrength: { value: 0 },
           uPointerVelocity: { value: new Vector2(0, 0) },
           uRipples: {
@@ -393,7 +394,8 @@ export function Particles({
     if (p) {
       (u.uPointer?.value as Vector2 | undefined)?.set(p.x, p.y);
       (u.uPointerVelocity?.value as Vector2 | undefined)?.set(p.vx, p.vy);
-      if (u.uPointerStrength) u.uPointerStrength.value = p.strength;
+      if (u.uPointerStrength) u.uPointerStrength.value = p.strength * p.gain;
+      if (u.uPointerRadius) u.uPointerRadius.value = p.radius;
       const ripples = u.uRipples?.value as Vector4[] | undefined;
       ripples?.forEach((r, i) => r.copy(p.ripples[i]!));
     }

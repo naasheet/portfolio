@@ -543,8 +543,8 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **8 — AR** (8.1–8.4 done; 8.5, the canvas link, is next). Phase 6 (Terminal, 6.1–6.6) is
-complete. Build order changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
+Current phase: **9 — Games** (9.1, the game shell, is next). Phase 8 (AR, 8.1–8.5) is complete.
+Phase 6 (Terminal, 6.1–6.6) is complete. Build order changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
 Ask pill and the `/` shortcut are off (see "Chat off until Phase 7" below). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
@@ -567,7 +567,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker), 8.3 (hand cursor and gestures), 8.4 (gesture legend, feedback and onboarding)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker), 8.3 (hand cursor and gestures), 8.4 (gesture legend, feedback and onboarding), 8.5 (canvas link and fallbacks)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -584,10 +584,12 @@ Carry-over into later chunks:
   - **Phones:** the room has its own phone layout (R.3), but the other shapes still use `SHAPE_BOX`
     (4 wide) while a 390 px portrait view is only ~1.8 units wide at z = 0: the sphere, laptop etc.
     overflow on phones. Scale the mesh by aspect when the pages are built (4.x / 10.2).
-  - **8.5 AR pointer:** done in 8.3 for position: while `ar.enabled` and `ar.hand.visible`,
-    `createPointerTracker()` ignores window pointermove (real and synthetic) and reads `ar.hand` each
-    frame, so mouse and hand never fight over `uPointer`; the pinch's synthetic pointerdown still
-    ripples. 8.5 is left with the hand's look on the canvas.
+  - **AR pointer (8.3, 8.5):** while `ar.enabled` and `ar.hand.visible`, `createPointerTracker()`
+    ignores window pointermove (real and synthetic) and reads `ar.hand` each frame, so mouse and
+    hand never fight over `uPointer`; the pinch's synthetic pointerdown still ripples. The frame now
+    carries `radius` and `gain`: the mouse's `POINTER_RADIUS` 0.45 × 1, the hand's × 1.2 radius
+    (0.54) and × 1.3 strength (`HAND_RADIUS_SCALE` / `HAND_STRENGTH_SCALE`), eased with τ 0.1 s;
+    Particles writes `uPointerRadius` = radius and `uPointerStrength` = strength × gain.
   - **Scroll response constants** (top of `Particles.tsx`): from the current page's own scroll
     (`scroll.progress`, R.2): rotate up to 0.5 rad on Y, tilt 0.12 on X, lift up to 0.3 (parallax),
     smoothed with τ 0.35 s. A page that doesn't scroll leaves the mesh at rest. Tune by feel.
@@ -620,7 +622,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.4** (unchanged: all of it loads with ARLayer and the lazy Cursor), **214.2 KB after 8.3** (unchanged: gestures load with ARLayer, the hand cursor with the lazy Cursor), **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.5** (unchanged), **214.2 KB after 8.4** (unchanged: all of it loads with ARLayer and the lazy Cursor), **214.2 KB after 8.3** (unchanged: gestures load with ARLayer, the hand cursor with the lazy Cursor), **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1115,7 +1117,7 @@ Carry-over into later chunks:
     `ended` differently); the browser's own prompt flow (Allow / Block / dismiss); the explainer
     copy; the drag feel.
   - **Follow-ups:** the preview can't be moved by keyboard (drag only); add arrow-key corners in
-    10.6. The About ARCard's on / blocked states aren't wired yet (see "6.1 / 8.x wiring").
+    10.6. (The About ARCard's states were wired in 8.5.)
 - **Hand tracking in a worker (8.2):** `features/ar/hand.worker.ts`, `features/ar/tracker.ts`,
   `scripts/copy-mediapipe-wasm.ts` (postinstall), `features/ar/landmarks.ts` (reshaped),
   `components/ar/ARLayer.tsx` / `CameraPreview.tsx`, `content/ar.ts` (`preview.loadingModel /
@@ -1154,6 +1156,55 @@ Carry-over into later chunks:
     (`arCopy.tracker.error`), `ar.status = "error"`, Hand off (camera light off).
   - **Terminal:** `ar on` still prints "on its way (phase 8)" until 8.3 makes the hand do something
     (TODO(8.3) in `lib/commands/ar.ts`).
+- **Canvas link and fallbacks (8.5):** `canvas/particles/pointer.ts` + `Particles.tsx` (the hand's
+  reach), `features/ar/tracker.ts` (hidden tab, slow fallback, warm worker), `lib/island.ts` +
+  `components/nav/IslandAlert.tsx` (alert actions), `components/ar/ARLayer.tsx` (the slow alert),
+  `components/about/About.tsx` (the Hand card), `content/ar.ts` (`slow`), /dev's readout (frame size).
+  - **Decisions (Nasheet, 8.5):** "radius 1.2, strength 1.3" are **multipliers of the mouse** (0.45 →
+    0.54; strength × 1.3 keeps the lens push under the ~2.2 rim limit); island alerts get an
+    optional action button (only the slow alert uses it); the About Hand card is wired here.
+  - **Hidden tab:** the tracker sends no frames while `document.hidden`; coming back resets the rate
+    window and the slow monitor, so hidden time never counts as slow.
+  - **Slow:** `createSlowMonitor()` (pure) is fed each per-second rate: under `SLOW_FPS` 15 for
+    `SLOW_HOLD_S` 3 s → stage 1: the camera track's `applyConstraints({ width / height: ideal
+    320 / 240 })` (no new prompt); still slow 3 s more → stage 2: `onSlow` once per session →
+    ARLayer's island alert "Tracking is slow here · Dropped to low resolution. Still slow?" with
+    **Turn off** (`setHandMode(false)`). A new session (Hand on again) gets a new stream at full size.
+  - **Island alert actions:** `island.alert({ …, action: { label, onClick } })` makes the alert long
+    (5 s) and renders a small teal button (`AlertAction`); hovering or focusing it holds the alert
+    (`island.holdAlert(true / false)`); clicking runs the action and dismisses it. Use sparingly:
+    errors with Retry still go to the corner toasts (2.4).
+  - **Warm worker:** the worker is a module-level singleton (`acquireWorker` / `releaseWorker`).
+    Hand off: the session's listener detaches and a 30 s (`WORKER_IDLE_MS`) timer starts; Hand on
+    within it reuses the worker and its loaded model (the session gets a synthetic `ready` at once);
+    after it the worker is terminated (model released). A worker that errored is dropped at once,
+    also between sessions. `w.inFlight` keeps a new session from sending while the previous
+    session's frame is still with the worker; that stale result is dropped.
+  - **About Hand card:** `state` = on (`ar.enabled`), blocked (`ar.status` "denied"), else off; the
+    button toggles (`setHandMode(state !== "on")`).
+  - **Terminal:** `ar on / off` already called `setHandMode`; a test now checks they leave the store
+    exactly as the switch does.
+- **Verified 8.5 (headless Chromium 1248, production build; the 8.3 fake-worker harness plus a
+  main-world probe recording `uPointerRadius` / `uPointerStrength` as uploaded and a fake
+  `document.hidden`):**
+  - **Canvas:** mouse 0.45; with the hand moving 0.54 and strength up to ~1.28; 1.2 s after the hand
+    left, 0.45 again.
+  - **Hidden tab:** 0 frames sent in 1 s hidden, 28 in the 1 s after.
+  - **Slow** (the fake answering in 110 ms, ~8.4 fps): 640 × 480 → 320 × 240 at ~4.6 s, the alert
+    at ~8.7–9.2 s (screenshot matches the board's "Too slow"); "Turn off" → Mouse, switch off, the
+    worker still warm. Main-thread frames during it: p50 6.1 / p95 6.2–6.3, max 13–31 ms, 0 over
+    50 ms in two runs (one earlier run had a single 182 ms frame that didn't repeat).
+  - **Warm worker:** Hand on again within 30 s → no new worker, ready at once; off 31 s → terminated;
+    on again → a new one.
+  - **Terminal:** `ar off` → Mouse, preview gone; `ar on` → Hand, preview, tracking at ~26 fps.
+  - **About:** "Switch to Hand" off → "Hand on … Back to mouse" on.
+  - `npm run test`: 150 (+5: the slow monitor, the warm worker with fake timers, terminal parity).
+  - **[manual]** The Done-when: **waving your hand parts the particles** (the 0.54 / × 1.3 feel), and
+    a **really slowed laptop** (DevTools CPU 6×, or the low-end laptop) falls back without
+    freezing; whether 320 × 240 actually helps your detection rate; the alert copy.
+  - **Follow-ups:** the slow check needs results to arrive (a worker that stops answering entirely
+    isn't caught; add a watchdog if it ever happens); a WebGL context loss still isn't handled
+    (10.6).
 - **Gesture legend, feedback and onboarding (8.4):** `components/ar/GestureLegend.tsx`,
   `ARCoach.tsx`, `IslandAR.tsx`, `CameraPreview.tsx` (legend beside it), `ARLayer.tsx`,
   `Cursor.tsx` (action icon, lost hint), `features/ar/gestures.ts` (palm target, events, coach
@@ -2151,8 +2202,9 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
-- Hand mode (8.1, 8.2, 8.4): `content/ar.ts` (the explainer, the preview, 8.2's status lines,
-  the tracker error toast, 8.4's legend, coach steps, island lines and "Show me your hand") and the camera alerts in
+- Hand mode (8.1, 8.2, 8.4, 8.5): `content/ar.ts` (the explainer, the preview, 8.2's status
+  lines, the tracker error toast, 8.4's legend, coach steps, island lines and "Show me your hand",
+  8.5's "Tracking is slow here" alert) and the camera alerts in
   `copy.alerts` ("Camera's shy?", "Camera's gone quiet", "Can't start the camera", "No camera here",
   "Best on a laptop"): review the wording.
 - Terminal (6.1–6.4): `content/terminal.ts` — the banner and chips, command descriptions and

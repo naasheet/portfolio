@@ -197,3 +197,31 @@ describe("contact", () => {
     expect(errors()[0]).toMatch(/isn't one of: project, collab, hi/);
   });
 });
+
+describe("ar (8.5: same as the switch)", () => {
+  it("ar on / off set the same store state as setHandMode", async () => {
+    const { setHandMode } = await import("@/lib/shortcuts");
+    const ar = () => useStore.getState().ar;
+    const snapshot = () => ({
+      enabled: ar().enabled,
+      explainerOpen: ar().explainerOpen,
+    });
+    useStore.setState((s) => ({
+      ar: { ...s.ar, enabled: false, explainerOpen: false, camera: "yes" },
+    }));
+
+    await run("ar on");
+    const viaTerminal = snapshot();
+    await run("ar off");
+    const offViaTerminal = snapshot();
+
+    setHandMode(true);
+    const viaSwitch = snapshot();
+    setHandMode(false);
+    const offViaSwitch = snapshot();
+
+    expect(viaTerminal).toEqual(viaSwitch);
+    expect(offViaTerminal).toEqual(offViaSwitch);
+    expect(offViaSwitch.enabled).toBe(false);
+  });
+});
