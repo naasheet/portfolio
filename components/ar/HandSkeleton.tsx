@@ -4,7 +4,7 @@ import { FINGERTIPS, HAND_CONNECTIONS } from "@/features/ar/landmarks";
 import { cn } from "@/lib/utils";
 
 /**
- * The gestures as drawn on the AR board (point, two fingers, open palm): MediaPipe's 21-point skeleton, teal bones, white
+ * The gestures as drawn on the AR board (point, two fingers, pinch, open palm): MediaPipe's 21-point skeleton, teal bones, white
  * joints, and amber on the fingertips that matter. 100 × 100 view box, wrist at the bottom.
  */
 const POSES: Record<HandPose, readonly (readonly [number, number])[]> = {
@@ -55,6 +55,30 @@ const POSES: Record<HandPose, readonly (readonly [number, number])[]> = {
     [72, 73],
     [70, 76],
   ],
+  // Pinch (swipe back / forward, after the rework): thumb and index tips together.
+  pinch: [
+    [54, 88],
+    [44, 80],
+    [36, 72],
+    [32, 62],
+    [34, 53],
+    [46, 60],
+    [40, 52],
+    [36, 50],
+    [35, 53],
+    [54, 58],
+    [58, 60],
+    [60, 66],
+    [58, 70],
+    [62, 60],
+    [66, 62],
+    [67, 68],
+    [65, 72],
+    [68, 64],
+    [72, 66],
+    [72, 71],
+    [70, 74],
+  ],
   palm: [
     [52, 90],
     [42, 84],
@@ -84,6 +108,7 @@ const POSES: Record<HandPose, readonly (readonly [number, number])[]> = {
 const LIT: Record<HandPose, readonly number[]> = {
   point: [8],
   two: [8, 12],
+  pinch: [4, 8],
   palm: FINGERTIPS,
 };
 

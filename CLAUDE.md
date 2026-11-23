@@ -174,7 +174,7 @@ Put new code in the folder that owns it. Don't create new top-level folders with
    three into first-load JS).
 2. **Store slices:** `audio` (playing, track, volume, bass/mid/high levels), `scroll`
    (progress), `page` (id: which of the six pages, or null), `room` (hot object; `view`, the
-   canvas's projected object boxes, mutated in place), `ar` (enabled, status, explainer open and camera found (8.1), hand: x/y, dwell, scrolling, palm hold), `ui` (terminal open,
+   canvas's projected object boxes, mutated in place), `ar` (enabled, status, explainer open and camera found (8.1), hand: x/y, dwell, scrolling, swipe, palm hold), `ui` (terminal open,
    chat open, chat streaming, sound enabled), `theme`, `particles` (6.5: the terminal's shape override and
    explode count, read by the canvas).
 3. **Fast values skip React.** Audio levels, hand position and scroll progress change every
@@ -380,8 +380,9 @@ Near-black neutral, teal accent, amber for highlights. CSS variables use these n
   for 0.8 s clicks it (a ring fills first; moving off cancels; it won't repeat until the cursor
   leaves). **Two fingers** (index and middle up) is scroll mode: the cursor holds still and the
   hand's vertical travel scrolls like grabbing the page, gliding on after. An open palm held for
-  1 s plays or pauses the music; on Home, 0.8 s over a desk object opens it. Show a legend of the
-  gestures while AR is on.
+  1 s plays or pauses the music; on Home, 0.8 s over a desk object opens it. **Pinch and drag
+  sideways** (thumb and index together) is the browser's Back (drag right) or Forward (drag left),
+  on release once the drag is far enough. Show a legend of the gestures while AR is on.
 - The fingertip writes to the same `uPointer` as the mouse.
 
 ### 9.7 Games
@@ -1191,6 +1192,19 @@ Carry-over into later chunks:
   - **[manual]** On your webcam: the 0.8 s by feel (too eager while reading? `DWELL_S`); whether the
     two-finger pose is recognised reliably (the /dev readout's fingers, e.g. `·IM··`); the scroll
     gain and glide; text fields (a dwell focuses them, but typing still needs the keyboard).
+- **Pinch swipe: back / forward (after the rework, Nasheet's call):** the pinch is back for one job.
+  Pinch (`pinchRatio` < 0.25, let go > 0.35, `nextPinch`), then drag sideways: `swipeProgress(dx, dy)`
+  = dx / 160 px (`SWIPE_PX`), clamped to ±1, and 0 unless |dx| ≥ 1.5 × |dy|. On release,
+  `swipeAction`: ≥ 1 → `history.back()` (**dragged right**), ≤ −1 → `history.forward()` (**dragged
+  left**), else nothing, so dragging back cancels. The traversal goes through the 2.5 Back / Forward
+  path (scroll restored). While pinching: no dwell, no scroll mode, no palm hold; a lost hand drops
+  the pinch without navigating. `ar.hand.swipe` (−1 to 1) drives the cursor: six specks trail out
+  the way you drag (`data-swipe`, dim until lit); full, the pill says "Back" / "Forward"
+  (`data-swipe-ready`; the pill's own label comes back after). Legend: a fourth row "Pinch and
+  drag · right: back · left: forward" (HandSkeleton's `pinch` pose is back; `HandPose` is an
+  explicit union now). The coach stays at three steps (Nasheet). Verified (fake-worker harness):
+  short and vertical drags do nothing; right past the line → "Back" → `/work` → `/about`; left →
+  "Forward" → `/work`. Tests 156. **[manual]** The 160 px and the pinch thresholds on your webcam.
 - **Canvas link and fallbacks (8.5):** `canvas/particles/pointer.ts` + `Particles.tsx` (the hand's
   reach), `features/ar/tracker.ts` (hidden tab, slow fallback, warm worker), `lib/island.ts` +
   `components/nav/IslandAlert.tsx` (alert actions), `components/ar/ARLayer.tsx` (the slow alert),

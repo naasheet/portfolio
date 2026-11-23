@@ -10,6 +10,9 @@
  *                and moving the hand scrolls like grabbing the page (hand up = further down),
  *                gliding on when the pose ends.
  *   open palm    held 1 s: play / pause the music; on Home over a desk object, 0.8 s opens it.
+ *   pinch + drag thumb and index together, then sideways: right goes back, left goes forward (the
+ *                browser's buttons), on release once the drag is far enough. No clicks or
+ *                scrolling while pinching.
  *
  * The top half is pure (tested in __tests__/gestures.test.ts). startGestures() is the driver:
  * one gsap.ticker callback (the shared clock) that reads `landmarks`, filters the fingertip (One
@@ -32,6 +35,13 @@ export const INNER = 0.7;
 export const FINGER_EXTENDED = 1.5;
 /** The thumb is out when its tip is this far from the index knuckle, in hand sizes. */
 export const THUMB_EXTENDED = 0.6;
+/** Pinch ratio (thumb tip to index tip ÷ hand size): pinch below, let go above. */
+export const PINCH_ON = 0.25;
+export const PINCH_OFF = 0.35;
+/** Sideways travel (px) a pinch-drag needs before letting go goes back / forward. */
+export const SWIPE_PX = 160;
+/** ...and it must be this much more sideways than vertical. */
+export const SWIPE_RATIO = 1.5;
 /** Rest on something clickable this long to click it (Nasheet: 0.8 s). */
 export const DWELL_S = 0.8;
 /** The palm must be held this long to toggle the music. */
@@ -92,6 +102,30 @@ export function slotDistance(
 /** Hand size: wrist to middle knuckle. */
 export const handSize = (p: Points, aspect: number) =>
   slotDistance(p, SLOT.wrist, SLOT.middleKnuckle, aspect);
+
+/** Thumb tip to index tip ÷ hand size (Infinity when the hand is degenerate). */
+export function pinchRatio(p: Points, aspect: number): number {
+  const size = handSize(p, aspect);
+  if (size < 1e-4) return Infinity;
+  return slotDistance(p, SLOT.thumbTip, SLOT.indexTip, aspect) / size;
+}
+
+/** Pinch with hysteresis: starts below PINCH_ON, ends above PINCH_OFF. */
+export const nextPinch = (pinching: boolean, ratio: number) =>
+  pinching ? ratio < PINCH_OFF : ratio < PINCH_ON;
+
+/**
+ * A pinch-drag of (dx, dy) px: −1 to 1 toward forward (dragging left) or back (dragging right),
+ * 0 unless it's mostly sideways.
+ */
+export function swipeProgress(dx: number, dy: number): number {
+  if (Math.abs(dx) < Math.abs(dy) * SWIPE_RATIO) return 0;
+  return Math.max(-1, Math.min(1, dx / SWIPE_PX));
+}
+
+/** What letting go of a pinch-drag does: right = back, left = forward (Nasheet), else nothing. */
+export const swipeAction = (progress: number): "back" | "forward" | null =>
+  progress >= 1 ? "back" : progress <= -1 ? "forward" : null;
 
 export type Fingers = {
   thumb: boolean;
@@ -225,7 +259,7 @@ const emit = (event: GestureEvent) => {
 /** Live numbers for /dev's readout and tuning; nothing reads them in the app. */
 export const gestureDebug = {
   fingers: "",
-  /** idle | point | dwell | scroll | palm */
+  /** idle | point | dwell | scroll | palm | swipe */
   gesture: "idle",
 };
 
@@ -272,6 +306,13 @@ export function startGestures(): () => void {
   // Dwell.
   let dwellProgress = 0;
   let clicks = 0;
+
+  // Pinch and drag sideways: back / forward.
+  let pinchRatioNow = Infinity;
+  let pinching = false;
+  let pinchX = 0;
+  let pinchY = 0;
+  let swipe = 0;
 
   /** Cursor travel while the hand is in view, for the coach's "point" step. */
   let travel = 0;
@@ -321,6 +362,7 @@ export function startGestures(): () => void {
         }
         visible = true;
 
+        pinchRatioNow = pinchRatio(p, aspect);
         const fingers = extendedFingers(p, aspect);
         twoFingers = isTwoFingers(fingers);
         palmPose = isOpenPalm(fingers);
@@ -336,9 +378,29 @@ export function startGestures(): () => void {
           .map(([k, on]) => (on ? k : "·"))
           .join("");
 
+        // Pinch: starts a sideways drag from where the hand is; letting go past the line goes
+        // back (dragged right) or forward (dragged left).
+        const pinchNow = nextPinch(pinching, pinchRatioNow);
+        if (pinchNow && !pinching && !scrolling) {
+          pinching = true;
+          pinchX = tx;
+          pinchY = ty;
+          swipe = 0;
+          endHold();
+          dwell.reset();
+          dwellProgress = 0;
+        } else if (!pinchNow && pinching) {
+          pinching = false;
+          const action = swipeAction(swipe);
+          swipe = 0;
+          if (action === "back") window.history.back();
+          else if (action === "forward") window.history.forward();
+        }
+        if (pinching) swipe = swipeProgress(tx - pinchX, ty - pinchY);
+
         // Open palm, held: open the desk object under it (Home), else toggle the music; once
         // per hold. Moving onto another object restarts the hold.
-        if (!scrolling && palmPose) {
+        if (!scrolling && !pinching && palmPose) {
           const { page, room } = store();
           const goal = palmTarget(page.id, room.hot);
           if (palmLatched) {
@@ -372,10 +434,15 @@ export function startGestures(): () => void {
       }
     }
 
-    // 2. Hand lost: stop scrolling at once, fade the cursor after LOST_S.
+    // 2. Hand lost: stop scrolling (and drop a pinch without navigating) at once, fade the
+    //    cursor after LOST_S.
     if (visible && now - lastSeen > 0.15 && scrolling) {
       scrollPose.reset();
       endScroll(false);
+    }
+    if (visible && now - lastSeen > 0.15 && pinching) {
+      pinching = false;
+      swipe = 0;
     }
     if (visible && now - lastSeen > LOST_S) {
       visible = false;
@@ -394,7 +461,8 @@ export function startGestures(): () => void {
 
     // 3. Scroll mode: two fingers held. The cursor holds still; the hand's vertical travel
     //    scrolls whatever is under the cursor, like grabbing the page.
-    const wantScroll = visible && scrollPose.update(twoFingers, now);
+    const wantScroll =
+      visible && scrollPose.update(twoFingers && !pinching, now);
     if (wantScroll && !scrolling) {
       scrolling = true;
       prevHandY = ty;
@@ -451,7 +519,7 @@ export function startGestures(): () => void {
       }
       synthetic.move(dx, dy, false, moved);
 
-      const canDwell = !scrolling && !palmPose && palm === 0;
+      const canDwell = !scrolling && !pinching && !palmPose && palm === 0;
       const target = canDwell
         ? (synthetic.hovered()?.closest(CLICKABLE) ?? null)
         : null;
@@ -475,13 +543,15 @@ export function startGestures(): () => void {
     // 6. Store (fast values; only when something changed).
     gestureDebug.gesture = !visible
       ? "idle"
-      : scrolling
-        ? "scroll"
-        : palm > 0
-          ? "palm"
-          : dwellProgress > 0
-            ? "dwell"
-            : "point";
+      : pinching
+        ? "swipe"
+        : scrolling
+          ? "scroll"
+          : palm > 0
+            ? "palm"
+            : dwellProgress > 0
+              ? "dwell"
+              : "point";
     const hand = store().ar.hand;
     const x = w > 0 ? dx / w : 0.5;
     const y = h > 0 ? dy / h : 0.5;
@@ -494,7 +564,8 @@ export function startGestures(): () => void {
       hand.holdTarget !== holdTarget ||
       hand.dwell !== dwellProgress ||
       hand.scrolling !== scrolling ||
-      hand.clicks !== clicks
+      hand.clicks !== clicks ||
+      hand.swipe !== swipe
     ) {
       store().ar.setHand({
         x,
@@ -506,6 +577,7 @@ export function startGestures(): () => void {
         dwell: dwellProgress,
         scrolling,
         clicks,
+        swipe,
       });
     }
   };
@@ -524,6 +596,7 @@ export function startGestures(): () => void {
       dwell: 0,
       scrolling: false,
       clicks: 0,
+      swipe: 0,
     });
     gestureDebug.gesture = "idle";
   };

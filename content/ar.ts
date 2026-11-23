@@ -38,6 +38,8 @@ export const arCopy = {
   tracker: {
     error: "Hand tracking didn't start, so I switched back to Mouse.",
   },
+  /** Pinch and drag sideways (after the gesture rework): the cursor's pill once it's far enough. */
+  swipe: { back: "Back", forward: "Forward" },
   /** 8.5: still slow after dropping to 320 × 240 (AR board edge state, "Too slow"). */
   slow: {
     text: "Tracking is slow here",
@@ -50,6 +52,11 @@ export const arCopy = {
     rows: [
       { pose: "point", name: "Point", hint: "move · hold still to click" },
       { pose: "two", name: "Two fingers", hint: "scroll" },
+      {
+        pose: "pinch",
+        name: "Pinch and drag",
+        hint: "right: back · left: forward",
+      },
       {
         pose: "palm",
         name: "Open palm, hold",
@@ -100,4 +107,5 @@ export const arCopy = {
   },
 } as const;
 
-export type HandPose = (typeof arCopy.explainer.gestures)[number]["pose"];
+/** The hand drawings (HandSkeleton): the explainer's three, plus the pinch for swiping. */
+export type HandPose = "point" | "two" | "palm" | "pinch";

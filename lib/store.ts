@@ -83,6 +83,11 @@ export type Hand = {
   scrolling: boolean;
   /** Counts dwell clicks, so the cursor can flash on each one. */
   clicks: number;
+  /**
+   * Pinch and drag sideways: how far toward going back (> 0, dragging right) or forward (< 0,
+   * dragging left), −1 to 1; ±1 = release now to go. 0 = not swiping.
+   */
+  swipe: number;
 };
 
 /** Whether this device has a camera (8.1, enumerateDevices): the switch hides with "none". */
@@ -277,6 +282,7 @@ export const useStore = create<StoreState>()(
           dwell: 0,
           scrolling: false,
           clicks: 0,
+          swipe: 0,
         },
         setEnabled: (enabled) => patch("ar", { enabled }),
         toggle: () => patch("ar", { enabled: !get().ar.enabled }),

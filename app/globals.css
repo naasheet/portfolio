@@ -661,6 +661,20 @@ html.has-cursor * {
 .cursor-root[data-mode="hand"][data-scroll] .cursor-pill {
   opacity: 0;
 }
+/* Pinch-drag sideways: the row is dim until lit; full, the pill says Back / Forward. */
+.cursor-root[data-mode="hand"][data-swipe] .cursor-speck[data-on] {
+  opacity: 0.25;
+}
+.cursor-root[data-mode="hand"][data-swipe] .cursor-speck[data-on][data-lit] {
+  opacity: 1;
+}
+.cursor-root[data-mode="hand"][data-swipe-ready] .cursor-pill {
+  opacity: 1;
+  transform: translate(16px, -50%) scale(1);
+}
+.cursor-root[data-mode="hand"][data-swipe-ready] .cursor-pill svg {
+  display: none;
+}
 /* The ring is the feedback during a hold: the room's "Open ↗" pill steps aside. */
 .cursor-root[data-mode="hand"][data-palm] .cursor-pill {
   opacity: 0;

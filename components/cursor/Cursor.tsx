@@ -45,6 +45,9 @@ const CLICK_FLASH_MS = 160;
 /** Two-finger scroll: four specks above and below the dot (px). */
 const SCROLL_SPECKS = [0, 1, 2, 3];
 const SCROLL_OFFSETS = [-24, -14, 14, 24];
+/** Pinch-drag sideways: six specks trail out the way you drag, lit as the swipe fills. */
+const SWIPE_SPECKS = 6;
+const SWIPE_STEP = 10;
 /** Easing time constants (s): onto the ring in ~250 ms (soft spring), snapping in when pressed. */
 const RING_TAU = 0.07;
 const PRESS_TAU = 0.035;
@@ -151,7 +154,8 @@ function ringAround(el: HTMLElement, radius: number, offset: number): Ring {
  * 18 px. Dwell (ar.hand.dwell): the ring around what it rests on (or 16 specks around the dot)
  * lights up one by one; the click (ar.hand.clicks) flashes the pressed look: the specks collapse
  * into the 14 px dot and burst back out. Two-finger scroll (ar.hand.scrolling): four specks line
- * up above and below the dot. Palm hold (ar.hand.palm): 16 specks ring a play / pause icon and
+ * up above and below the dot. Pinch and drag sideways (ar.hand.swipe): six specks trail out the
+ * way you drag and light up; once full, the pill says "Back" or "Forward". Palm hold (ar.hand.palm): 16 specks ring a play / pause icon and
  * light up one by one. Hand lost: it fades.
  * It renders in hand mode even with reduced motion (it is the only pointer then): the specks are
  * still (no spin, no easing) and the click snaps.
@@ -216,6 +220,8 @@ export function Cursor() {
     let shown = false;
     /** Dwell clicks seen (ar.hand.clicks) and the end of the click flash (ms). */
     let seenClicks = useStore.getState().ar.hand.clicks;
+    /** The view pill's own label while it says Back / Forward. */
+    let pillBefore = "";
     let flashUntil = 0;
     /** When the hand went out of view (ms), for the lost hint; 0 while it's in view. */
     let lostSince = 0;
@@ -250,6 +256,7 @@ export function Cursor() {
       let palm = 0;
       let dwell = 0;
       let scrolling = false;
+      let swipe = 0;
       if (hand) {
         const ar = useStore.getState().ar;
         if (!ar.hand.visible) {
@@ -281,6 +288,23 @@ export function Cursor() {
         scrolling = ar.hand.scrolling;
         if (scrolling) rootEl.dataset.scroll = "";
         else delete rootEl.dataset.scroll;
+        // Pinch-drag sideways: once far enough, the pill says what letting go will do.
+        swipe = ar.hand.swipe;
+        if (swipe !== 0) rootEl.dataset.swipe = "";
+        else delete rootEl.dataset.swipe;
+        const ready = Math.abs(swipe) >= 1;
+        if (ready !== "swipeReady" in rootEl.dataset) {
+          if (ready) {
+            pillBefore = pillTextEl.textContent ?? "";
+            pillTextEl.textContent =
+              swipe > 0 ? arCopy.swipe.back : arCopy.swipe.forward;
+            rootEl.dataset.swipeReady = "";
+          } else {
+            // Give the pill back its own label (a desk object's "Open ↗").
+            pillTextEl.textContent = pillBefore;
+            delete rootEl.dataset.swipeReady;
+          }
+        }
         palm = ar.hand.palm;
         if (palm > 0) rootEl.dataset.palm = "";
         else delete rootEl.dataset.palm;
@@ -334,6 +358,12 @@ export function Cursor() {
           ty = pointer.y + PALM_RADIUS * Math.sin(a);
           tau = RING_TAU;
           setLit(i, i < lit);
+        } else if (hand && swipe !== 0) {
+          // Pinch-drag sideways: a row of specks out the way you drag, lit as it fills.
+          visible = i < SWIPE_SPECKS;
+          if (visible) tx = pointer.x + Math.sign(swipe) * (i + 1) * SWIPE_STEP;
+          tau = TEXT_TAU;
+          setLit(i, i < Math.floor(Math.abs(swipe) * SWIPE_SPECKS + 1e-6));
         } else if (hand && scrolling) {
           // Two-finger scroll: the specks line up above and below the dot, like a scroll track.
           const slot = SCROLL_SPECKS.indexOf(i);

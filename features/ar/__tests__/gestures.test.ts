@@ -7,7 +7,11 @@ import {
   isOpenPalm,
   isTwoFingers,
   mapToScreen,
+  nextPinch,
   palmTarget,
+  pinchRatio,
+  swipeAction,
+  swipeProgress,
 } from "../gestures";
 import { SLOT, TRACKED_COUNT } from "../landmarks";
 import { createOneEuro } from "../oneEuro";
@@ -72,6 +76,27 @@ describe("two fingers (scroll)", () => {
     expect(isTwoFingers(extendedFingers(point, 1))).toBe(false);
     expect(isTwoFingers(extendedFingers(hand(fist), 1))).toBe(false);
     expect(isTwoFingers(extendedFingers(hand(open), 1))).toBe(false);
+  });
+});
+
+describe("pinch and drag sideways (back / forward)", () => {
+  it("the pinch: thumb-to-index over hand size, with hysteresis", () => {
+    const p = hand({ ...open, thumbTip: [0.42, 0.45], indexTip: [0.42, 0.42] });
+    expect(pinchRatio(p, 1)).toBeCloseTo(0.03 / 0.2, 2);
+    expect(nextPinch(false, 0.3)).toBe(false);
+    expect(nextPinch(false, 0.24)).toBe(true);
+    expect(nextPinch(true, 0.3)).toBe(true);
+    expect(nextPinch(true, 0.36)).toBe(false);
+  });
+  it("right goes back, left goes forward, once far enough", () => {
+    expect(swipeAction(swipeProgress(170, 10))).toBe("back");
+    expect(swipeAction(swipeProgress(-170, 10))).toBe("forward");
+    expect(swipeProgress(80, 0)).toBeCloseTo(0.5);
+    expect(swipeAction(swipeProgress(120, 0))).toBeNull();
+  });
+  it("a mostly vertical drag does nothing", () => {
+    expect(swipeProgress(170, 150)).toBe(0);
+    expect(swipeAction(swipeProgress(170, 150))).toBeNull();
   });
 });
 
