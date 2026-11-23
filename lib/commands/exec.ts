@@ -99,6 +99,9 @@ async function runPipeline(
         if (last) session.print(lines);
         else captured.push(...lines);
       },
+      status: (l) => {
+        if (last && !env.signal.aborted) session.status(l);
+      },
       printError: (message) => {
         failed = true;
         if (!env.signal.aborted)
@@ -127,6 +130,7 @@ async function runPipeline(
       });
       return false;
     }
+    session.status(null);
     if (env.signal.aborted) throw new DOMException("Cancelled", "AbortError");
     stdin = captured.flatMap(toText);
   }

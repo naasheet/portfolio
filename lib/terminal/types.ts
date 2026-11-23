@@ -23,4 +23,9 @@ export type OutputLine =
   | { kind: "node"; node: ReactNode };
 
 export type EntryId = number;
-export type Entry = { id: EntryId; line: OutputLine };
+export type Entry = {
+  id: EntryId;
+  line: OutputLine;
+  /** A status line still redrawing (ctx.status, 6.4). */
+  live?: boolean;
+};

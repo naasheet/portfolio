@@ -66,10 +66,99 @@ export const terminalCopy = {
   },
   /** Each command's help line and messages (6.2+): lib/commands/<name>.ts reads its own. */
   commands: {
+    /** help's groups, in this order (6.4). */
+    categories: {
+      navigate: "Getting around",
+      about: "About me",
+      shell: "Shell",
+      fun: "Just for fun",
+    },
     help: {
-      description: "List every command",
-      usage: "help",
-      count: (n: number) => `${n} commands. Type one to run it.`,
+      description: "List every command, or explain one",
+      usage: "help [command]",
+      count: (n: number) =>
+        `${n} commands. Type one to run it, or help <command> for more.`,
+      usageLabel: "Usage",
+      examplesLabel: "Examples",
+      aliasesLabel: "Also",
+    },
+    whoami: {
+      description: "Who you are, and who I am",
+      usage: "whoami",
+      you: "visitor",
+      me: (name: string, title: string, city: string) =>
+        `…and I'm ${name}, ${title.toLowerCase()} in ${city}. Try neofetch for the long version.`,
+    },
+    skills: {
+      description: "My skills as a table",
+      usage: "skills",
+      head: ["Skill", "Level", "Years"],
+      years: (n: number) => `${n} yrs`,
+      learning: "Learning now",
+    },
+    history: {
+      description: "The commands you've typed (-c forgets them)",
+      usage: "history [-c]",
+      empty: "No history yet. You're a blank slate.",
+      cleared: "History cleared. We never speak of it again.",
+    },
+    clear: {
+      description: "Clear the screen (or Ctrl+L)",
+      usage: "clear",
+    },
+    date: {
+      description: "Your time and mine",
+      usage: "date",
+      yours: "You",
+      mine: (city: string) => `Me (${city})`,
+    },
+    exit: {
+      description: "Close the terminal (or Esc)",
+      usage: "exit",
+      bye: "logout. See you around.",
+    },
+    neofetch: {
+      description: "The system info, starring me",
+      usage: "neofetch",
+      name: "Name",
+      role: "Role",
+      location: "Location",
+      stack: "Stack",
+      /** The site's own stack (CLAUDE.md §3): a fact about this site, not a bio claim. */
+      stackValue: "Next.js · React · Three.js · GSAP",
+      uptime: "Uptime",
+      theme: "Theme",
+      track: "Track",
+      silence: "silence (press M for music)",
+      themes: { dark: "dark", light: "light" },
+      duration: (s: number) =>
+        s < 60
+          ? `${s} s`
+          : s < 3600
+            ? `${Math.floor(s / 60)} min ${s % 60} s`
+            : `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min`,
+    },
+    sudo: {
+      description: "Do something as admin (try: sudo hire-me)",
+      usage: "sudo <command>",
+      missing: "sudo: and do what, exactly? Try: sudo hire-me",
+      /** TODO(content): review the steps and the refusals. */
+      steps: [
+        "Checking references",
+        "Compiling the portfolio",
+        "Brewing coffee",
+        "Asking the particles nicely",
+        "Warming up the keyboard",
+        "Drafting a hello",
+      ],
+      bar: (done: number, total: number, step: string) =>
+        `[${"#".repeat(done)}${"-".repeat(total - done)}] ${Math.round((done / total) * 100)}% ${step}…`,
+      granted: "Access granted. Opening a message to me…",
+      refusals: [
+        "visitor is not in the sudoers file. This incident will be reported (to nobody).",
+        "Nice try. The only thing you can sudo here is hire-me.",
+        "Permission denied. But I like the confidence.",
+      ],
     },
     echo: {
       description: "Print what you type after it",

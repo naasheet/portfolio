@@ -120,7 +120,10 @@ export const Line = memo(function Line({ line }: { line: OutputLine }) {
                       key={c}
                       className={cn(
                         "pr-6 align-top whitespace-pre",
-                        c === 0 ? "text-island-accent" : "text-island-text",
+                        // A shared first-column width lines up consecutive tables (help's groups).
+                        c === 0
+                          ? "min-w-[12ch] text-island-accent"
+                          : "text-island-text",
                       )}
                     >
                       {cell}

@@ -20,6 +20,7 @@ function size(node: FsNode, read: (n: FsNode) => string | null): string {
 
 export const ls: Command = {
   name: "ls",
+  category: "navigate",
   description: t.description,
   usage: t.usage,
   examples: ["ls", "ls -la", "ls projects"],

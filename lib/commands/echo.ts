@@ -6,6 +6,7 @@ const t = terminalCopy.commands.echo;
 
 export const echo: Command = {
   name: "echo",
+  category: "shell",
   description: t.description,
   usage: t.usage,
   examples: ['echo "hello world"'],

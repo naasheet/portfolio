@@ -14,6 +14,7 @@ const t = terminalCopy.commands.open;
 
 export const open: Command = {
   name: "open",
+  category: "navigate",
   description: t.description,
   usage: t.usage,
   examples: ["open resume.pdf", "open projects/project-1.md", "open music/"],

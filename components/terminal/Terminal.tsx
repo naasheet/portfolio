@@ -15,7 +15,7 @@ import { getFs } from "@/lib/fs";
 import { complete } from "@/lib/commands/registry";
 import { useStore } from "@/lib/store";
 import { onTypingSound } from "@/lib/sfx";
-import { createHistory, type History } from "@/lib/terminal/history";
+import { getHistory, type History } from "@/lib/terminal/history";
 import {
   getServerSession,
   getSession,
@@ -58,7 +58,7 @@ export function Terminal() {
   const charWidth = useRef(0);
 
   useEffect(() => {
-    history.current ??= createHistory();
+    history.current ??= getHistory();
   }, []);
 
   // Keep the newest line in view: the Drawer's body is the scroller.
@@ -195,9 +195,17 @@ export function Terminal() {
       {banner ? <Welcome onRun={(command) => void run(command)} /> : null}
 
       <div role="log" aria-live="polite" aria-label={t.outputLabel}>
-        {entries.map((entry) => (
-          <Line key={entry.id} line={entry.line} />
-        ))}
+        {entries.map((entry) =>
+          // A live status line (a progress bar redrawing) is hidden from screen readers until
+          // it settles; then it's announced once.
+          entry.live ? (
+            <div key={entry.id} aria-hidden>
+              <Line line={entry.line} />
+            </div>
+          ) : (
+            <Line key={entry.id} line={entry.line} />
+          ),
+        )}
       </div>
 
       <div

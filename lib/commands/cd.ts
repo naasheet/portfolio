@@ -7,6 +7,7 @@ const t = terminalCopy.commands.cd;
 
 export const cd: Command = {
   name: "cd",
+  category: "navigate",
   description: t.description,
   usage: t.usage,
   examples: ["cd projects", "cd ..", "cd ~"],

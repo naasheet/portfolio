@@ -1,7 +1,8 @@
 "use client";
 
 import { ArrowRight, Download } from "lucide-react";
-import { useState, type ReactElement } from "react";
+import { useEffect, useState, type ReactElement } from "react";
+import { useStore } from "@/lib/store";
 import { CTACard } from "@/components/cards/CTACard";
 import { EmailCard } from "@/components/cards/EmailCard";
 import { SocialCard } from "@/components/cards/SocialCard";
@@ -59,6 +60,20 @@ function Status() {
  */
 export function Contact({ resumeKb }: { resumeKb: number | null }) {
   const [open, setOpen] = useState(false);
+  // `sudo hire-me` (6.4) asks for the sheet through the store; take the request and clear it.
+  useEffect(
+    () =>
+      useStore.subscribe(
+        (s) => s.ui.contactSheetOpen,
+        (asked) => {
+          if (!asked) return;
+          useStore.getState().ui.setContactSheetOpen(false);
+          setOpen(true);
+        },
+        { fireImmediately: true },
+      ),
+    [],
+  );
   const shown = socials.filter((s) => ICONS[s.platform]);
   const resumeMeta =
     resumeKb !== null ? t.resumeCard.meta(resumeKb) : undefined;

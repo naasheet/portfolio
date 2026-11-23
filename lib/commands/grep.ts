@@ -22,6 +22,7 @@ function find(hay: string, needle: string): [number, number][] {
 
 export const grep: Command = {
   name: "grep",
+  category: "shell",
   description: t.description,
   usage: t.usage,
   examples: ["help | grep music", 'echo "Hello World" | grep -i world'],

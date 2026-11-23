@@ -59,7 +59,21 @@ export function createHistory() {
     all(): readonly string[] {
       return items;
     },
+    /** `history -c`. */
+    clear(): void {
+      items = [];
+      index = -1;
+      storage.remove(KEY);
+    },
   };
+}
+
+let shared: ReturnType<typeof createHistory> | null = null;
+
+/** The history the terminal and the `history` command share (6.4). */
+export function getHistory(): ReturnType<typeof createHistory> {
+  shared ??= createHistory();
+  return shared;
 }
 
 export type History = ReturnType<typeof createHistory>;

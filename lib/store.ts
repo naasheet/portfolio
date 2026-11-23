@@ -94,6 +94,8 @@ export type UiSlice = {
   menuOpen: boolean;
   /** The music queue sheet (5.3), opened from the island's player. */
   queueOpen: boolean;
+  /** Ask the Contact page to open its message sheet (6.4, `sudo hire-me`); it clears the flag. */
+  contactSheetOpen: boolean;
   /**
    * Home's intro (R.6): "pending" until the gate starts leaving, "play" while the name forms and
    * assembles into the room, "done" once it has settled (or was skipped). lib/motion/intro.ts.
@@ -112,6 +114,7 @@ export type UiSlice = {
   toggleShortcuts: () => void;
   setMenuOpen: (open: boolean) => void;
   setQueueOpen: (open: boolean) => void;
+  setContactSheetOpen: (open: boolean) => void;
 };
 
 export type ThemeSlice = {
@@ -239,6 +242,7 @@ export const useStore = create<StoreState>()(
         shortcutsOpen: false,
         menuOpen: false,
         queueOpen: false,
+        contactSheetOpen: false,
         intro: "pending",
         setIntro: (intro) => {
           if (get().ui.intro !== intro) patch("ui", { intro });
@@ -260,6 +264,8 @@ export const useStore = create<StoreState>()(
           patch("ui", { shortcutsOpen: !get().ui.shortcutsOpen }),
         setMenuOpen: (menuOpen) => patch("ui", { menuOpen }),
         setQueueOpen: (queueOpen) => patch("ui", { queueOpen }),
+        setContactSheetOpen: (contactSheetOpen) =>
+          patch("ui", { contactSheetOpen }),
       },
 
       theme: {

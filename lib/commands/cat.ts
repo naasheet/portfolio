@@ -10,6 +10,7 @@ const t = terminalCopy.commands.cat;
 
 export const cat: Command = {
   name: "cat",
+  category: "navigate",
   description: t.description,
   usage: t.usage,
   examples: [

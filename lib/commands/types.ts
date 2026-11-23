@@ -22,6 +22,8 @@ export type FileSystem = VirtualFs;
 
 export type CommandContext = {
   print: (line: string | OutputLine | OutputLine[]) => void;
+  /** One line redrawn in place (a progress bar); it settles when the command ends (6.4). */
+  status: (line: OutputLine) => void;
   printError: (message: string) => void;
   clear: () => void;
   store: typeof useStore;
@@ -40,8 +42,12 @@ export type CommandContext = {
   openUrl: (url: string) => void;
 };
 
+/** How `help` groups commands (6.4; 6.5 adds site and music). */
+export type Category = "navigate" | "about" | "shell" | "fun";
+
 export type Command = {
   name: string;
+  category: Category;
   aliases?: string[];
   /** One line, shown by `help`. */
   description: string;

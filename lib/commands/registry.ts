@@ -5,25 +5,45 @@
  */
 import { cat } from "./cat";
 import { cd } from "./cd";
+import { clear } from "./clear";
+import { date } from "./date";
 import { echo } from "./echo";
+import { exit } from "./exit";
 import { grep } from "./grep";
 import { help } from "./help";
+import { history } from "./history";
 import { ls } from "./ls";
+import { neofetch } from "./neofetch";
 import { open } from "./open";
 import { pwd } from "./pwd";
+import { skills } from "./skills";
+import { sudo } from "./sudo";
 import { tree } from "./tree";
+import { whoami } from "./whoami";
 import type { Command, CommandContext } from "./types";
 
 export const commands: readonly Command[] = [
+  // Shell
   help,
+  history,
+  clear,
   echo,
   grep,
+  date,
+  exit,
+  // Getting around (6.3)
   ls,
   cd,
   pwd,
   cat,
   tree,
   open,
+  // About me
+  whoami,
+  skills,
+  neofetch,
+  // Just for fun
+  sudo,
 ];
 
 const byName = new Map<string, Command>();
@@ -118,7 +138,11 @@ export function complete(
     pool = commandNames();
   } else {
     const command = findCommand(words[0]!);
-    pool = command?.complete?.(words.slice(1), ctx) ?? [];
+    // help / man complete command names (help can't import the registry: a cycle).
+    pool =
+      command === help
+        ? commandNames()
+        : (command?.complete?.(words.slice(1), ctx) ?? []);
   }
   const candidates = [...new Set(pool.filter((c) => c.startsWith(word)))];
   if (candidates.length === 0) return { kind: "none" };

@@ -533,7 +533,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal** (6.1–6.3 done; 6.4, the core commands, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal** (6.1–6.4 done; 6.5, the site and music commands, is next). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -555,7 +555,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -608,7 +608,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -1036,6 +1036,41 @@ Carry-over into later chunks:
   - **Reduced motion:** the canvas doesn't render continuously, so no audio effect shows.
   - The 5.2 island bars keep their own 4-band, self-normalising reduction (`Bars.tsx`); they
     don't read `audio.levels`.
+- **Core commands (6.4):** `lib/commands/{whoami,skills,history,clear,date,exit,neofetch,sudo}.ts`,
+  `help.ts` rewritten; strings in `content/terminal.ts` (approved: they stay out of `copy.ts`, which
+  every page loads; §8 allows any content/ file).
+  - **Every command has a `category`** (`navigate` | `about` | `shell` | `fun`; 6.5 adds site and
+    music) and must have description, usage (starting with its name) and at least one example:
+    `__tests__/core.test.ts` checks every registered command, so a new one without them fails.
+  - **help / man:** grouped by `terminalCopy.commands.categories` (in that order), each group a
+    table; `help <cmd>` prints "name — description", Usage, Also (aliases), Examples (`$ …`);
+    unknown → "did you mean". `help <Tab>` completes command names (special-cased in the registry:
+    help can't import it, a cycle). Table first columns have `min-w-[12ch]` so consecutive tables
+    line up.
+  - **whoami** ("visitor", then who I am from `profile`), **skills** (per area a table: skill,
+    level dots (empty when unrated), years; then learning), **history** (numbered; `-c` clears;
+    `getHistory()` is now one shared instance for the terminal and the command), **clear**,
+    **date** (yours and `profile.location.timeZone`'s), **exit** (closes; scrollback stays),
+    **neofetch** (a plain-ASCII "NK" monogram, no block characters: they're not in the SF Mono
+    subset; name, role, location, the site's stack, uptime = `performance.now()` since this page
+    load, theme, the playing track or "silence").
+  - **sudo:** `sudo hire-me` → `ctx.status()` redraws a `[####------] 40% step…` bar in place
+    through six steps (420 ms each, Ctrl+C stops it), "Access granted…", then sets
+    **`ui.contactSheetOpen`** (new store flag) and closes the terminal and goes to /contact; the
+    Contact page subscribes (fireImmediately) and opens its sheet, clearing the flag. Anything
+    else: a refusal, cycling through three.
+  - **`ctx.status(line)` / `session.status()`:** one live entry (`live: true`, rendered
+    `aria-hidden` so screen readers don't hear every redraw) replaced in place; it settles (normal
+    entry) when the command ends (`exec` and `session.end()` call `status(null)`).
+- **Verified 6.4:** `npm run test`: **92 tests** (+30: each command's help text, help lists all and
+  groups, help <cmd> / man / typo, help completion, whoami, neofetch, date, clear, exit, skills,
+  sudo refusals, a cancelled `sudo hire-me` leaving one settled line and no sheet). In the terminal
+  (production build): help shows 17 commands in 4 aligned groups; `man ls`; neofetch (screenshot:
+  monogram beside the facts); whoami; date; `sudo rm -rf /` refused; history numbered; **`sudo
+  hire-me`: one log entry redrawn 30 % → 100 %, then the terminal closed, /contact with the "Say
+  hello" sheet open.** Console clean.
+  - **[manual]** The jokes (`terminalCopy.commands.sudo`, whoami, neofetch's "silence") and the
+    420 ms pace by feel; `sudo hire-me` on a phone.
 - **Virtual filesystem (6.3):** `lib/fs.ts`, `lib/commands/{ls,cd,pwd,cat,tree,open}.ts`,
   `lib/terminal/markdown.ts`, `content/terminal.ts`, `&&` / `;` in the parser.
   - **Tree** (generated from `content/`, built lazily by `getFs()`): `~/about.md` (name, title,
@@ -1735,8 +1770,8 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
-- Terminal (6.1–6.3): `content/terminal.ts` — the banner and chips, command descriptions and
-  messages, and the `~/.secrets` hints ("Something on the desk looks thirsty.", "Some files hide
+- Terminal (6.1–6.4): `content/terminal.ts` — the banner and chips, command descriptions and
+  messages (6.4: the sudo steps and refusals, whoami's line, neofetch's labels), and the `~/.secrets` hints ("Something on the desk looks thirsty.", "Some files hide
   behind a dot.") and footer: review the wording.
 - About (5.5): `copy.about.nowPlaying` for review ("Paused" isn't from the frame).
 - About (4.3): confirm `profile.degree` ("Final-year B.Tech, Computer Engineering") and

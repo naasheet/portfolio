@@ -6,8 +6,10 @@ const t = terminalCopy.commands.pwd;
 
 export const pwd: Command = {
   name: "pwd",
+  category: "navigate",
   description: t.description,
   usage: t.usage,
+  examples: ["pwd", "cd projects && pwd"],
   run(_args, { cwd, print }) {
     print({ kind: "text", text: terminalCopy.fs.home + cwd.slice(1) });
   },

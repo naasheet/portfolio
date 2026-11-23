@@ -7,6 +7,7 @@ const t = terminalCopy.commands.tree;
 
 export const tree: Command = {
   name: "tree",
+  category: "navigate",
   description: t.description,
   usage: t.usage,
   examples: ["tree", "tree -a", "tree projects"],

@@ -30,6 +30,8 @@ let state: Session = {
 let nextId = 1;
 let controller: AbortController | null = null;
 let answer: ((value: string) => void) | null = null;
+/** The live status line's entry, while a command redraws it. */
+let statusId: number | null = null;
 const listeners = new Set<() => void>();
 
 function set(partial: Partial<Session>) {
@@ -47,7 +49,37 @@ export const session = {
   },
   /** Ctrl+L / `clear`: the scrollback and the banner go. */
   clear(): void {
+    statusId = null;
     set({ entries: [], banner: false });
+  },
+  /**
+   * ctx.status (6.4): one line a command redraws in place (a progress bar). null settles it:
+   * it stays in the scrollback as a normal line.
+   */
+  status(line: OutputLine | null): void {
+    if (line === null) {
+      if (statusId === null) return;
+      const id = statusId;
+      statusId = null;
+      set({
+        entries: state.entries.map((e) =>
+          e.id === id ? { id, line: e.line } : e,
+        ),
+      });
+      return;
+    }
+    if (statusId === null || !state.entries.some((e) => e.id === statusId)) {
+      statusId = nextId++;
+      const entries = [...state.entries, { id: statusId, line, live: true }];
+      set({ entries: entries.slice(Math.max(0, entries.length - MAX_LINES)) });
+      return;
+    }
+    const id = statusId;
+    set({
+      entries: state.entries.map((e) =>
+        e.id === id ? { id, line, live: true } : e,
+      ),
+    });
   },
   /** Start a command; returns its signal. */
   begin(): AbortSignal {
@@ -57,6 +89,7 @@ export const session = {
     return controller.signal;
   },
   end(): void {
+    session.status(null);
     controller = null;
     answer = null;
     if (state.running || state.asking) set({ running: false, asking: null });
