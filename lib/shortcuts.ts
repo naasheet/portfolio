@@ -162,7 +162,6 @@ export type ShortcutGroup = "everywhere" | "home";
 export type Shortcut = {
   id:
     | "terminal"
-    | "chat"
     | "shortcuts"
     | "theme"
     | "sound"
@@ -181,6 +180,11 @@ export type Shortcut = {
   run: (key: string) => boolean | void;
 };
 
+/*
+ * No "/" (chat) until Phase 7, which now comes after Phase 9: add it back then, as
+ * { id: "chat", key: "/", match: ["/"], label: copy.shortcuts.chat, run: toggleChat } (and
+ * "chat" in the id union). The ? overlay lists this array, so it drops out there too.
+ */
 export const SHORTCUTS: readonly Shortcut[] = [
   {
     id: "terminal",
@@ -189,14 +193,6 @@ export const SHORTCUTS: readonly Shortcut[] = [
     match: ["`"],
     label: copy.shortcuts.terminal,
     run: openTerminal,
-  },
-  {
-    id: "chat",
-    group: "everywhere",
-    key: "/",
-    match: ["/"],
-    label: copy.shortcuts.chat,
-    run: () => useStore.getState().ui.toggleChat(),
   },
   {
     id: "sound",

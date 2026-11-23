@@ -821,8 +821,8 @@ html[data-gate="done"] .entry-gate {
  * Persistent layer (2.3). viewport-fit=cover lets the page run under the notch and the home
  * indicator, so every fixed control is inset by at least 16 px or the safe area, whichever is
  * larger. The right side adds --scrollbar-gap (set by lockScroll), so it doesn't jump when an
- * overlay locks scrolling on Windows. Toasts sit above the 40 px Ask pill (7.4 revisits
- * this when the real Ask bubble lands).
+ * overlay locks scrolling on Windows. Toasts sat above the 40 px Ask pill; with the
+ * pill hidden until Phase 7 they sit in the corner (7.4 sets the offset for the real bubble).
  */
 :root {
   --layer-inset-bottom: max(16px, env(safe-area-inset-bottom));
@@ -830,7 +830,8 @@ html[data-gate="done"] .entry-gate {
   --layer-inset-right: calc(
     max(16px, env(safe-area-inset-right)) + var(--scrollbar-gap, 0px)
   );
-  --toast-offset: calc(var(--layer-inset-bottom) + 56px);
+  /* No Ask pill until Phase 7: toasts sit in the corner. 7.4: the bubble's height + 16 px. */
+  --toast-offset: var(--layer-inset-bottom);
   /* The nav row floats 20 px from the top, or below the notch (2.4). */
   --nav-inset-top: max(20px, env(safe-area-inset-top));
 }

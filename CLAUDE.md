@@ -43,7 +43,7 @@ Non-goals: no OS/desktop metaphor, no whiteboard or kanban board, no iOS-looking
 | AR hand control | Global toggle in the nav; also drives the Slice game | AR button, or `ar on` |
 | Music | The nav's music island (2.4, 5.2); drives the canvas | The island, the sound button, `M`, `play`, or the headphones on the desk |
 | iOS-style fonts | All text | Self-hosted SF Pro Text, Display and Mono |
-| Chatbot | Floating "Ask" bubble, bottom-right | Click it, press `/`, or `ask …` |
+| Chatbot | Floating "Ask" bubble, bottom-right (Phase 7; hidden until then) | Click it, press `/`, or `ask …` |
 | Working terminal | Drop-down drawer; full page on mobile | Backtick key (`) or the nav icon |
 | Games (2) | `/arcade`: Slice (played by hand) and Stack (3D tower) | The controller on the desk, the Arcade page, or `play slice` / `play stack` |
 
@@ -521,11 +521,17 @@ NEXT_PUBLIC_SHOW_DEV=          # set to 1 to show /dev in production builds
 | 4 | Pages and content: content model, ~~hero~~ (4.2, replaced by phase R), about, work, case studies, skills, contact, SEO, MVP review (4.1–4.9) — **MVP** | 7–8 |
 | 5 | Music: engine, mini-player, expanded player, audio-reactive canvas, now-playing card (5.1–5.5) | 9 |
 | 6 | Terminal: UI, parser and registry, virtual filesystem, core and site commands, mobile (6.1–6.6) | 10 |
-| 7 | Chatbot: knowledge, API, rate limits, UI, actions (7.1–7.5) | 11 |
-| 8 | AR: permission and preview, worker tracking, gestures, legend and coach, canvas link (8.1–8.5) | 12 |
-| 9 | Games: shell, Slice, Stack, leaderboard, arcade (9.1–9.7) | 13–14 |
+| 8 | AR: permission and preview, worker tracking, gestures, legend and coach, canvas link (8.1–8.5) | 11 |
+| 9 | Games: shell, Slice, Stack, leaderboard, arcade (9.1–9.7) | 12–13 |
+| 7 | Chatbot: knowledge, API, rate limits, UI, actions (7.1–7.5) | 14 |
 | 10 | Polish pass: UI audit, responsive, motion, performance, bundle, accessibility, devices (10.1–10.7) | 15 |
 | 11 | Ship: deploy and monitoring, README and credits, demo video (11.1–11.3) | 16 |
+
+**Order change (after 6.6, Nasheet's decision):** Phase 7 (Chatbot) now runs after Phase 9 and
+before Phase 10, so the phases go 6 → 8 → 9 → 7 → 10 → 11. Chunk numbers stay as they are. Until
+Phase 7: the "Ask" pill is hidden (`ChatBubbleSlot` renders nothing, in place), `/` is not a
+shortcut (gone from `SHORTCUTS` and so from the ? overlay), and the terminal's `ask` keeps its "on
+its way (phase 7)" reply.
 
 If scope must shrink, cut in this order: chatbot actions (7.5), then Stack (9.4–9.5). The
 canvas, music, terminal, AR and Slice are the identity of the site; never cut those.
@@ -534,7 +540,9 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **6 — Terminal is complete** (6.1–6.6); Phase 7 (Chatbot, 7.1) is next. Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
+Current phase: **6 — Terminal is complete** (6.1–6.6); **Phase 8 (AR, 8.1) is next.** Build order
+changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
+Ask pill and the `/` shortcut are off (see "Chat off until Phase 7" below). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
 Phase R (R.1–R.7) is complete. Phases 0, 2 and 3 are complete; phase 1 is built, but 1.8, the design
 review, is still Nasheet's open [manual] checkpoint.
@@ -628,8 +636,8 @@ Carry-over into later chunks:
 - **Music in the island:** built in 5.2 (see "Music in the island (5.2)" below). The sound circle
   and the idle island still show the CSS `EqBars` loop while `audio.playing`; the island's music
   activity uses the analyser-driven `components/player/Bars.tsx`.
-- **6.1 / 7.x / 8.x / 9.x flags:** `` ` `` and the terminal circle flip `ui.terminalOpen`; `/` flips
-  `ui.chatOpen`; Hand (and `A`) sets `ar.enabled`; Esc (when no overlay is open) closes chat, then
+- **6.1 / 7.x / 8.x / 9.x flags:** `` ` `` and the terminal circle flip `ui.terminalOpen` (6.6: phones
+  open /terminal); `/` will flip `ui.chatOpen` again in Phase 7 (removed until then); Hand (and `A`) sets `ar.enabled`; Esc (when no overlay is open) closes chat, then
   the terminal, then an expanded island card. Each feature pushes its own island activity
   (AR: camera dot + hand, chat: "Writing a reply…", game: live score; a new best is
   `island.alert({ icon: "star", tone: "amber", … })`). The "Hint · first use" state is not built yet.
@@ -639,9 +647,18 @@ Carry-over into later chunks:
   is treated as Back / Forward and restored to its saved scroll position. (Page links:
   `ChapterLink`, a TransitionLink to the page's route.)
 - **Terminal (6.1, built):** see "Terminal UI (6.1)" below; resizable and /terminal since 6.6.
-- **7.4 Ask bubble:** `--toast-offset` in `globals.css` (2.3) is `var(--layer-inset-bottom) + 56px`,
-  sized for the 40 px placeholder pill plus a 16 px gap. Change the 56 px to the real bubble's
-  height + 16.
+- **Chat off until Phase 7 (now after Phase 9):**
+  - **Ask pill hidden:** `components/chat/ChatBubbleSlot.tsx` returns null but stays in its place in
+    `PersistentLayer` (bottom-right corner). 7.4 puts the Ask bubble there.
+  - **`/` removed** from `SHORTCUTS` in `lib/shortcuts.ts` (and the "chat" id from the union); the ?
+    overlay lists that array, so it's gone there too. "/" stays lit on the overlay's keyboard drawing,
+    because "?" is drawn as the / key. `copy.shortcuts.chat` and `copy.layer.ask` are kept for 7.x.
+    Re-add the entry in Phase 7 (the comment above `SHORTCUTS` has it).
+  - **Toasts:** `--toast-offset` is `var(--layer-inset-bottom)` while there's no pill (it was
+    `+ 56px`: the 40 px pill + 16). 7.4: set it to the real bubble's height + 16.
+  - **Terminal:** `ask` still answers "The chatbot is on its way (phase 7)." (unchanged).
+  - **Left as is:** the store's `ui.chatOpen` / `chatStreaming`, Esc closing chat first, and the
+    `/terminal` page's comment about covering the Ask pill (harmless while it's hidden).
 - **10.x icon sizes:** `components/media/iconSize.ts` has `ICON_SIZE` (16 / 20 / 24) and `ICON_CLASS`
   (`size-4/5/6`). Earlier components still hard-code `size-4` and friends; move them to the
   constants in the polish pass. New code uses the constants.
