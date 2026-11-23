@@ -45,6 +45,8 @@ export type Synthetic = {
   scroll(x: number, y: number, dy: number): void;
   /** The hand left: leave the hovered chain. */
   leave(): void;
+  /** 8.4: a full click at (x, y) without a pinch (the palm hold opening a desk object). */
+  click(x: number, y: number): void;
 };
 
 /** The element and its ancestors, innermost first (what :hover would cover). */
@@ -185,6 +187,16 @@ export function createSynthetic(): Synthetic {
       const lenis = getLenis();
       if (lenis) lenis.scrollTo(lenis.targetScroll + dy, { immediate: true });
       else window.scrollBy(0, dy);
+    },
+    click(x, y) {
+      const el = at(x, y);
+      if (!el) return;
+      hoverTo(el, x, y, 0);
+      fire(el, "pointerdown", "mousedown", init(x, y, 1));
+      fire(el, "pointerup", "mouseup", init(x, y, 0));
+      el.dispatchEvent(
+        new MouseEvent("click", { ...init(x, y, 0), detail: 1 }),
+      );
     },
     leave() {
       const old = chain[0];

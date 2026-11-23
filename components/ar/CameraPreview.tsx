@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { arCopy } from "@/content/ar";
 import { focusRing } from "@/components/ui/controlStyles";
+import { GestureLegend } from "./GestureLegend";
 import {
   SLOT,
   TRACKED_BONES,
@@ -223,53 +224,62 @@ export function CameraPreview({ stream }: { stream: MediaStream }) {
       style={{ x, y }}
       title={t.dragHint}
       className={cn(
-        "pointer-events-auto fixed flex w-44 cursor-grab touch-none flex-col gap-2 rounded-card glass p-2 select-none active:cursor-grabbing",
+        "pointer-events-auto fixed flex cursor-grab touch-none gap-2 select-none active:cursor-grabbing",
+        // 8.4: the legend sits beside the preview, on the side away from the screen edge.
+        corner.endsWith("r") ? "flex-row-reverse" : "flex-row",
+        corner.startsWith("t") ? "items-start" : "items-end",
         CORNER_CLASS[corner],
       )}
     >
-      <div className="relative h-30 w-40 overflow-hidden rounded-control bg-island-bg">
-        <video
-          ref={video}
-          muted
-          playsInline
-          autoPlay
-          aria-hidden
-          className="size-full -scale-x-100 object-cover"
-        />
-        <canvas
-          ref={canvas}
-          aria-hidden
-          className="pointer-events-none absolute inset-0 size-full"
-        />
-        <span
-          aria-hidden
-          className="absolute top-2 left-2 size-2 rounded-chip bg-island-danger"
-        />
-        <span
-          aria-hidden
-          className="absolute right-2 bottom-1.5 text-caption-2 font-mono text-island-text-secondary"
-        >
-          {t.mirrored}
-        </span>
+      <div className="flex w-44 flex-col gap-2 rounded-card glass p-2">
+        <div className="relative h-30 w-40 overflow-hidden rounded-control bg-island-bg">
+          <video
+            ref={video}
+            muted
+            playsInline
+            autoPlay
+            aria-hidden
+            className="size-full -scale-x-100 object-cover"
+          />
+          <canvas
+            ref={canvas}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 size-full"
+          />
+          <span
+            aria-hidden
+            className="absolute top-2 left-2 size-2 rounded-chip bg-island-danger"
+          />
+          <span
+            aria-hidden
+            className="absolute right-2 bottom-1.5 text-caption-2 font-mono text-island-text-secondary"
+          >
+            {t.mirrored}
+          </span>
+        </div>
+        <div className="flex items-center justify-between pl-1">
+          <span className="flex items-center gap-2 text-footnote text-text-primary">
+            <span
+              aria-hidden
+              className="size-2 rounded-chip bg-accent-primary"
+            />
+            <span ref={status}>{statusText()}</span>
+          </span>
+          <button
+            type="button"
+            aria-label={t.off}
+            onClick={() => setHandMode(false)}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            className={cn(
+              "flex size-7 cursor-pointer items-center justify-center rounded-control text-text-secondary transition-colors duration-150 ease-out hover:bg-text-primary/10 hover:text-text-primary [&_svg]:size-4",
+              focusRing,
+            )}
+          >
+            <X aria-hidden />
+          </button>
+        </div>
       </div>
-      <div className="flex items-center justify-between pl-1">
-        <span className="flex items-center gap-2 text-footnote text-text-primary">
-          <span aria-hidden className="size-2 rounded-chip bg-accent-primary" />
-          <span ref={status}>{statusText()}</span>
-        </span>
-        <button
-          type="button"
-          aria-label={t.off}
-          onClick={() => setHandMode(false)}
-          onPointerDownCapture={(e) => e.stopPropagation()}
-          className={cn(
-            "flex size-7 cursor-pointer items-center justify-center rounded-control text-text-secondary transition-colors duration-150 ease-out hover:bg-text-primary/10 hover:text-text-primary [&_svg]:size-4",
-            focusRing,
-          )}
-        >
-          <X aria-hidden />
-        </button>
-      </div>
+      <GestureLegend />
     </m.div>
   );
 }

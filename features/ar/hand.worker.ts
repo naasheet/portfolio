@@ -13,13 +13,20 @@
 import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 import { TRACKED } from "./landmarks";
 
+export type Handedness = "left" | "right" | null;
+
 /** Main thread → worker. */
 export type ToWorker = { type: "frame"; bitmap: ImageBitmap; ts: number };
 
 /** Worker → main thread. */
 export type FromWorker =
   | { type: "ready"; delegate: "GPU" | "CPU" }
-  | { type: "result"; points: Float32Array | null }
+  | {
+      type: "result";
+      points: Float32Array | null;
+      /** 8.4: the subject's own hand (frames aren't mirrored, so MediaPipe's label is direct). */
+      hand?: Handedness;
+    }
   | { type: "error"; message: string };
 
 const origin = self.location.origin;
@@ -146,7 +153,10 @@ self.addEventListener("message", (event: MessageEvent<ToWorker>) => {
     const result = landmarker.detectForVideo(bitmap, ts);
     detected = true;
     const points = pack(result.landmarks[0]);
-    post({ type: "result", points }, points ? [points.buffer] : []);
+    const label = result.handedness[0]?.[0]?.categoryName;
+    const hand: Handedness =
+      label === "Left" ? "left" : label === "Right" ? "right" : null;
+    post({ type: "result", points, hand }, points ? [points.buffer] : []);
   } catch (error) {
     if (delegate === "GPU" && !detected && model) {
       busy = true;

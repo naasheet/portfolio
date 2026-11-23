@@ -38,6 +38,60 @@ export const arCopy = {
   tracker: {
     error: "Hand tracking didn't start, so I switched back to Mouse.",
   },
+  /** 8.4: the legend beside the preview (AR board, "Gestures"). */
+  legend: {
+    title: "Gestures",
+    rows: [
+      { pose: "point", name: "Point", hint: "move" },
+      { pose: "pinch", name: "Pinch", hint: "click · drag to scroll" },
+      {
+        pose: "palm",
+        name: "Open palm, hold",
+        hint: "music · opens on the desk",
+      },
+    ],
+    drag: "Drag the preview to any corner",
+  },
+  /** 8.4: the hand left the frame for 3 s (AR board edge state, "Hand lost"). */
+  lostHint: "Show me your hand",
+  /** 8.4: the island's AR activity (Island board, "AR · live" and "AR · palm hold"). */
+  island: {
+    label: "Hand mode",
+    tracking: (hand: "left" | "right" | null) =>
+      hand ? `Tracking · ${hand} hand` : "Tracking",
+    noHand: "No hand",
+    fps: (n: number) => `${Math.round(n)} fps`,
+    holdMusic: (playing: boolean) =>
+      playing ? "Hold to pause music" : "Hold to play music",
+    holdOpen: (name: string) => `Hold to open ${name}`,
+    seconds: (s: number) => `${s.toFixed(1)} s`,
+  },
+  /** 8.4: the coach, the first time Hand mode turns on (AR board, "Coach"). */
+  coach: {
+    label: "Hand mode tour",
+    step: (n: number, of: number) => `Step ${n} of ${of}`,
+    skip: "Skip tour",
+    waiting: "Waiting for you…",
+    next: "Next",
+    done: "Done",
+    steps: [
+      {
+        pose: "point",
+        title: "Point",
+        body: "Raise one hand and point at the screen. The amber dot follows your index finger. Try touching the laptop.",
+      },
+      {
+        pose: "pinch",
+        title: "Pinch to click",
+        body: "Tap your thumb and index finger together. The specks snap into one dot, and whatever you're pointing at clicks.",
+      },
+      {
+        pose: "drag",
+        title: "Pinch and drag to scroll",
+        body: "Hold the pinch and move your hand up or down. Let go to stop, with a little glide.",
+      },
+    ],
+  },
 } as const;
 
 export type HandPose = (typeof arCopy.explainer.gestures)[number]["pose"];

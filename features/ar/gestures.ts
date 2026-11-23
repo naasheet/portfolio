@@ -29,6 +29,10 @@ export const FINGER_EXTENDED = 1.5;
 export const THUMB_EXTENDED = 0.6;
 /** The palm must be held this long to toggle the music. */
 export const PALM_HOLD_S = 1;
+/** 8.4: on Home, a palm held over a desk object this long opens it. */
+export const PALM_OPEN_S = 0.8;
+/** 8.4: the coach's "point" step counts once the cursor has travelled this far (px). */
+export const POINT_TRAVEL_PX = 120;
 /** The click lands where the cursor was this long before the pinch (fingers closing drag it). */
 export const CLICK_LOOKBACK_S = 0.12;
 /** The visible cursor holds still this long after a pinch starts. */
@@ -128,6 +132,34 @@ export function extendedFingers(p: Points, aspect: number): Fingers {
 export const isOpenPalm = (f: Fingers) =>
   f.thumb && f.index && f.middle && f.ring && f.little;
 
+/**
+ * What an open-palm hold does (8.4): on Home with a desk object highlighted (room.hot) it opens
+ * that object after 0.8 s; anywhere else it toggles the music after 1 s. The plant is never
+ * highlighted (only a pinch waters it), so a palm over it toggles the music.
+ */
+export function palmTarget(
+  pageId: string | null,
+  hot: string | null,
+): { kind: "open" | "music"; target: string | null; duration: number } {
+  return pageId === "home" && hot
+    ? { kind: "open", target: hot, duration: PALM_OPEN_S }
+    : { kind: "music", target: null, duration: PALM_HOLD_S };
+}
+
+// --- Events (8.4: the coach waits for each gesture once) -------------------------------------
+
+export type GestureEvent = "point" | "click" | "drag";
+const listeners = new Set<(event: GestureEvent) => void>();
+
+/** Called when the visitor points (moves the cursor a little), pinch-clicks or pinch-drags. */
+export function onGesture(listener: (event: GestureEvent) => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+const emit = (event: GestureEvent) => {
+  for (const listener of listeners) listener(event);
+};
+
 /** A short history of filtered cursor positions, to look back to before a pinch. */
 export function createHistory(size = 16) {
   const t = new Float64Array(size);
@@ -207,6 +239,20 @@ export function startGestures(): () => void {
   let palmStart = -1;
   let palmLatched = false;
   let palm = 0;
+  let holdKind: "open" | "music" | null = null;
+  let holdTarget: string | null = null;
+  /** Cursor travel while the hand is in view, for the coach's "point" step. */
+  let travel = 0;
+  let pointed = false;
+  let prevX = NaN;
+  let prevY = NaN;
+
+  const endHold = () => {
+    palmStart = -1;
+    palm = 0;
+    holdKind = null;
+    holdTarget = null;
+  };
 
   const setPinching = (on: boolean) => {
     if (store().ar.pinching !== on) store().ar.setPinching(on);
@@ -216,10 +262,14 @@ export function startGestures(): () => void {
     if (!pinching) return;
     pinching = false;
     setPinching(false);
+    // Events go out before the click: a click on the coach's Next moves it to the next step,
+    // which must not count this same pinch.
     if (dragging) {
+      if (!cancelled) emit("drag");
       synthetic.up(downX, downY, false);
       inertia = cancelled ? 0 : dragVelocity;
     } else {
+      if (!cancelled) emit("click");
       synthetic.up(downX, downY, !cancelled);
     }
     dragging = false;
@@ -292,19 +342,38 @@ export function startGestures(): () => void {
           release(false);
         }
 
-        // Open palm, held: toggle the music once per hold.
+        // Open palm, held: open the desk object under it (Home), else toggle the music; once
+        // per hold. Moving onto another object restarts the hold.
         if (!pinching && isOpenPalm(fingers)) {
-          if (palmStart < 0) palmStart = now;
-          palm = palmLatched ? 0 : Math.min(1, (now - palmStart) / PALM_HOLD_S);
-          if (palm >= 1 && !palmLatched) {
-            palmLatched = true;
+          const { page, room } = store();
+          const goal = palmTarget(page.id, room.hot);
+          if (palmLatched) {
             palm = 0;
-            toggleMusic();
+            holdKind = null;
+            holdTarget = null;
+          } else {
+            if (
+              palmStart < 0 ||
+              goal.kind !== holdKind ||
+              goal.target !== holdTarget
+            ) {
+              palmStart = now;
+              holdKind = goal.kind;
+              holdTarget = goal.target;
+            }
+            palm = Math.min(1, (now - palmStart) / goal.duration);
+            if (palm >= 1) {
+              palmLatched = true;
+              const kind = holdKind;
+              endHold();
+              // Open: a click where the hand points, on the room's hit element (R.4 opens it).
+              if (kind === "open") synthetic.click(dx, dy);
+              else toggleMusic();
+            }
           }
         } else {
-          palmStart = -1;
+          endHold();
           palmLatched = false;
-          palm = 0;
         }
       }
     }
@@ -313,8 +382,9 @@ export function startGestures(): () => void {
     if (visible && now - lastSeen > 0.15 && pinching) release(true);
     if (visible && now - lastSeen > LOST_S) {
       visible = false;
-      palm = 0;
-      palmStart = -1;
+      endHold();
+      travel = 0;
+      pointed = false;
       fx.reset();
       fy.reset();
       history.clear();
@@ -354,6 +424,17 @@ export function startGestures(): () => void {
       if (Math.abs(inertia) < 20) inertia = 0;
     }
 
+    // The coach's "point": the hand moved the cursor a little.
+    if (visible && !pointed) {
+      if (!Number.isNaN(prevX)) travel += Math.hypot(dx - prevX, dy - prevY);
+      if (travel > POINT_TRAVEL_PX) {
+        pointed = true;
+        emit("point");
+      }
+    }
+    prevX = visible ? dx : NaN;
+    prevY = visible ? dy : NaN;
+
     // 5. Store and synthetic pointer.
     gestureDebug.gesture = !visible
       ? "idle"
@@ -371,9 +452,11 @@ export function startGestures(): () => void {
       hand.visible !== visible ||
       hand.x !== x ||
       hand.y !== y ||
-      hand.palm !== palm
+      hand.palm !== palm ||
+      hand.holdKind !== holdKind ||
+      hand.holdTarget !== holdTarget
     ) {
-      store().ar.setHand({ x, y, visible, palm });
+      store().ar.setHand({ x, y, visible, palm, holdKind, holdTarget });
     }
     if (visible) {
       const moved =
@@ -392,7 +475,23 @@ export function startGestures(): () => void {
     if (pinching) release(true);
     synthetic.leave();
     setPinching(false);
-    store().ar.setHand({ x: 0.5, y: 0.5, visible: false, palm: 0 });
+    store().ar.setHand({
+      x: 0.5,
+      y: 0.5,
+      visible: false,
+      palm: 0,
+      holdKind: null,
+      holdTarget: null,
+    });
     gestureDebug.gesture = "idle";
   };
 }
+
+// --- Coach (8.4) ------------------------------------------------------------------------------
+
+/** The gesture each coach step waits for: Point, Pinch to click, Pinch and drag to scroll. */
+export const COACH_EVENTS: readonly GestureEvent[] = ["point", "click", "drag"];
+
+/** Whether `event` completes coach step `step` (0-based). */
+export const coachStepDone = (step: number, event: GestureEvent) =>
+  COACH_EVENTS[step] === event;

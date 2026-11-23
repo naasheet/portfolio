@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  coachStepDone,
   createHistory,
   extendedFingers,
   isOpenPalm,
   mapToScreen,
   nextPinch,
+  palmTarget,
   pinchRatio,
 } from "../gestures";
 import { SLOT, TRACKED_COUNT } from "../landmarks";
@@ -108,5 +110,33 @@ describe("One Euro", () => {
     for (let i = 0; i < 10; i++)
       out = f.filter(100 + (i + 1) * 40, (60 + i) / 30);
     expect(out).toBeGreaterThan(300);
+  });
+});
+
+describe("palm target (8.4)", () => {
+  it("opens the highlighted desk object on Home, after 0.8 s", () => {
+    expect(palmTarget("home", "arcade")).toEqual({
+      kind: "open",
+      target: "arcade",
+      duration: 0.8,
+    });
+  });
+  it("toggles the music elsewhere, or with nothing highlighted, after 1 s", () => {
+    expect(palmTarget("home", null).kind).toBe("music");
+    expect(palmTarget("work", "arcade")).toEqual({
+      kind: "music",
+      target: null,
+      duration: 1,
+    });
+  });
+});
+
+describe("coach steps (8.4)", () => {
+  it("each step waits for its own gesture", () => {
+    expect(coachStepDone(0, "point")).toBe(true);
+    expect(coachStepDone(0, "click")).toBe(false);
+    expect(coachStepDone(1, "click")).toBe(true);
+    expect(coachStepDone(2, "drag")).toBe(true);
+    expect(coachStepDone(2, "click")).toBe(false);
   });
 });

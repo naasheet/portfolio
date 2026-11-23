@@ -1,3 +1,4 @@
+import type { SVGProps } from "react";
 import type { HandPose } from "@/content/ar";
 import { FINGERTIPS, HAND_CONNECTIONS } from "@/features/ar/landmarks";
 import { cn } from "@/lib/utils";
@@ -88,10 +89,11 @@ const LIT: Record<HandPose, readonly number[]> = {
 export function HandSkeleton({
   pose,
   className,
+  ...rest
 }: {
   pose: HandPose;
   className?: string;
-}) {
+} & SVGProps<SVGSVGElement>) {
   const points = POSES[pose];
   const lit = LIT[pose];
   return (
@@ -99,6 +101,7 @@ export function HandSkeleton({
       viewBox="0 0 100 100"
       aria-hidden
       className={cn("size-full", className)}
+      {...rest}
     >
       <g
         className="stroke-accent-primary"

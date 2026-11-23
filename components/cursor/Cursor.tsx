@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowUpRight, Pause, Play } from "lucide-react";
+import { ArrowUpRight, Hand, Pause, Play } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useMediaQuery } from "@/lib/hooks/useMediaQuery";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
+import { arCopy } from "@/content/ar";
 import { gsap } from "@/lib/motion/gsap";
 import { useStore } from "@/lib/store";
 
@@ -34,6 +35,11 @@ const HAND_ORBIT_RADIUS = 18;
 /** The palm hold: 16 specks in a ring this far out, lit one by one as the hold fills. */
 const PALM_SPECKS = 16;
 const PALM_RADIUS = 26;
+/**
+ * 8.4: the hand gone this long (after the cursor's 500 ms fade, so 3 s in all) shows "Show me
+ * your hand" where it was last seen (AR board edge state, "Hand lost").
+ */
+const LOST_HINT_MS = 2500;
 /** Easing time constants (s): onto the ring in ~250 ms (soft spring), snapping in when pressed. */
 const RING_TAU = 0.07;
 const PRESS_TAU = 0.035;
@@ -154,6 +160,7 @@ export function Cursor() {
   const pill = useRef<HTMLDivElement>(null);
   const pillShape = useRef<HTMLSpanElement>(null);
   const pillText = useRef<HTMLSpanElement>(null);
+  const hint = useRef<HTMLDivElement>(null);
   const specks = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
@@ -162,6 +169,7 @@ export function Cursor() {
     const pillEl = pill.current;
     const pillShapeEl = pillShape.current;
     const pillTextEl = pillText.current;
+    const hintEl = hint.current;
     const speckEls = specks.current.filter((s): s is HTMLSpanElement => !!s);
     if (
       !active ||
@@ -170,6 +178,7 @@ export function Cursor() {
       !pillEl ||
       !pillShapeEl ||
       !pillTextEl ||
+      !hintEl ||
       speckEls.length !== POOL
     ) {
       return;
@@ -198,6 +207,16 @@ export function Cursor() {
     /** Hand mode (8.3): position, press and palm come from the store. */
     let hand = false;
     let shown = false;
+    /** When the hand went out of view (ms), for the lost hint; 0 while it's in view. */
+    let lostSince = 0;
+    const setLost = (on: boolean) => {
+      if (on === "lost" in rootEl.dataset) return;
+      if (on) {
+        // Where the hand was last seen (the centre if it never was).
+        gsap.set(hintEl, { x: pointer.x, y: pointer.y });
+        rootEl.dataset.lost = "";
+      } else delete rootEl.dataset.lost;
+    };
 
     // Per-speck position, scale and visibility.
     const pos = speckEls.map(() => ({ x: 0, y: 0, s: 1 }));
@@ -223,8 +242,13 @@ export function Cursor() {
         const ar = useStore.getState().ar;
         if (!ar.hand.visible) {
           if (shown) hideVisual();
+          const now = performance.now();
+          if (!lostSince) lostSince = now;
+          setLost(now - lostSince > LOST_HINT_MS);
           return;
         }
+        lostSince = 0;
+        setLost(false);
         placeAt(ar.hand.x * window.innerWidth, ar.hand.y * window.innerHeight);
         if (!shown) showVisual();
         if (pressed !== ar.pinching) {
@@ -235,6 +259,9 @@ export function Cursor() {
         palm = ar.hand.palm;
         if (palm > 0) rootEl.dataset.palm = "";
         else delete rootEl.dataset.palm;
+        // 8.4: the icon in the ring says what the hold does: open (↗) or play / pause.
+        const action = ar.hand.holdKind ?? "";
+        if (rootEl.dataset.action !== action) rootEl.dataset.action = action;
         const playing = useStore.getState().audio.playing;
         if (playing !== "playing" in rootEl.dataset) {
           if (playing) rootEl.dataset.playing = "";
@@ -432,6 +459,13 @@ export function Cursor() {
       if (hand === on) return;
       hand = on;
       rootEl.dataset.mode = on ? "hand" : "mouse";
+      lostSince = 0;
+      setLost(false);
+      if (on) {
+        // Until the hand is seen, the lost hint sits in the middle of the screen.
+        pointer.x = window.innerWidth / 2;
+        pointer.y = window.innerHeight / 2;
+      }
       state = "default";
       rootEl.dataset.state = state;
       target = null;
@@ -498,8 +532,15 @@ export function Cursor() {
         <span className="cursor-palm-icon">
           <Play aria-hidden className="cursor-palm-play" />
           <Pause aria-hidden className="cursor-palm-pause" />
+          <ArrowUpRight aria-hidden className="cursor-palm-open" />
         </span>
         <span className="cursor-caret" />
+      </div>
+      <div ref={hint} className="cursor-pos">
+        <span className="cursor-hint">
+          <Hand aria-hidden className="size-4" />
+          {arCopy.lostHint}
+        </span>
       </div>
     </div>
   );

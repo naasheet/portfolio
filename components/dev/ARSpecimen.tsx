@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { CameraPreview } from "@/components/ar/CameraPreview";
 import { HandSkeleton } from "@/components/ar/HandSkeleton";
 import { Button } from "@/components/ui/Button";
+import { COACH_KEY } from "@/components/ar/ARCoach";
 import { rememberAllowed } from "@/features/ar/camera";
+import { storage } from "@/lib/browser";
 import { gestureDebug } from "@/features/ar/gestures";
 import { TRACKED, landmarks } from "@/features/ar/landmarks";
 import { gsap } from "@/lib/motion/gsap";
@@ -123,6 +125,9 @@ export function ARSpecimen() {
           onClick={() => useStore.getState().ar.setExplainerOpen(true)}
         >
           Open the explainer
+        </Button>
+        <Button variant="secondary" onClick={() => storage.remove(COACH_KEY)}>
+          Replay coach (next Hand on)
         </Button>
         <Button variant="secondary" onClick={() => rememberAllowed(false)}>
           Forget “allowed”

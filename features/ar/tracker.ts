@@ -45,7 +45,7 @@ export function createResultHandler(
         handlers.onError(message.message);
         return false;
       }
-      writeLandmarks(message.points);
+      writeLandmarks(message.points, message.hand ?? null);
       count++;
       const t = now();
       if (t - windowStart >= 1000) {

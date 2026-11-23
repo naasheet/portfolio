@@ -14,7 +14,9 @@ import { arCopy } from "@/content/ar";
 import { island } from "@/lib/island";
 import { useStore } from "@/lib/store";
 import { toast } from "@/lib/toast";
+import { ARCoach, coachSeen } from "./ARCoach";
 import { CameraPreview } from "./CameraPreview";
+import { IslandAR } from "./IslandAR";
 
 /** Camera refused or lost: the AR board's "Camera's shy?" island alert, then back to Mouse. */
 function cameraAlert(kind: "denied" | "lost" | "error") {
@@ -45,6 +47,8 @@ function cameraAlert(kind: "denied" | "lost" | "error") {
  * worker on the same stream and fills `landmarks`; it stops with the camera. If it fails, an
  * error toast, ar.status "error", and back to Mouse (the camera light goes off). Once the model
  * is ready, features/ar/gestures.ts (8.3) turns the landmarks into the hand cursor and gestures.
+ * 8.4: while the camera is on, IslandAR puts Hand mode in the island; the first time the tracker
+ * is ready, ARCoach runs its three steps (once, `ar-coach`). The legend sits in the preview.
  */
 export default function ARLayer() {
   const enabled = useStore((s) => s.ar.enabled);
@@ -108,6 +112,9 @@ export default function ARLayer() {
     };
   }, [enabled]);
 
+  // 8.4: the coach, the first time the tracker is ready (and while it hasn't been seen).
+  const [coach, setCoach] = useState(false);
+
   useEffect(() => {
     if (!stream) return;
     // 8.3: the cursor and gestures start once the model answers, and stop with the tracker.
@@ -115,6 +122,7 @@ export default function ARLayer() {
     const stopTracker = startTracker(stream, {
       onReady: () => {
         stopGestures ??= startGestures();
+        if (!coachSeen()) setCoach(true);
       },
       onError: (message) => {
         stopGestures?.();
@@ -128,8 +136,16 @@ export default function ARLayer() {
     return () => {
       stopGestures?.();
       stopTracker();
+      setCoach(false);
     };
   }, [stream]);
 
-  return stream ? <CameraPreview stream={stream} /> : null;
+  if (!stream) return null;
+  return (
+    <>
+      <CameraPreview stream={stream} />
+      <IslandAR />
+      {coach ? <ARCoach onClose={() => setCoach(false)} /> : null}
+    </>
+  );
 }

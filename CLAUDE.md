@@ -262,8 +262,10 @@ Put new code in the folder that owns it. Don't create new top-level folders with
   feedback within 100 ms.
 - **Motion:** one signature move per chapter, and everything else quiet. Only the status dot,
   the now-playing bars, the terminal cursor (added in 1.4, approved), the mouse cursor's
-  orbiting specks (Orbit board, 1.7; paused when the pointer leaves or the tab is hidden) and the
-  entry gate's loading spinner (2.2, only while the gate is up) loop.
+  orbiting specks (Orbit board, 1.7; paused when the pointer leaves or the tab is hidden), the
+  entry gate's loading spinner (2.2, only while the gate is up) and the gesture legend's tiny hand
+  drawings (8.4, only while Hand mode shows the legend; transform only; still under reduced
+  motion) loop.
 - **Copy:** short, first person, a little funny. Labels say what happens. Every string lives
   in `content/copy.ts` or another `content/` file, never hardcoded in a component.
 - **UI chunks:** match the attached design PNG (exported from the Key Frames canvas or Figma). If none is attached, ask for it before building.
@@ -541,7 +543,7 @@ canvas, music, terminal, AR and Slice are the identity of the site; never cut th
 
 ## 15. Progress
 
-Current phase: **8 — AR** (8.1–8.3 done; 8.4, legend and coach, is next). Phase 6 (Terminal, 6.1–6.6) is
+Current phase: **8 — AR** (8.1–8.4 done; 8.5, the canvas link, is next). Phase 6 (Terminal, 6.1–6.6) is
 complete. Build order changed after 6.6: Phase 7 (Chatbot) now comes after Phase 9 and before Phase 10 (§14); until then the
 Ask pill and the `/` shortcut are off (see "Chat off until Phase 7" below). Phase 5 (Music, 5.1–5.5) is complete. Phase 4 is built (4.1, 4.3–4.8;
 4.2 replaced by phase R); **4.9, the MVP review, is still Nasheet's open [manual] checkpoint** (skipped ahead to 5.1 at his request).
@@ -565,7 +567,7 @@ themes), 0.4 (motion foundation), 0.5 (store and shared utilities), 0.6 (/dev sp
 persistent layer), 2.4 (nav, island, phone menu and keyboard shortcuts), 2.5 (page transitions),
 3.1 (particle scene), 3.2 (shape library), 3.3 (scroll morph), 3.4 (pointer interaction),
 3.5 (theme, colour and chapter moods), 3.6 (quality tiers and fallbacks), R.1 (separate pages), R.2 (canvas retrofit: route-driven), R.3 (room shape), R.4 (room hover, focus and open), R.5 (room extras and phone), R.6 (Home intro), R.7 (CLAUDE.md edits), 4.1 (content model), 4.2 (replaced by phase R: Home is the particle room,
-R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker), 8.3 (hand cursor and gestures)
+R.3–R.6), 4.3 (About page), 4.4 (Work page), 4.5 (case-study template), 4.6 (Skills page), 4.7 (Contact page and API), 4.8 (footer, 404 and SEO), 5.1 (audio engine), 5.2 (music in the island), 5.3 (queue sheet and Media Session), 5.4 (audio-reactive canvas), 5.5 (now-playing card), 6.1 (terminal UI), 6.2 (parser and command registry), 6.3 (virtual filesystem), 6.4 (core commands), 6.5 (site-control commands), 6.6 (mobile terminal and polish), 8.1 (permission flow and camera preview), 8.2 (hand tracking in a worker), 8.3 (hand cursor and gestures), 8.4 (gesture legend, feedback and onboarding)
 Carry-over into later chunks:
 - **3.x canvas (from 3.1):**
   - **Changing the shape:** always through `morphTo(mesh, shape, { instant })` in
@@ -618,7 +620,7 @@ Carry-over into later chunks:
   hover, focus-visible, active, disabled). Fake hover/pressed/focus cells with the classes in
   `components/dev/devStates.ts` (dev only; components never take a "force state" prop), and lay
   states out with `DevState`.
-- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.3** (unchanged: gestures load with ARLayer, the hand cursor with the lazy Cursor), **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
+- **Bundle (every chunk that touches `/`): OVER BUDGET, decision open.** First-load JS on `/` is **214.2 KB after 8.4** (unchanged: all of it loads with ARLayer and the lazy Cursor), **214.2 KB after 8.3** (unchanged: gestures load with ARLayer, the hand cursor with the lazy Cursor), **214.2 KB after 8.2** (unchanged: the tracker loads with ARLayer, MediaPipe only inside the worker), **214.2 KB after 8.1** (+0.5: ARLayerSlot is a client component now, the camera alerts in the shared `copy`, the island's long alert; the explainer and the camera layer load on first use), **213.7 KB after 6.6** (unchanged: openTerminal is a few lines in shortcuts; /terminal's shell loads lazily on its own route), **213.7 KB after 6.5** (+0.1: the store's `particles` slice; the commands load with the terminal), **213.6 KB after 6.4** (unchanged: the commands load with the terminal), **213.6 KB after 6.3** (−0.3: the terminal's strings moved out of the shared `copy` into `content/terminal.ts`, which only the terminal chunk loads; **put new terminal strings there**), **213.9 KB after 6.2** (+0.2: `copy.terminal` / `copy.commands` in the shared `copy`; the engine loads with the terminal), **213.7 KB after 6.1** (+0.3: TerminalDrawerSlot is a client component now; the terminal itself loads on first open), **213.4 KB after 5.5** (+0.1: `copy.about.nowPlaying`), **213.3 KB after 5.4** (unchanged: levels.ts loads with the engine), **213.3 KB after 5.3** (+0.2: `ui.queueOpen` and the queue copy in the shared `copy`; the sheet and Media Session load with the player), **213.1 KB after 5.2** (the player loads only once sound is on; the removed "Music's warming up" copy; method: the gzipped module `<script src>`s in `/`'s HTML), **213.4 KB after 5.1** (+0.4: the playlist, read by the gate's preload; the engine is lazy), **213.0 KB after 4.8** (+1.1: the 404's TransitionLink, which Next loads on every page; see 4.8), **211.9 KB after 4.7** (+0.7: `copy.contact`, which sits in the shared `copy` object), **211.2 KB after 4.6** (+0.4: `copy.skills`), **210.8 KB after 4.5** (the MDX runtime is only on case studies), **210.9 KB after 4.4** (+0.2: `copy.work` and Work's `place`), **210.7 KB after 4.3**, **210.0 KB after 4.1**, **209.6 KB after R.6**, **209.4 KB after R.5** (the object actions and the fallback cards load on first use; eager they
   cost +4.6), **208.3 KB after R.4** (+1.9: RoomLinks, server-rendered for the keyboard and screen readers,
   plus the overlay's lazy loader), **206.4 KB after R.3 and R.2** (206.3 after R.1), **206.0 KB after 3.6** (205.5 after 3.5),
   **204.4 KB after 2.5** (+1.1 KB for the template and scroll memory), **203.3 KB after 2.4**
@@ -684,8 +686,8 @@ Carry-over into later chunks:
   (games). Note that `caution` (161 ms), `notification` (300 ms) and `swipe_*` (150 ms) are
   longer than the 100 ms rule in §8. Ask before using them. IconButton has no `sound` prop
   yet (not in 1.7's scope).
-- **8.3 hand cursor:** built (see "Hand cursor and gestures (8.3)"). Still open from the Orbit
-  board: the "hint after 3 s" when the hand is lost (8.4's coach).
+- **8.3 hand cursor:** built (see "Hand cursor and gestures (8.3)"); the lost-hand hint came
+  with 8.4.
 - **11.x media compression:** the UI sounds are WAV (~25 KB loaded now). Convert to Opus (ffmpeg is
   installed since 5.1; extend `scripts/compress-media.mjs`).
 - **10.x:** Tooltip has no automatic collision handling. 2.4 added `align="end"` (bubble lined up
@@ -1152,6 +1154,61 @@ Carry-over into later chunks:
     (`arCopy.tracker.error`), `ar.status = "error"`, Hand off (camera light off).
   - **Terminal:** `ar on` still prints "on its way (phase 8)" until 8.3 makes the hand do something
     (TODO(8.3) in `lib/commands/ar.ts`).
+- **Gesture legend, feedback and onboarding (8.4):** `components/ar/GestureLegend.tsx`,
+  `ARCoach.tsx`, `IslandAR.tsx`, `CameraPreview.tsx` (legend beside it), `ARLayer.tsx`,
+  `Cursor.tsx` (action icon, lost hint), `features/ar/gestures.ts` (palm target, events, coach
+  steps), `synthetic.ts` (`click`), the worker's handedness, `ar.hand.holdKind / holdTarget`,
+  strings in `content/ar.ts` (`legend`, `lostHint`, `island`, `coach`). From the AR, island and
+  Home states boards.
+  - **Decisions (Nasheet, 8.4):** the legend's drawings loop (added to §8's loops); a palm over the
+    plant toggles the music (it's never highlighted; only a pinch waters it); the AR island pill
+    keeps the live layout (lead · page · trail), not the board's page-less pill.
+  - **Legend:** a 192 px glass card beside the preview inside the same draggable group (the group
+    is `flex-row`, `flex-row-reverse` in right corners; `items-end` / `items-start` by corner), so
+    it moves with the preview. Rows: HandSkeleton in a 32 px tile with `.legend-icon` loops
+    (`legend-sway` / `-pinch` / `-wave`, transform only, only under no-preference).
+  - **Palm target:** `palmTarget(page.id, room.hot)`: on Home with an object highlighted, open it
+    after **0.8 s** (`PALM_OPEN_S`) with a synthetic click where the hand points (the room's hit
+    element, so R.4's open path runs: no import from components); else toggle the music after 1 s.
+    Moving onto another object restarts the hold. `ar.hand.holdKind` (`open` | `music` | null) and
+    `holdTarget` (room object id) say what a hold will do.
+  - **Island (`IslandAR`, mounted with the camera):** live = teal camera dot + hand (lead), "Tracking
+    · right hand" / "No hand" and the rate in fps (trail, written from the ticker). Music outranks
+    AR by kind, so with music live AR is the split circle (its lead). During a hold it re-pushes
+    with priority −1: an amber ring filling (`stroke-dashoffset` from the ticker) around ↗ or play
+    / pause, and "Hold to open About" / "Hold to play music" with the seconds left. Subscribed to
+    `[holdKind, holdTarget]` only (a derived slow value), never to the fast hand.
+  - **Handedness:** the worker sends `result.handedness[0][0]` as `hand`. MediaPipe 1.2's d.ts says
+    the label is the subject's own hand for an unmirrored frame (we send unmirrored), so it is
+    used as is. **[manual]** check it says "right hand" for your right hand.
+  - **Cursor:** the palm ring's icon follows `data-action` (↗ for open); the room's view pill hides
+    during a hold. **Lost hint:** 2.5 s after the cursor's 500 ms fade (3 s in all) the root shows
+    only the "Show me your hand" pill (`data-lost`) where the hand was last seen (the centre if
+    never), until the hand is back.
+  - **Coach:** `ARLayer` shows it on the tracker's ready unless `ar-coach` = "1". A solid card
+    (`bg-surface-solid`, overlay level) centred 24 px above the bottom, not modal. "Step n of 3",
+    progress dashes, the drawing (point; pinch with the amber ring; pinch with a dashed arrow), title,
+    body, Skip tour, "Waiting for you…", Next (disabled until the step's gesture: `onGesture`
+    point = 120 px of cursor travel, click = a pinch-click, drag = a pinch-drag). Done or Skip saves
+    `ar-coach`. /dev has "Replay coach". **Gesture events go out before the synthetic click**:
+    otherwise a pinch on Next counted for the next step too (found in QA).
+- **Verified 8.4 (headless Chromium 1248, production build, the 8.3 fake-worker harness):**
+  - **Legend:** 3 rows beside the preview, `legend-sway` running (screenshot).
+  - **Island:** "03 Work · Tracking 29 fps" live; a hold on /work "Hold to play music 0.6 s", then
+    the music played and AR moved to the split circle; on Home "01 Home · Hold to open About 0.4 s"
+    with the ring (screenshot), then `/about` opened after 0.8 s; the cursor's action `open`.
+  - **Coach:** step 1 Next disabled + "Waiting for you…" → enabled after pointing; pinch on Next →
+    step 2 (disabled) → enabled after a pinch-click elsewhere; → step 3 (disabled) → enabled after a
+    pinch-drag; Done → gone, `ar-coach` = 1.
+  - **Lost hint:** hidden at 2 s, shown at 3.3 s (opacity 1) centred on the last position (640,
+    300; screenshot); gone when the hand returned. Console clean. `npm run test`: 145 (+3).
+  - **[manual]** The Done-when: **a friend who's never seen it** uses it after the coach (watch
+    where they get stuck). The coach and legend copy; the legend loops by eye; "right hand" on your
+    camera; the 0.8 s hold-to-open and 1 s music hold by feel.
+  - **Follow-ups:** the island's AR slots are buttons that do nothing (no expanded card); give them
+    an action or make them plain in 10.6. The preview's status row wraps "Looking for your hand"
+    onto two lines at 176 px. The About ARCard's on / blocked states (8.5). The board's "Tracking is
+    slow" alert (8.5).
 - **Hand cursor and gestures (8.3):** `features/ar/oneEuro.ts`, `features/ar/gestures.ts`,
   `features/ar/synthetic.ts`, `components/cursor/Cursor.tsx` (hand mode), `app/globals.css` (the
   hover variant, `[data-hand-hover]` on plain :hover rules, the hand cursor), `canvas/particles/pointer.ts`,
@@ -2094,8 +2151,8 @@ Open TODO(content) items:
   of `copy.contact` (lede, card lines, form errors).
 - `content/profile.ts` `resumeUpdated` (4.7) — e.g. "Nov 2026", shown on the resume card when set.
 - `content/copy.ts` `errors` / `empty` (4.1) — review the lines.
-- Hand mode (8.1, 8.2): `content/ar.ts` (the explainer, the preview, 8.2's status lines and the
-  tracker error toast) and the camera alerts in
+- Hand mode (8.1, 8.2, 8.4): `content/ar.ts` (the explainer, the preview, 8.2's status lines,
+  the tracker error toast, 8.4's legend, coach steps, island lines and "Show me your hand") and the camera alerts in
   `copy.alerts` ("Camera's shy?", "Camera's gone quiet", "Can't start the camera", "No camera here",
   "Best on a laptop"): review the wording.
 - Terminal (6.1–6.4): `content/terminal.ts` — the banner and chips, command descriptions and

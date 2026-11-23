@@ -637,6 +637,106 @@ html.has-cursor * {
 .cursor-root[data-playing] .cursor-palm-pause {
   display: block;
 }
+/* 8.4: the ring's icon says what the hold does: ↗ opens a desk object, else play / pause. */
+.cursor-palm-open {
+  display: none;
+}
+.cursor-root[data-action="open"] .cursor-palm-play,
+.cursor-root[data-action="open"] .cursor-palm-pause {
+  display: none;
+}
+.cursor-root[data-action="open"] .cursor-palm-open {
+  display: block;
+}
+/* The ring is the feedback during a hold: the room's "Open ↗" pill steps aside. */
+.cursor-root[data-mode="hand"][data-palm] .cursor-pill {
+  opacity: 0;
+}
+
+/*
+ * 8.4: "Show me your hand", where the hand was last seen, 3 s after it left (AR board edge
+ * state). The root shows for it while the cursor itself stays hidden.
+ */
+.cursor-hint {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 16px;
+  border: 1px solid var(--color-island-border);
+  border-radius: 9999px;
+  background: var(--color-island-bg);
+  color: var(--color-island-text);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.9);
+  transition:
+    transform 200ms var(--ease-spring),
+    opacity 200ms var(--ease-out);
+}
+.cursor-hint svg {
+  color: var(--color-accent-secondary);
+}
+.cursor-root[data-lost] {
+  opacity: 1;
+}
+.cursor-root[data-lost] .cursor-hint {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.cursor-root[data-lost]:not([data-visible])
+  :is(
+    .cursor-dot,
+    .cursor-speck,
+    .cursor-pill,
+    .cursor-caret,
+    .cursor-palm-icon
+  ) {
+  opacity: 0;
+}
+
+/*
+ * 8.4: the gesture legend's tiny drawings loop gently (approved addition to CLAUDE.md §8's loops:
+ * only while Hand mode shows the legend; transform only; still under reduced motion).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .legend-icon {
+    animation: legend-sway 2.4s ease-in-out infinite alternate;
+  }
+  .legend-icon[data-pose="pinch"] {
+    transform-origin: 30% 40%;
+    animation-name: legend-pinch;
+    animation-duration: 1.6s;
+  }
+  .legend-icon[data-pose="palm"] {
+    transform-origin: 50% 100%;
+    animation-name: legend-wave;
+    animation-duration: 2s;
+  }
+}
+@keyframes legend-sway {
+  to {
+    transform: translate(2px, -2px);
+  }
+}
+@keyframes legend-pinch {
+  to {
+    transform: scale(0.88);
+  }
+}
+@keyframes legend-wave {
+  from {
+    transform: rotate(-6deg);
+  }
+  to {
+    transform: rotate(6deg);
+  }
+}
+
 /* Reduced motion (the cursor shows only in hand mode then): no fades or springs, it snaps. */
 @media (prefers-reduced-motion: reduce) {
   .cursor-root,
@@ -644,7 +744,8 @@ html.has-cursor * {
   .cursor-root .cursor-speck,
   .cursor-root .cursor-caret,
   .cursor-root .cursor-pill,
-  .cursor-palm-icon {
+  .cursor-palm-icon,
+  .cursor-hint {
     transition: none;
   }
 }

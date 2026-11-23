@@ -36,6 +36,8 @@ export const landmarks = {
   phase: "off" as TrackerPhase,
   /** The camera frame's width ÷ height (points are 0–1 per axis), for distances (8.3). */
   aspect: 4 / 3,
+  /** 8.4: which hand (the subject's own), for the island's "Tracking · right hand". */
+  hand: null as "left" | "right" | null,
   /** Where the model runs, once loaded (the GPU delegate, or the CPU fallback). */
   delegate: null as "GPU" | "CPU" | null,
 };
@@ -71,7 +73,11 @@ export const TRACKED_TIPS: readonly number[] = [
  * Copies one worker result into the buffer: `packed` holds x, y per slot (or is null when no
  * hand is in view).
  */
-export function writeLandmarks(packed: Float32Array | null): void {
+export function writeLandmarks(
+  packed: Float32Array | null,
+  hand: "left" | "right" | null = null,
+): void {
+  landmarks.hand = packed ? hand : null;
   if (packed && packed.length === landmarks.points.length) {
     landmarks.points.set(packed);
     landmarks.visible = true;
